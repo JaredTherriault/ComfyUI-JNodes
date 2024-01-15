@@ -1,0 +1,10 @@
+{
+    "main_pass":
+    [
+        "-n", "-c:v", "libx265",
+        "-pix_fmt", "yuv420p10le",
+        "-preset", "medium",
+        "-x265-params", "log-level=quiet"
+    ],
+     "extension": "mp4"
+}

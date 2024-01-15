@@ -1,0 +1,6 @@
+
+*.pyc
+NextUp.txt
+KnownIssues.txt
+web/js/assets/favicon.ico
+web/js/assets/favicon-active.ico

@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            node-version: 20.x
+          - os: windows-latest
+            node-version: 18.x
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: npm ci
+    - run: npm run lint
+    - run: npm run test
+    - run: npm run test:types
+    - run: npm run test:build
+      env:
+        CI: true
+    - run: npm run build
+  package-ubuntu-full:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+    - run: npm ci
+    - name: Test npm package and custom builds with minimal requirements
+      run: |
+        PATH=$(echo "$PATH" | sed -e 's/:\/usr\/local\/bin://'):/usr/local/bin/npm:/usr/local/bin/node
+        npm run test:build:custom
+  package-windows-basic:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20.x
+    - run: npm ci
+    - name: Test npm package with minimal requirements
+      run: |
+        npm pack
+        $PackageVersion = ((node -p "require('./package.json').version") | Out-String).Trim()
+        mkdir ../my-project
+        cd ../my-project
+        $regexRemovePath = [regex]::Escape('C:\npm\prefix')
+        $arrPath = $env:Path -split ';' | Where-Object {$_ -notMatch "^$regexRemovePath\\?"}
+        $env:Path = $arrPath -join ';'
+        node -p "const {writeFileSync} = require('fs'); const packageJson = {exifreader: {include: {jpeg: true, exif: true}}, dependencies: {exifreader: '../ExifReader/exifreader-$($PackageVersion).tgz'}}; writeFileSync('package.json', JSON.stringify(packageJson));"
+        if ($LastExitCode -ne 0) { throw (Get-PSCallStack | Out-String) }
+        npm install --production
+        if ($LastExitCode -ne 0) { throw (Get-PSCallStack | Out-String) }
+        npm rebuild exifreader
+        if ($LastExitCode -ne 0) { throw (Get-PSCallStack | Out-String) }
+      shell: pwsh -command "$ErrorActionPreference = 'Stop'; & {0}"
