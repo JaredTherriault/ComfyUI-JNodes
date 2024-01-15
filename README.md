@@ -54,3 +54,6 @@ Open an issue if you have any problems, but keep in mind I probably won't have a
 
 # Data Collection and Privacy Policy
 Your data is your own. This suite of nodes and web features does not collect any data from you or your machine.
+
+# ComfyUI Manager Support
+It'll happen when I've implemented more contexts and features. For now I'm not interested in showcasing the suite since it's only about halfway done.
