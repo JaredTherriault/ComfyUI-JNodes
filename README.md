@@ -36,6 +36,12 @@
  
  The python nodes will all still work fine, but if you don't delete the files above you won't be able to use many web features.
  
+# Known Issues
+ * Mouse Over a lora card with no preview images near the scroll bar results 
+in a graphical overlay issue
+* Reverse image list doesn't work
+* Many context picker options do nothing
+ 
 # Future updates
  * Implementation of more contexts in ImageDrawer (many are missing still)
  * Slideshow for images
