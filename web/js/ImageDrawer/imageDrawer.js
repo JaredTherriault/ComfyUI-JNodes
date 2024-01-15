@@ -30,12 +30,14 @@ export const defaultKeyList = "prompt, workflow";
 
 // Context selection constants
 const contextSelectorOptionNames = {
-	feedName: "feed",
-	tempName: "temp/history",
-	inputName: "input",
-	loraName: "Lora/Lycoris",
-	embeddingsName: "Embeddings",
-	pngInfoName: "Image Info"
+	feedName: { name: "feed", description: "The latest generations from this web session (cleared on page refresh)"},
+	tempName: { name: "temp/history", description: "The generations you've created since the last comfyUI server restart"},
+//	inputName: { name: "input", description: "Images and videos found in your input folder"},
+	loraName: { name: "Lora/Lycoris", description: "Lora and Lycoris models found in your Lora directory"},
+//	embeddingsName: { name: "Embeddings", description: "Embedding/textual inversion models found in your embeddings directory"},
+//	pngInfoName: { name: "Image Info", description: "Read and display metadata from an image or video"},
+//	compareName: { name: "Compare", description: "Compare generations sent to this context via menu"},
+//	resourcesName: { name: "Resources", description: "For things like poses, depth images, etc"},
 };
 
 class ContextState {
@@ -308,8 +310,9 @@ const createContextSelector = () => {
 	for (const optionLabel in contextSelectorOptionNames) {
 		if (contextSelectorOptionNames.hasOwnProperty(optionLabel)) {
 			const option = document.createElement("option");
-			option.value = contextSelectorOptionNames[optionLabel];
-			option.textContent = contextSelectorOptionNames[optionLabel];
+			option.value = contextSelectorOptionNames[optionLabel].name;
+			option.textContent = contextSelectorOptionNames[optionLabel].name;
+			option.title = contextSelectorOptionNames[optionLabel].description;
 			ContextSelector.appendChild(option);
 		}
 	}
