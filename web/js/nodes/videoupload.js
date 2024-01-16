@@ -1,6 +1,6 @@
-import { app } from "../../../scripts/app.js";
-import { api } from '../../../scripts/api.js'
-import { ComfyWidgets } from "../../../scripts/widgets.js"
+import { app } from "/scripts/app.js";
+import { api } from '/scripts/api.js'
+import { ComfyWidgets } from "/scripts/widgets.js"
 import { acceptableFileTypes } from "./video_preview.js"
 
 function videoUpload(node, inputName, inputData, app) {

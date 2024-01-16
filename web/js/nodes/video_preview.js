@@ -1,5 +1,5 @@
-import { app } from '../../../scripts/app.js'
-import { api } from '../../../scripts/api.js'
+import { app } from '/scripts/app.js'
+import { api } from '/scripts/api.js'
 
 export const acceptableFileTypes = [
 	"video/webm", "video/mp4", "video/mkv",

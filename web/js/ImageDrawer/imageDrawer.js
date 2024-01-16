@@ -48,7 +48,7 @@ class ContextState {
 	}
 };
 
-let lastSelectedContextOption = contextSelectorOptionNames.feedName;
+let lastSelectedContextOption = contextSelectorOptionNames.feedName.name;
 let contextCache = new Map();
 
 // localStorage accessors
@@ -93,7 +93,7 @@ export const setElementVisibility = (element, bNewVisible) => {
 export const toggleFeedImageButtonsBasedOnContextAndImageCount = () => {
 	const imgs = getImagesInList();
 	const bHasImages = imgs.length > 0;
-	const bIsFeedView = ContextSelector?.value == contextSelectorOptionNames.feedName;
+	const bIsFeedView = ContextSelector?.value == contextSelectorOptionNames.feedName.name;
 
 	setElementVisibility(clearButton, bIsFeedView && bHasImages);
 }
@@ -331,7 +331,7 @@ const createContextSelector = () => {
 		}
 
 		// Replace imageList with appropriate elements
-		if (selectedValue == contextSelectorOptionNames.feedName) {
+		if (selectedValue == contextSelectorOptionNames.feedName.name) {
 			if (!checkContextCache(selectedValue)) {
 				clearImageList();
 			}
@@ -345,12 +345,12 @@ const createContextSelector = () => {
 				}
 			}
 		}
-		else if (selectedValue == contextSelectorOptionNames.loraName) {
+		else if (selectedValue == contextSelectorOptionNames.loraName.name) {
 			if (!checkContextCache(selectedValue)) {
 				await loadLoras();
 			}
 		}
-		else if (selectedValue == contextSelectorOptionNames.tempName) {
+		else if (selectedValue == contextSelectorOptionNames.tempName.name) {
 			if (!checkContextCache(selectedValue)) {
 				await loadHistory();
 			}
@@ -678,7 +678,7 @@ app.registerExtension({
 					// we're currently in feed mode. Otherwise they'll be added when switching to feed.
 					feedImages.push(src);
 
-					if (ContextSelector.value == contextSelectorOptionNames.feedName) {
+					if (ContextSelector.value == contextSelectorOptionNames.feedName.name) {
 						let element = await ImageElements.createImageElementFromImgSrc(src);
 						if (element == undefined) { console.log("attempting to add undefined element in addEventListener"); }
 						addElementToImageList(element);

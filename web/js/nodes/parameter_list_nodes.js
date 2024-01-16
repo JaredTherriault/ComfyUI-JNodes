@@ -1,5 +1,4 @@
-import { app } from '../../../scripts/app.js'
-import { api } from '../../../scripts/api.js'
+import { app } from '/scripts/app.js'
 
 const get_param_node_helpers = {
 	name: 'JNodes.get_param_node_helpers',
