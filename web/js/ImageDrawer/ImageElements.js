@@ -3,7 +3,7 @@ import { getPngMetadata } from "/scripts/pnginfo.js";
 
 import { defaultKeyList, getVal } from "./imageDrawer.js";
 // getValue only prepends 'JNodes.', getVal also prepends 'ImageDrawer.'.
-import { getValue, setSearchTermsOnElement, getMaxZIndex, getLastMousePosition } from "../common/utils.js"
+import { getValue, setSearchTermsOnElement, getMaxZIndex, getLastMousePosition, createDarkContainer, copyToClipboard } from "../common/utils.js"
 import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 import { createModal } from "../common/modal.js";
 
@@ -73,6 +73,121 @@ export async function createImageElementFromImgSrc(src) {
 	if (!src) { return; }
 	const href = `/view?filename=${encodeURIComponent(src.filename)}&type=${src.type}&subfolder=${encodeURIComponent(src.subfolder)}&t=${+new Date()}`;
 	const bIsVideoFormat = src.format?.startsWith("video");
+
+	const imageElement =
+		$el("div.imageElement", {
+			style: {
+//				textAlign: 'center',
+//				objectFit: 'var(--div-fit, contain)',
+//				height: 'calc(var(--max-size) * 1vh)',
+//				borderRadius: '4px',
+//				position: "relative",
+				maxWidth: 'fit-content',
+			}
+		});
+
+	function createButtonToolbar() {
+
+		function createButtons() {
+			if (!buttonsRow) { return; }
+
+			function createButton(foregroundElement, tooltipText, onClickFunction) {
+				const buttonElement = $el("button", {
+					title: tooltipText,
+					style: {
+						background: 'none',
+						border: 'none',
+						padding: 0,
+					}
+				}, [
+					foregroundElement
+				]);
+
+				buttonElement.addEventListener('click', onClickFunction);
+
+				return buttonElement;
+			}
+
+			// Options button
+			buttonsRow.appendChild(
+				createButton(
+					$el("label", {
+						textContent: "📋",
+					}),
+					`Copy positive prompt`,
+					function(e) {
+						let positive_prompt = imageElement?.metadata?.positive_prompt;
+						if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
+						if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
+						copyToClipboard(positive_prompt);
+						e.preventDefault();
+					}
+				)
+			);
+		}
+
+		const buttonsRow = $el("div", {
+			style: {
+				width: '100%',
+				display: 'flex',
+				flexDirection: 'row',
+			}
+		});
+
+		const buttonToolbarContainerElement = createDarkContainer();
+
+		buttonToolbarContainerElement.style.top = '2%';
+		buttonToolbarContainerElement.style.left = '2%';
+		buttonToolbarContainerElement.style.visibility = "hidden";
+		buttonToolbarContainerElement.appendChild(buttonsRow);
+
+		createButtons();
+
+		return buttonToolbarContainerElement;
+	}
+
+	const aElement = $el("a", {
+		target: "_blank",
+		href,
+		onclick: async (e) => {
+
+			function createModalContent() {
+				const modalImg = $el(bIsVideoFormat ? "video" : "img", {
+					src: href,
+					// Store the image source as a data attribute for easy access
+					'data-src': href,
+					style: {
+						position: 'relative',
+						width: '99vw',
+						height: '99vh',
+						maxWidth: 'fit-content',
+						maxHeight: 'fit-content',
+						display: "block",
+						margin: "auto",
+					},
+				});
+
+				// Create modal content
+				const modalContent = document.createElement("div");
+				modalContent.style.position = 'absolute';
+				modalContent.style.display = "inline-block";
+				modalContent.style.left = "50%";
+				modalContent.style.top = "50%";
+				modalContent.style.transform = "translate(-50%, -50%)";
+				modalContent.style.maxWidth = "99%";
+				modalContent.style.maxHeight = "99%";
+				modalContent.style.overflow = "hidden";
+
+				modalContent.appendChild(modalImg);
+
+				return modalContent;
+			}
+			e.preventDefault();
+			createModal(createModalContent());
+		}
+	});
+
+	imageElement.appendChild(aElement);
 
 	const img = $el(bIsVideoFormat ? "video" : "img", {
 		src: href,
@@ -229,23 +344,32 @@ export async function createImageElementFromImgSrc(src) {
 					if (widget) {
 
 						imageElement.tooltipWidget = widget;
+						
+						function mouseOverEvent() {
+							
+							updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
+							buttonToolbar.style.visibility = "visible";
+						}
+						
+						function mouseOutEvent() {
+							
+							if (!toolTip) { return; }
+							toolTip.style.visibility = "hidden";
+							toolTip.style.opacity = "0";
+
+							buttonToolbar.style.visibility = "hidden";
+						}
 
 						const lastMousePosition = getLastMousePosition();
 						const elementUnderMouse = document.elementFromPoint(lastMousePosition[0], lastMousePosition[1]);
 						if (elementUnderMouse && elementUnderMouse == img) {
-							updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
+							mouseOverEvent();
 						}
 
 						// Show/Hide tooltip
-						imageElement.addEventListener("mouseover", () => {
-							updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
-						});
+						imageElement.addEventListener("mouseover", mouseOverEvent);
 
-						imageElement.addEventListener("mouseout", () => {
-							if (!toolTip) { return; }
-							toolTip.style.visibility = "hidden";
-							toolTip.style.opacity = "0";
-						});
+						imageElement.addEventListener("mouseout", mouseOutEvent);
 
 						imageElement.onpointermove = e => {
 							if (toolTip?.style?.visibility === "visible") {
@@ -271,6 +395,8 @@ export async function createImageElementFromImgSrc(src) {
 					const response = await fetch(href);
 					const blob = await response.blob();
 					const pnginfo = await getPngMetadata(blob);
+
+					imageElement.metadata = pnginfo;
 
 					const toolTipWidget = makeTooltipWidgetFromMetadata(pnginfo);
 
@@ -304,6 +430,9 @@ export async function createImageElementFromImgSrc(src) {
 					const jsonReadyString = cleanedString.replace("UNICODE", "")
 
 					const asJson = JSON.parse(jsonReadyString);
+
+					imageElement.metadata = asJson;
+
 					const toolTipWidget = makeTooltipWidgetFromMetadata(asJson);
 
 					setTooltipFromWidget(toolTipWidget);
@@ -325,55 +454,9 @@ export async function createImageElementFromImgSrc(src) {
 		img.loop = true;
 	}
 
-	const imageElement =
-		$el("div.imageElement", {
-			style: {
-				display: 'inline-block',
-			}
-		}, [
-			$el("a", {
-				target: "_blank",
-				href,
-				onclick: async (e) => {
-
-					function createModalContent() {
-						const modalImg = $el(bIsVideoFormat ? "video" : "img", {
-							src: href,
-							// Store the image source as a data attribute for easy access
-							'data-src': href,
-							style: {
-								position: 'relative',
-								width: '99vw',
-								height: '99vh',
-								maxWidth: 'fit-content',
-								maxHeight: 'fit-content',
-								display: "block",
-								margin: "auto",
-							},
-						});
-
-						// Create modal content
-						const modalContent = document.createElement("div");
-						modalContent.style.position = 'absolute';
-						modalContent.style.display = "inline-block";
-						modalContent.style.left = "50%";
-						modalContent.style.top = "50%";
-						modalContent.style.transform = "translate(-50%, -50%)";
-						modalContent.style.maxWidth = "99%";
-						modalContent.style.maxHeight = "99%";
-						modalContent.style.overflow = "hidden";
-
-						modalContent.appendChild(modalImg);
-
-						return modalContent;
-					}
-					e.preventDefault();
-					createModal(createModalContent());
-				}
-			}, [
-				img,
-			]),
-		]);
+	aElement.appendChild(img);
+	const buttonToolbar = createButtonToolbar(imageElement)
+	imageElement.appendChild(buttonToolbar);
 
 	return imageElement;
 }

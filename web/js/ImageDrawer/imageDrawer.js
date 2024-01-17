@@ -359,8 +359,8 @@ const createContextSelector = () => {
 		// Set up lastSelectedContextOption to accommodate future context switching
 		lastSelectedContextOption = selectedValue;
 
-		// Automatically focus search bar to save user a click
-		focusSearch();
+		// Automatically focus search bar and select text to save user a click
+		focusAndSelectSearchText();
 	});
 };
 
@@ -406,6 +406,10 @@ export function clearAndHandleSearch() {
 
 export function focusSearch() {
 	SearchBar.focus();
+}
+
+export function focusAndSelectSearchText() {
+	SearchBar.select(); // Select focuses already
 }
 
 // Function to execute seach with an explicit searchTerm

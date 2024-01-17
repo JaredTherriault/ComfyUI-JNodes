@@ -1,6 +1,6 @@
 import { api } from "/scripts/api.js";
 import { $el } from "/scripts/ui.js";
-import { copyToClipboard, setSearchTermsOnElement } from "../common/utils.js"
+import { copyToClipboard, setSearchTermsOnElement, createDarkContainer, getDarkColor } from "../common/utils.js"
 
 import { setSearchTextAndExecute } from "./imageDrawer.js";
 
@@ -33,8 +33,6 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 	let loraNameToUse = loraNameText;
 	let trainedWords = [];
 	let tags = [];
-
-	const darkColor = 'rgba(0,0,0,0.5)';
 
 	// Load the first image as the object cover image. 
 	// If one does not exist, fall back to placeholder image.
@@ -136,18 +134,6 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 		});
 	backgroundImage.src = getHrefForFamiliarImage(backgroundImage.lastViewedImageIndex);
 
-	function createDarkContainer(identifier, paddingOverride) {
-		return $el("div", {
-			id: identifier,
-			style: {
-				position: 'absolute',
-				backgroundColor: darkColor,
-				display: 'inline-block', // Size to content, '-block' to allow vertical margin and padding
-				padding: paddingOverride ? paddingOverride : '1%',
-			},
-		});
-	}
-
 	let imageCounterLabel;
 
 	function updateImageCounterText() {
@@ -200,17 +186,20 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 
 				return buttonElement;
 			}
+			
+			let copyLoraText = `<lora:${loraNameText}:1:1>`;
 
 			if (trainedWords.length > 0) {
 				//Copy all
+				let copyAllText = copyLoraText + ", " + trainedWords;
 				buttonsRow.appendChild(
 					createButton(
 						$el("label", {
 							textContent: "📋",
 						}),
-						`Copy lora as a1111-style text + trained words (${"<lora:" + loraNameText + ":1.0:1.0>, " + trainedWords})`,
+						`Copy lora as a1111-style text + trained words (${copyAllText})`,
 						function(e) {
-							copyToClipboard("<lora:" + loraNameText + ":1.0:1.0>, " + trainedWords)
+							copyToClipboard(copyAllText)
 							e.preventDefault();
 						}
 					)
@@ -237,9 +226,9 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 					$el("label", {
 						textContent: "📜",
 					}),
-					`Copy lora as a1111-style text (${"<lora:" + loraNameText + ":1.0:1.0>"})`,
+					`Copy lora as a1111-style text (${copyLoraText})`,
 					function(e) {
-						copyToClipboard("<lora:" + loraNameText + ":1.0:1.0>")
+						copyToClipboard(copyLoraText)
 						e.preventDefault();
 					}
 				)
@@ -311,7 +300,7 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 				top: '85%',
 				left: 0,
 				width: "100%",
-				backgroundColor: darkColor,
+				backgroundColor: getDarkColor(),
 				height: '15%',
 				display: 'flex',
 				flexDirection: 'column',

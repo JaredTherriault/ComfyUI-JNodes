@@ -70,6 +70,22 @@ export function setValue(name, val) {
 	localStorage.setItem("JNodes.Settings." + name, val);
 };
 
+export function getDarkColor() {
+	return 'rgba(0,0,0,0.5)';
+}
+
+export function createDarkContainer(identifier, paddingOverride) {
+	return $el("div", {
+		id: identifier,
+		style: {
+			position: 'absolute',
+			backgroundColor: getDarkColor(),
+			display: 'inline-block', // Size to content, '-block' to allow vertical margin and padding
+			padding: paddingOverride ? paddingOverride : '1%',
+		},
+	});
+}
+
 export function setSearchTermsOnElement(element, searchTerms) {
 	element.setAttribute('searchTerms', searchTerms);
 }
@@ -81,7 +97,7 @@ export function getMaxZIndex(element) {
 		maxZIndex = Math.max(maxZIndex, parent.style.zIndex);
 		parent = parent.parentElement;
 	}
-	
+
 	return maxZIndex;
 }
 
