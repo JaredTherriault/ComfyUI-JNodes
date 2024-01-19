@@ -77,11 +77,11 @@ export async function createImageElementFromImgSrc(src) {
 	const imageElement =
 		$el("div.imageElement", {
 			style: {
-//				textAlign: 'center',
-//				objectFit: 'var(--div-fit, contain)',
-//				height: 'calc(var(--max-size) * 1vh)',
-//				borderRadius: '4px',
-//				position: "relative",
+				//				textAlign: 'center',
+				//				objectFit: 'var(--div-fit, contain)',
+				//				height: 'calc(var(--max-size) * 1vh)',
+				//				borderRadius: '4px',
+				//				position: "relative",
 				maxWidth: 'fit-content',
 			}
 		});
@@ -90,6 +90,8 @@ export async function createImageElementFromImgSrc(src) {
 
 		function createButtons() {
 			if (!buttonsRow) { return; }
+
+			let contextMenu;
 
 			function createButton(foregroundElement, tooltipText, onClickFunction) {
 				const buttonElement = $el("button", {
@@ -108,22 +110,72 @@ export async function createImageElementFromImgSrc(src) {
 				return buttonElement;
 			}
 
-			// Options button
-			buttonsRow.appendChild(
+			function removeOptionsMenu() {
+				if (contextMenu) {
+					const parentElement = contextMenu.parentNode;
+					parentElement.removeChild(contextMenu);
+					contextMenu = null;
+				}
+			}
+
+			function createOptionsMenu() {
+
+				contextMenu = $el("div", {
+					id: "context-menu-image-elements",
+					style: {
+						width: 'fit-content',
+						display: 'flex',
+						flexDirection: 'column',
+						//						position: 'absolute',
+					}
+				});
+
+				contextMenu.appendChild(
+					createButton(
+						$el("label", {
+							textContent: "📋 Copy Positive Prompt",
+							style: {
+								color: 'rgb(250,250,250)',
+							}
+						}),
+						'Copy positive prompt',
+						function(e) {
+							let positive_prompt = imageElement?.metadata?.positive_prompt;
+							if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
+							if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
+							copyToClipboard(positive_prompt);
+							removeOptionsMenu();
+							e.preventDefault();
+						}
+					)
+				);
+
+				return contextMenu;
+			}
+
+			const optionsContainer = $el("div", [
 				createButton(
 					$el("label", {
-						textContent: "📋",
+						textContent: "⋮",
+						style: {
+							fontSize: '200%',
+							color: 'rgb(250,250,250)',
+						}
 					}),
-					`Copy positive prompt`,
+					'Options',
 					function(e) {
-						let positive_prompt = imageElement?.metadata?.positive_prompt;
-						if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
-						if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
-						copyToClipboard(positive_prompt);
+						if (contextMenu) {
+							removeOptionsMenu();
+						} else {
+							optionsContainer.appendChild(createOptionsMenu());
+						}
 						e.preventDefault();
 					}
-				)
+				)]
 			);
+
+			// Options button
+			buttonsRow.appendChild(optionsContainer);
 		}
 
 		const buttonsRow = $el("div", {
@@ -344,15 +396,15 @@ export async function createImageElementFromImgSrc(src) {
 					if (widget) {
 
 						imageElement.tooltipWidget = widget;
-						
+
 						function mouseOverEvent() {
-							
+
 							updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
 							buttonToolbar.style.visibility = "visible";
 						}
-						
+
 						function mouseOutEvent() {
-							
+
 							if (!toolTip) { return; }
 							toolTip.style.visibility = "hidden";
 							toolTip.style.opacity = "0";

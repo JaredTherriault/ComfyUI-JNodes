@@ -73,288 +73,290 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 		}
 
 		if (infoMap['trainedWords']) {
-			trainedWords = infoMap['trainedWords'];
+			trainedWords = (`${infoMap['trainedWords']}`).trim();
 			if (!trainedWords.endsWith(",")) {
 				trainedWords += ",";
 			}
-
-			return infoMap;
+			trainedWords = trainedWords.replace("\\(", "(").replace("\\)", ")").replace('\\"', '"');
 		}
 
-		const infoMap = await parseFamiliarInfos();
+		return infoMap;
+	}
 
-		function createImageSwitchButton(bIsLeft) {
+	const infoMap = await parseFamiliarInfos();
 
-			if (familiars.familiar_images.length < 2) {
-				return;
-			}
+	function createImageSwitchButton(bIsLeft) {
 
-			function onClickLeft(e) {
-				backgroundImage.lastViewedImageIndex -= 1;
-				if (backgroundImage.lastViewedImageIndex < 0) {
-					backgroundImage.lastViewedImageIndex = familiars.familiar_images.length - 1;
-				}
-				backgroundImage.src = getHrefForFamiliarImage(backgroundImage.lastViewedImageIndex);
-
-				updateImageCounterText();
-			}
-
-			function onClickRight(e) {
-				backgroundImage.lastViewedImageIndex += 1;
-				if (backgroundImage.lastViewedImageIndex == familiars.familiar_images.length) {
-					backgroundImage.lastViewedImageIndex = 0;
-				}
-				backgroundImage.src = getHrefForFamiliarImage(backgroundImage.lastViewedImageIndex);
-
-				updateImageCounterText();
-			}
-
-			return $el('button', {
-				style: {
-					position: "absolute",
-					top: '50%',
-					left: bIsLeft ? '5%' : '85%',
-					transformOrigin: 'center',
-					fontSize: 'calc(var(--max-size) * 0.02vw)',
-				},
-				onclick: bIsLeft ? onClickLeft : onClickRight,
-			}, [
-				$el("label", {
-					textContent: bIsLeft ? "<" : ">",
-				}),
-			]);
+		if (familiars.familiar_images.length < 2) {
+			return;
 		}
 
-		const backgroundImage =
-			$el("img", {
-				lastViewedImageIndex: 0,
-				style: {
-					objectFit: "cover",
-					width: "100%",
-					height: "100%",
-				}
-			});
-		backgroundImage.src = getHrefForFamiliarImage(backgroundImage.lastViewedImageIndex);
-
-		let imageCounterLabel;
-
-		function updateImageCounterText() {
-			if (imageCounterLabel) {
-				if (familiars.familiar_images.length < 1) {
-					return;
-				}
-				const CurrentImageIndex =
-					parseInt(backgroundImage.lastViewedImageIndex);
-				imageCounterLabel.textContent =
-					`${CurrentImageIndex + 1}/${familiars.familiar_images.length}`
+		function onClickLeft(e) {
+			backgroundImage.lastViewedImageIndex -= 1;
+			if (backgroundImage.lastViewedImageIndex < 0) {
+				backgroundImage.lastViewedImageIndex = familiars.familiar_images.length - 1;
 			}
-		}
-
-		function createImageCounterElement() {
-
-			imageCounterLabel = $el("label", {
-				textContent: 'No preview images found',
-			});
-
-			const imageCounterElement = createDarkContainer();
-
-			imageCounterElement.style.top = '2%';
-			imageCounterElement.style.right = '2%';
-			imageCounterElement.appendChild(imageCounterLabel);
+			backgroundImage.src = getHrefForFamiliarImage(backgroundImage.lastViewedImageIndex);
 
 			updateImageCounterText();
-
-			return imageCounterElement;
 		}
 
-		function createButtonToolbar() {
+		function onClickRight(e) {
+			backgroundImage.lastViewedImageIndex += 1;
+			if (backgroundImage.lastViewedImageIndex == familiars.familiar_images.length) {
+				backgroundImage.lastViewedImageIndex = 0;
+			}
+			backgroundImage.src = getHrefForFamiliarImage(backgroundImage.lastViewedImageIndex);
 
-			function createButtons() {
-				if (!buttonsRow) { return; }
+			updateImageCounterText();
+		}
 
-				function createButton(foregroundElement, tooltipText, onClickFunction) {
-					const buttonElement = $el("button", {
-						title: tooltipText,
-						style: {
-							background: 'none',
-							border: 'none',
-							padding: 0,
-						}
-					}, [
-						foregroundElement
-					]);
+		return $el('button', {
+			style: {
+				position: "absolute",
+				top: '50%',
+				left: bIsLeft ? '5%' : '85%',
+				transformOrigin: 'center',
+				fontSize: 'calc(var(--max-size) * 0.02vw)',
+			},
+			onclick: bIsLeft ? onClickLeft : onClickRight,
+		}, [
+			$el("label", {
+				textContent: bIsLeft ? "<" : ">",
+			}),
+		]);
+	}
 
-					buttonElement.addEventListener('click', onClickFunction);
+	const backgroundImage =
+		$el("img", {
+			lastViewedImageIndex: 0,
+			style: {
+				objectFit: "cover",
+				width: "100%",
+				height: "100%",
+			}
+		});
+	backgroundImage.src = getHrefForFamiliarImage(backgroundImage.lastViewedImageIndex);
 
-					return buttonElement;
-				}
+	let imageCounterLabel;
 
-				let copyLoraText = `<lora:${loraNameText}:1:1>`;
+	function updateImageCounterText() {
+		if (imageCounterLabel) {
+			if (familiars.familiar_images.length < 1) {
+				return;
+			}
+			const CurrentImageIndex =
+				parseInt(backgroundImage.lastViewedImageIndex);
+			imageCounterLabel.textContent =
+				`${CurrentImageIndex + 1}/${familiars.familiar_images.length}`
+		}
+	}
 
-				if (trainedWords.length > 0) {
-					//Copy all
-					let copyAllText = copyLoraText + ", " + trainedWords;
-					buttonsRow.appendChild(
-						createButton(
-							$el("label", {
-								textContent: "📋",
-							}),
-							`Copy lora as a1111-style text + trained words (${copyAllText})`,
-							function(e) {
-								copyToClipboard(copyAllText)
-								e.preventDefault();
-							}
-						)
-					);
+	function createImageCounterElement() {
 
-					// Copy trained words button
-					buttonsRow.appendChild(
-						createButton(
-							$el("label", {
-								textContent: "📝",
-							}),
-							`Copy trained words (${trainedWords})`,
-							function(e) {
-								copyToClipboard(trainedWords)
-								e.preventDefault();
-							}
-						)
-					);
-				}
+		imageCounterLabel = $el("label", {
+			textContent: 'No preview images found',
+		});
 
-				// Copy text lora button
+		const imageCounterElement = createDarkContainer();
+
+		imageCounterElement.style.top = '2%';
+		imageCounterElement.style.right = '2%';
+		imageCounterElement.appendChild(imageCounterLabel);
+
+		updateImageCounterText();
+
+		return imageCounterElement;
+	}
+
+	function createButtonToolbar() {
+
+		function createButtons() {
+			if (!buttonsRow) { return; }
+
+			function createButton(foregroundElement, tooltipText, onClickFunction) {
+				const buttonElement = $el("button", {
+					title: tooltipText,
+					style: {
+						background: 'none',
+						border: 'none',
+						padding: 0,
+					}
+				}, [
+					foregroundElement
+				]);
+
+				buttonElement.addEventListener('click', onClickFunction);
+
+				return buttonElement;
+			}
+
+			let copyLoraText = `<lora:${loraNameText}:1:1>`;
+
+			if (trainedWords.length > 0) {
+				//Copy all
+				let copyAllText = copyLoraText + ", " + trainedWords;
 				buttonsRow.appendChild(
 					createButton(
 						$el("label", {
-							textContent: "📜",
+							textContent: "📋",
 						}),
-						`Copy lora as a1111-style text (${copyLoraText})`,
+						`Copy lora as a1111-style text + trained words (${copyAllText})`,
 						function(e) {
-							copyToClipboard(copyLoraText)
+							copyToClipboard(copyAllText)
+							e.preventDefault();
+						}
+					)
+				);
+
+				// Copy trained words button
+				buttonsRow.appendChild(
+					createButton(
+						$el("label", {
+							textContent: "📝",
+						}),
+						`Copy trained words (${trainedWords})`,
+						function(e) {
+							copyToClipboard(trainedWords)
 							e.preventDefault();
 						}
 					)
 				);
 			}
 
-			const buttonsRow = $el("div", {
-				style: {
-					width: '100%',
-					display: 'flex',
-					flexDirection: 'row',
-				}
-			});
-
-			const buttonToolbarContainerElement = createDarkContainer();
-
-			buttonToolbarContainerElement.style.top = '2%';
-			buttonToolbarContainerElement.style.left = '2%';
-			buttonToolbarContainerElement.appendChild(buttonsRow);
-
-			createButtons();
-
-			return buttonToolbarContainerElement;
+			// Copy text lora button
+			buttonsRow.appendChild(
+				createButton(
+					$el("label", {
+						textContent: "📜",
+					}),
+					`Copy lora as a1111-style text (${copyLoraText})`,
+					function(e) {
+						copyToClipboard(copyLoraText)
+						e.preventDefault();
+					}
+				)
+			);
 		}
 
-		function createNameAndTagContainer() {
-
-			function createTagButton(tagName) {
-				const buttonElement = $el("button", {
-					title: `Click to search "${tagName}"`,
-					style: {
-						background: 'none',
-						border: 'none',
-						padding: '0',
-					}
-				}, [
-					$el("label", {
-						textContent: tagName,
-						style: {
-							fontSize: 'calc(var(--max-size) * 0.01vw)',
-							color: 'rgb(250,250,250)',
-							wordBreak: 'keep-all',
-						}
-					})
-				]);
-
-				buttonElement.addEventListener('click', () => {
-					setSearchTextAndExecute(tagName);
-				});
-
-				return buttonElement;
+		const buttonsRow = $el("div", {
+			style: {
+				width: '100%',
+				display: 'flex',
+				flexDirection: 'row',
 			}
+		});
 
-			const tagButtonContainer = $el("div", {
-				id: 'tag-container',
-				style: {
-					display: 'flex',
-					flexWrap: 'wrap',
-					justifyContent: 'center',
-					gap: '10px',
-					width: '90%'
-				}
-			});
+		const buttonToolbarContainerElement = createDarkContainer();
 
-			const mainContainer = $el("div", {
-				id: 'darkened-text-bg',
+		buttonToolbarContainerElement.style.top = '2%';
+		buttonToolbarContainerElement.style.left = '2%';
+		buttonToolbarContainerElement.appendChild(buttonsRow);
+
+		createButtons();
+
+		return buttonToolbarContainerElement;
+	}
+
+	function createNameAndTagContainer() {
+
+		function createTagButton(tagName) {
+			const buttonElement = $el("button", {
+				title: `Click to search "${tagName}"`,
 				style: {
-					position: "absolute",
-					top: '85%',
-					left: 0,
-					width: "100%",
-					backgroundColor: getDarkColor(),
-					height: '15%',
-					display: 'flex',
-					flexDirection: 'column',
-					alignItems: 'center',
+					background: 'none',
+					border: 'none',
+					padding: '0',
 				}
 			}, [
 				$el("label", {
-					textContent: loraNameToUse,
+					textContent: tagName,
 					style: {
-						fontSize: 'calc(var(--max-size) * 0.02vw)',
-						top: '5%',
-						wordBreak: 'break-all',
+						fontSize: 'calc(var(--max-size) * 0.01vw)',
+						color: 'rgb(250,250,250)',
+						wordBreak: 'keep-all',
 					}
-				}),
-				tagButtonContainer
+				})
 			]);
 
-			for (const tag of tags) {
-				tagButtonContainer.appendChild(createTagButton(tag));
-			}
-
-			return mainContainer;
-		}
-
-		//console.log("loraNameToUse: " + loraNameToUse);
-
-		const loraElement =
-			$el("div", {
-				id: "extra-networks-card",
-				"data-name": loraNameToUse,
-				style: {
-					textAlign: 'center',
-					objectFit: 'var(--div-fit, contain)',
-					height: 'calc(var(--max-size) * 1vh)',
-					borderRadius: '4px',
-					position: "relative",
-					aspectRatio: '0.67',
-				},
+			buttonElement.addEventListener('click', () => {
+				setSearchTextAndExecute(tagName);
 			});
 
-		loraElement.appendChild(backgroundImage);
-		const leftImageSwitchButton = createImageSwitchButton(true);
-		if (leftImageSwitchButton) { loraElement.appendChild(leftImageSwitchButton); }
-		const rightImageSwitchButton = createImageSwitchButton(false);
-		if (rightImageSwitchButton) { loraElement.appendChild(rightImageSwitchButton); }
-		loraElement.appendChild(createImageCounterElement());
-		loraElement.appendChild(createButtonToolbar());
-		loraElement.appendChild(createNameAndTagContainer());
+			return buttonElement;
+		}
 
-		loraElement.title = JSON.stringify(infoMap);
+		const tagButtonContainer = $el("div", {
+			id: 'tag-container',
+			style: {
+				display: 'flex',
+				flexWrap: 'wrap',
+				justifyContent: 'center',
+				gap: '10px',
+				width: '90%'
+			}
+		});
 
-		setSearchTermsOnElement(loraElement, `${loraNameToUse}, ${trainedWords}, ${tags.join(', ')}`);
+		const mainContainer = $el("div", {
+			id: 'darkened-text-bg',
+			style: {
+				position: "absolute",
+				top: '85%',
+				left: 0,
+				width: "100%",
+				backgroundColor: getDarkColor(),
+				height: '15%',
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center',
+			}
+		}, [
+			$el("label", {
+				textContent: loraNameToUse,
+				style: {
+					fontSize: 'calc(var(--max-size) * 0.02vw)',
+					top: '5%',
+					wordBreak: 'break-all',
+				}
+			}),
+			tagButtonContainer
+		]);
 
-		return loraElement;
+		for (const tag of tags) {
+			tagButtonContainer.appendChild(createTagButton(tag));
+		}
+
+		return mainContainer;
 	}
+
+	//console.log("loraNameToUse: " + loraNameToUse);
+
+	const loraElement =
+		$el("div", {
+			id: "extra-networks-card",
+			"data-name": loraNameToUse,
+			style: {
+				textAlign: 'center',
+				objectFit: 'var(--div-fit, contain)',
+				height: 'calc(var(--max-size) * 1vh)',
+				borderRadius: '4px',
+				position: "relative",
+				aspectRatio: '0.67',
+			},
+		});
+
+	loraElement.appendChild(backgroundImage);
+	const leftImageSwitchButton = createImageSwitchButton(true);
+	if (leftImageSwitchButton) { loraElement.appendChild(leftImageSwitchButton); }
+	const rightImageSwitchButton = createImageSwitchButton(false);
+	if (rightImageSwitchButton) { loraElement.appendChild(rightImageSwitchButton); }
+	loraElement.appendChild(createImageCounterElement());
+	loraElement.appendChild(createButtonToolbar());
+	loraElement.appendChild(createNameAndTagContainer());
+
+	loraElement.title = JSON.stringify(infoMap);
+
+	setSearchTermsOnElement(loraElement, `${loraNameToUse}, ${trainedWords}, ${tags.join(', ')}`);
+
+	return loraElement;
+}
