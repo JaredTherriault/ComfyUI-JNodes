@@ -5,7 +5,7 @@ import { $el } from "/scripts/ui.js";
 import * as ExtraNetworks from "./ExtraNetworks.js";
 import * as ImageElements from "./ImageElements.js"
 
-import { getValue, setValue, addJNodesSetting } from "../common/utils.js"
+import { getValue, setValue, addJNodesSetting, setElementVisibility } from "../common/utils.js"
 
 // Attribution: pythongsssss's Image Feed. So much brilliance in that original script.
 
@@ -84,11 +84,6 @@ export const addElementToImageList = (element) => {
 		console.log("Attempted to add undefined element");
 	}
 };
-
-export const setElementVisibility = (element, bNewVisible) => {
-	if (!element) { return; }
-	element.style.display = bNewVisible ? "unset" : "none";
-}
 
 export const toggleFeedImageButtonsBasedOnContextAndImageCount = () => {
 	const imgs = getImagesInList();

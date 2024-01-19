@@ -86,6 +86,11 @@ export function createDarkContainer(identifier, paddingOverride) {
 	});
 }
 
+export const setElementVisibility = (element, bNewVisible) => {
+	if (!element) { return; }
+	element.style.display = bNewVisible ? "unset" : "none";
+}
+
 export function setSearchTermsOnElement(element, searchTerms) {
 	element.setAttribute('searchTerms', searchTerms);
 }
