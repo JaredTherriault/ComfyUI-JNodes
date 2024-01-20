@@ -13,6 +13,10 @@ import server
 async def get_folder_items_wrapper(request):
     return get_folder_items(request)
 
+@server.PromptServer.instance.routes.get('/jnodes_output_items')
+async def get_output_items_wrapper(request):
+    return get_output_items(request)
+
 @server.PromptServer.instance.routes.get("/jnodes_view_image")
 async def view_image_wrapper(request):
     return view_image(request)
@@ -53,10 +57,10 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_RemoveParseableDataForInference": RemoveParseableDataForInference,
     "JNodes_PromptBuilderSingleSubject": PromptBuilderSingleSubject,
     "JNodes_PromptEditor" : PromptEditor,
-    "JNodes_AddOrSetPngInfoKey" : AddOrSetPngInfoKey,
+    "JNodes_AddOrSetMetaDataKey" : AddOrSetMetaDataKey,
     "JNodes_SetPositivePromptInMetaData": SetPositivePromptInMetaData,
     "JNodes_SetNegativePromptInMetaData": SetNegativePromptInMetaData,
-    "JNodes_RemovePngInfoKey" : RemovePngInfoKey,
+    "JNodes_RemoveMetaDataKey" : RemoveMetaDataKey,
     "JNodes_TokenCounter": TokenCounter,
     
     # selector_nodes
@@ -78,6 +82,7 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_GetTempDirectory": GetTempDirectory,
     "JNodes_GetOutputDirectory": GetOutputDirectory,
     "JNodes_StringLiteral" : StringLiteral,
+    "JNodes_AnyToString" : AnyToString,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -124,6 +129,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_GetTempDirectory": "Get Temp Directory",
     "JNodes_GetOutputDirectory": "Get Output Directory",
     "JNodes_StringLiteral" : "String Literal",
+    "JNodes_AnyToString" : "Anything To String",
 }
 
 

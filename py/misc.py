@@ -2,6 +2,7 @@ import os
 
 import folder_paths
 from .logger import logger
+from .utils import any, AnyType
 
 
 class GetTempDirectory:
@@ -41,3 +42,14 @@ class StringLiteral:
     def get_string(self, string):
         return (string,)
     
+    
+class AnyToString:
+    RETURN_TYPES = (any,)
+    FUNCTION = "get_string"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"any": (any,)}}
+
+    def get_string(self, any):
+        return (str(any),)

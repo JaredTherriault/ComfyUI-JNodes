@@ -399,33 +399,37 @@ class PromptEditor:
 
         return (re.sub('|'.join(r'\b%s\b' % re.escape(s) for s in replacement_dict.keys()), replace, text).strip(),)
     
-class AddOrSetPngInfoKey:
+class AddOrSetMetaDataKey:
 
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "key": ("STRING", {"default": 'unknown', "multiline": False}),
-                "value": ("STRING", {"default": 'unknown', "multiline": True}),
+                "key": ("STRING", {"default": '', "multiline": False}),
+                "value": ("STRING", {"default": '', "multiline": True}),
+            },
+            "optional": {
+                "passthrough": (any,),
             },
             "hidden": {
                 "extra_pnginfo": "EXTRA_PNGINFO"
             },
         }
 
-    RETURN_TYPES = ("BOOLEAN",)
+    RETURN_TYPES = (any, "BOOLEAN",)
     FUNCTION = "add_or_set_png_info_key"
     
-    OUTPUT_NODE = True
+    OUTPUT_NODE = False
 
-    def add_or_set_png_info_key(self, key, value, extra_pnginfo=None):
+    def add_or_set_png_info_key(self, key, value, passthrough, extra_pnginfo=None):
+        return_true = False
         try:
             if extra_pnginfo:
                 extra_pnginfo[key] = value
-                return (True,)
+                return_true = True
         except Exception as e:
             logger.error(f'{e}')
-        return (False,)
+        return (passthrough if passthrough is not None else value, return_true,)
     
 class SetPositivePromptInMetaData:
 
@@ -446,7 +450,7 @@ class SetPositivePromptInMetaData:
     OUTPUT_NODE = True
 
     def set_prompt(self, prompt, extra_pnginfo=None):
-        return AddOrSetPngInfoKey().add_or_set_png_info_key("positive_prompt", prompt, extra_pnginfo)
+        return (AddOrSetMetaDataKey().add_or_set_png_info_key("positive_prompt", prompt, None, extra_pnginfo)[1],)
     
 class SetNegativePromptInMetaData:
 
@@ -454,7 +458,7 @@ class SetNegativePromptInMetaData:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "prompt": ("STRING", {"default": 'unknown', "multiline": True}),
+                "prompt": ("STRING", {"default": '', "multiline": True}),
             },
             "hidden": {
                 "extra_pnginfo": "EXTRA_PNGINFO"
@@ -467,9 +471,9 @@ class SetNegativePromptInMetaData:
     OUTPUT_NODE = True
 
     def set_prompt(self, prompt, extra_pnginfo=None):
-        return AddOrSetPngInfoKey().add_or_set_png_info_key("negative_prompt", prompt, extra_pnginfo)
+        return (AddOrSetMetaDataKey().add_or_set_png_info_key("negative_prompt", prompt, None, extra_pnginfo)[1],)
     
-class RemovePngInfoKey:
+class RemoveMetaDataKey:
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -477,24 +481,28 @@ class RemovePngInfoKey:
             "required": {
                 "key": ("STRING", {"default": 'unknown', "multiline": False}),
             },
+            "optional": {
+                "passthrough": (any,),
+            },
             "hidden": {
                 "extra_pnginfo": "EXTRA_PNGINFO"
             },
         }
 
-    RETURN_TYPES = ("BOOLEAN",)
+    RETURN_TYPES = (any, "BOOLEAN",)
     FUNCTION = "remove_png_info_key"
     
-    OUTPUT_NODE = True
+    OUTPUT_NODE = False
 
-    def remove_png_info_key(self, key, extra_pnginfo=None):
+    def remove_png_info_key(self, key, passthrough, extra_pnginfo=None):
+        return_true = False
         try:
             if extra_pnginfo and key in extra_pnginfo:
                 del extra_pnginfo[key]
-                return (True,)
+                return_true = True
         except Exception as e:
             logger.error(f'{e}')
-        return (False,)
+        return (passthrough if passthrough is not None else key, return_true,)
   
 
 class TokenCounter:
