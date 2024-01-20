@@ -408,20 +408,17 @@ class AddOrSetMetaDataKey:
                 "key": ("STRING", {"default": '', "multiline": False}),
                 "value": ("STRING", {"default": '', "multiline": True}),
             },
-            "optional": {
-                "passthrough": (any,),
-            },
             "hidden": {
                 "extra_pnginfo": "EXTRA_PNGINFO"
             },
         }
 
-    RETURN_TYPES = (any, "BOOLEAN",)
-    FUNCTION = "add_or_set_png_info_key"
+    RETURN_TYPES = ("BOOLEAN",)
+    FUNCTION = "add_or_set_metadata_key"
     
-    OUTPUT_NODE = False
+    OUTPUT_NODE = True
 
-    def add_or_set_png_info_key(self, key, value, passthrough, extra_pnginfo=None):
+    def add_or_set_metadata_key(self, key, value, extra_pnginfo=None):
         return_true = False
         try:
             if extra_pnginfo:
@@ -429,7 +426,11 @@ class AddOrSetMetaDataKey:
                 return_true = True
         except Exception as e:
             logger.error(f'{e}')
-        return (passthrough if passthrough is not None else value, return_true,)
+        return (return_true,)
+    
+    @classmethod
+    def IS_CHANGED(s, key, value, extra_pnginfo=None):
+        return return_random_int() # Run every time
     
 class SetPositivePromptInMetaData:
 
@@ -450,7 +451,7 @@ class SetPositivePromptInMetaData:
     OUTPUT_NODE = True
 
     def set_prompt(self, prompt, extra_pnginfo=None):
-        return (AddOrSetMetaDataKey().add_or_set_png_info_key("positive_prompt", prompt, None, extra_pnginfo)[1],)
+        return AddOrSetMetaDataKey().add_or_set_metadata_key("positive_prompt", prompt, extra_pnginfo)
     
 class SetNegativePromptInMetaData:
 
@@ -471,7 +472,7 @@ class SetNegativePromptInMetaData:
     OUTPUT_NODE = True
 
     def set_prompt(self, prompt, extra_pnginfo=None):
-        return (AddOrSetMetaDataKey().add_or_set_png_info_key("negative_prompt", prompt, None, extra_pnginfo)[1],)
+        return AddOrSetMetaDataKey().add_or_set_metadata_key("negative_prompt", prompt, extra_pnginfo)
     
 class RemoveMetaDataKey:
 
@@ -481,20 +482,17 @@ class RemoveMetaDataKey:
             "required": {
                 "key": ("STRING", {"default": 'unknown', "multiline": False}),
             },
-            "optional": {
-                "passthrough": (any,),
-            },
             "hidden": {
                 "extra_pnginfo": "EXTRA_PNGINFO"
             },
         }
 
-    RETURN_TYPES = (any, "BOOLEAN",)
-    FUNCTION = "remove_png_info_key"
+    RETURN_TYPES = ("BOOLEAN",)
+    FUNCTION = "remove_metadata_key"
     
-    OUTPUT_NODE = False
+    OUTPUT_NODE = True
 
-    def remove_png_info_key(self, key, passthrough, extra_pnginfo=None):
+    def remove_metadata_key(self, key, extra_pnginfo=None):
         return_true = False
         try:
             if extra_pnginfo and key in extra_pnginfo:
@@ -502,7 +500,11 @@ class RemoveMetaDataKey:
                 return_true = True
         except Exception as e:
             logger.error(f'{e}')
-        return (passthrough if passthrough is not None else key, return_true,)
+        return (return_true,)
+    
+    @classmethod
+    def IS_CHANGED(s, key, value, extra_pnginfo=None):
+        return return_random_int() # Run every time
   
 
 class TokenCounter:
