@@ -4,9 +4,9 @@ import { $el } from "/scripts/ui.js";
 import * as ExtraNetworks from "./ExtraNetworks.js";
 import * as ImageElements from "./ImageElements.js"
 import {
-	getImageListChildren, replaceImageListChildren, clearImageListChildren, 
+	getImageListChildren, replaceImageListChildren, clearImageListChildren,
 	addElementToImageList, getImageListScrollLevel, setImageListScrollLevel,
-	getSearchText
+	getSearchText, setSearchTextAndExecute, focusAndSelectSearchText, getTrackedFeedImages
 } from "./imageDrawer.js"
 
 import { decodeReadableStream } from "../common/utils.js"
@@ -134,14 +134,18 @@ export const createContextSelector = () => {
 		const bHasCache = contextCache.has(selectedValue);
 		if (bHasCache) {
 			const cachedContent = contextCache.get(selectedValue);
-			// Replace children
-			replaceImageListChildren(...cachedContent.childElements); // Spread the array 
-			// Execute Search
-			setSearchTextAndExecute(cachedContent.searchBarText);
-			// Restore scroll level
-			setImageListScrollLevel(cachedContent.scrollLevel);
+			if (cachedContent.childElements.length > 0) {
+				// Replace children
+				replaceImageListChildren(...cachedContent.childElements); // Spread the array 
+				// Execute Search
+				setSearchTextAndExecute(cachedContent.searchBarText);
+				// Restore scroll level
+				setImageListScrollLevel(cachedContent.scrollLevel);
+
+				return true;
+			}
 		}
-		return bHasCache;
+		return false;
 	}
 
 	ContextSelector = $el("select");
@@ -175,9 +179,9 @@ export const createContextSelector = () => {
 				clearImageListChildren();
 			}
 			const imageListLength = getImageListChildren().length;
-			if (imageListLength < feedImages.length) {
-				for (let imageIndex = imageListLength; imageIndex < feedImages.length; imageIndex++) {
-					const src = feedImages[imageIndex];
+			if (imageListLength < getTrackedFeedImages().length) {
+				for (let imageIndex = imageListLength; imageIndex < getTrackedFeedImages().length; imageIndex++) {
+					const src = getTrackedFeedImages()[imageIndex];
 					let element = await ImageElements.createImageElementFromImgSrc(src);
 					if (element == undefined) { console.log(`Attempting to add undefined image element in {selectedValue}`); }
 					addElementToImageList(element);

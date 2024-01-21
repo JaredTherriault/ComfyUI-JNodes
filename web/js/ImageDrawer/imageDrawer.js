@@ -59,6 +59,10 @@ export function clearImageListChildren() {
 	imageList.replaceChildren();
 };
 
+export function getTrackedFeedImages() {
+	return feedImages;
+}
+
 export const addElementToImageList = (element) => {
 	//console.log("adding element: " + element);
 	if (element != undefined) {
