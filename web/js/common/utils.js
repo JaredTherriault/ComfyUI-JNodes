@@ -128,6 +128,33 @@ export function copyToClipboard(text) {
 	document.body.removeChild(textArea);
 }
 
+export async function decodeReadableStream(readableStream) {
+  const reader = readableStream.getReader();
+  const chunks = [];
+
+  while (true) {
+    const { done, value } = await reader.read();
+
+    if (done) {
+      break;
+    }
+
+    chunks.push(value);
+  }
+
+  // Assuming the stream is text data
+  const concatenatedChunks = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    concatenatedChunks.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  const text = new TextDecoder().decode(concatenatedChunks);
+  return text;
+}
+
 function createExpandableArea() {
 
 	const nameWidget = $el("label", {

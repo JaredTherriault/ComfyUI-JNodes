@@ -44,12 +44,12 @@ class StringLiteral:
     
     
 class AnyToString:
-    RETURN_TYPES = (any,)
+    RETURN_TYPES = ("STRING",)
     FUNCTION = "get_string"
 
     @classmethod
     def INPUT_TYPES(cls):
-        return {"required": {"any": (any,)}}
+        return {"required": {"anything": (any,)}}
 
-    def get_string(self, any):
-        return (str(any),)
+    def get_string(self, anything):
+        return (str(anything),)

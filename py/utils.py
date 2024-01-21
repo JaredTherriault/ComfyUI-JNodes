@@ -40,9 +40,13 @@ def return_random_int(min = 1, max = 100000):
 def make_exclusive_list(original_list, items_to_remove):
     return [item for item in original_list if item not in items_to_remove]
     
-def get_extension(filename):
-    file_parts = filename.split('.')
-    return len(file_parts) > 1 and file_parts[-1]
+def get_file_extension(filename):
+    _, extension = os.path.splitext(filename)
+    return extension
+
+def get_file_extension_without_dot(filename):
+    _, extension = os.path.splitext(filename)
+    return extension[1:]
 
 def is_webp(filename):
      return get_extension(filename) == "webp"
@@ -52,6 +56,9 @@ def is_gif(filename):
 
 def is_video(filename):
     return get_extension(filename) in ACCEPTED_VIDEO_EXTENSIONS
+
+def is_acceptable_image_or_video(filename):
+    return get_file_extension_without_dot(filename) in ACCEPTED_VIDEO_EXTENSIONS + ACCEPTED_IMAGE_EXTENSIONS
 
 
 def pil2tensor(image: Union[Image.Image, List[Image.Image]]) -> torch.Tensor:

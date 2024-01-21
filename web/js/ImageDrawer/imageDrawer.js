@@ -5,7 +5,7 @@ import { $el } from "/scripts/ui.js";
 import * as ExtraNetworks from "./ExtraNetworks.js";
 import * as ImageElements from "./ImageElements.js"
 
-import { getValue, setValue, addJNodesSetting, setElementVisibility } from "../common/utils.js"
+import { getValue, setValue, addJNodesSetting, setElementVisibility, decodeReadableStream } from "../common/utils.js"
 
 // Attribution: pythongsssss's Image Feed. So much brilliance in that original script.
 
@@ -30,14 +30,15 @@ export const defaultKeyList = "prompt, workflow";
 
 // Context selection constants
 const contextSelectorOptionNames = {
-	feedName: { name: "feed", description: "The latest generations from this web session (cleared on page refresh)"},
-	tempName: { name: "temp/history", description: "The generations you've created since the last comfyUI server restart"},
-//	inputName: { name: "input", description: "Images and videos found in your input folder"},
-	loraName: { name: "Lora/Lycoris", description: "Lora and Lycoris models found in your Lora directory"},
-//	embeddingsName: { name: "Embeddings", description: "Embedding/textual inversion models found in your embeddings directory"},
-//	pngInfoName: { name: "Image Info", description: "Read and display metadata from an image or video"},
-//	compareName: { name: "Compare", description: "Compare generations sent to this context via menu"},
-//	resourcesName: { name: "Resources", description: "For things like poses, depth images, etc"},
+	feed: { name: "feed", description: "The latest generations from this web session (cleared on page refresh)" },
+	temp: { name: "temp/history", description: "The generations you've created since the last comfyUI server restart" },
+	//	input: { name: "input", description: "Images and videos found in your input folder"},
+	output: { name: "output", description: "Images and videos found in your output folder" },
+	lora: { name: "Lora/Lycoris", description: "Lora and Lycoris models found in your Lora directory" },
+	//	embeddings: { name: "Embeddings", description: "Embedding/textual inversion models found in your embeddings directory"},
+	//	pngInfo: { name: "Image Info", description: "Read and display metadata from an image or video"},
+	//	compare: { name: "Compare", description: "Compare generations sent to this context via menu"},
+	//	resources: { name: "Resources", description: "For things like poses, depth images, etc"},
 };
 
 class ContextState {
@@ -48,7 +49,7 @@ class ContextState {
 	}
 };
 
-let lastSelectedContextOption = contextSelectorOptionNames.feedName.name;
+let lastSelectedContextOption = contextSelectorOptionNames.feed.name;
 let contextCache = new Map();
 
 // localStorage accessors
@@ -88,7 +89,7 @@ export const addElementToImageList = (element) => {
 export const toggleFeedImageButtonsBasedOnContextAndImageCount = () => {
 	const imgs = getImagesInList();
 	const bHasImages = imgs.length > 0;
-	const bIsFeedView = ContextSelector?.value == contextSelectorOptionNames.feedName.name;
+	const bIsFeedView = ContextSelector?.value == contextSelectorOptionNames.feed.name;
 
 	setElementVisibility(clearButton, bIsFeedView && bHasImages);
 }
@@ -326,7 +327,7 @@ const createContextSelector = () => {
 		}
 
 		// Replace imageList with appropriate elements
-		if (selectedValue == contextSelectorOptionNames.feedName.name) {
+		if (selectedValue == contextSelectorOptionNames.feed.name) {
 			if (!checkContextCache(selectedValue)) {
 				clearImageList();
 			}
@@ -340,14 +341,19 @@ const createContextSelector = () => {
 				}
 			}
 		}
-		else if (selectedValue == contextSelectorOptionNames.loraName.name) {
+		else if (selectedValue == contextSelectorOptionNames.lora.name) {
 			if (!checkContextCache(selectedValue)) {
 				await loadLoras();
 			}
 		}
-		else if (selectedValue == contextSelectorOptionNames.tempName.name) {
+		else if (selectedValue == contextSelectorOptionNames.temp.name) {
 			if (!checkContextCache(selectedValue)) {
 				await loadHistory();
+			}
+		}
+		else if (selectedValue == contextSelectorOptionNames.output.name) {
+			if (!checkContextCache(selectedValue)) {
+				await loadOutput();
 			}
 		}
 
@@ -440,11 +446,11 @@ async function loadLoras() {
 	if (loraKeys.length > 0) {
 		let count = 0;
 		let maxCount = 0;
-		for (const loraName of loraKeys) {
+		for (const lora of loraKeys) {
 			if (maxCount > 0 && count > maxCount) { break; }
-			let element = await ExtraNetworks.createExtraNetworkCard(loraName, loraDicts[loraName]);
+			let element = await ExtraNetworks.createExtraNetworkCard(lora, loraDicts[lora]);
 			if (element == undefined) {
-				console.log("Attempting to add undefined element for lora named: " + loraName + " with dict: " + JSON.stringify(loraDicts[loraName]));
+				console.log("Attempting to add undefined element for lora named: " + lora + " with dict: " + JSON.stringify(loraDicts[lora]));
 			}
 			addElementToImageList(element);
 			count++;
@@ -458,7 +464,7 @@ async function loadLoras() {
 async function loadHistory() {
 	clearImageList();
 	addElementToImageList($el("label", { textContent: "Loading history..." }));
-	const allHistory = await api.getHistory()
+	const allHistory = await api.getHistory(100000)
 	clearImageList(); // Remove loading indicator
 	for (const history of allHistory.History) {
 		if (!history.outputs) { continue; }
@@ -477,6 +483,33 @@ async function loadHistory() {
 			}
 		}
 	}
+}
+
+async function loadOutput() {
+	clearImageList();
+	addElementToImageList($el("label", { textContent: "Loading output folder..." }));
+	const allOutputItems = await api.fetchApi("/jnodes_output_items") //jnodes_output_items
+
+	// Decode into a string
+	const decodedString = await decodeReadableStream(allOutputItems.body);
+
+	// Remove null characters
+	const cleanedString = decodedString.replace(/\u0000/g, '');
+	const jsonReadyString = cleanedString.replace("UNICODE", "")
+
+	const asJson = JSON.parse(jsonReadyString);
+	
+	clearImageList(); // Remove loading indicator
+	//for (const folder of allOutputItems) {
+		//if (!folder.files) { continue; }
+		if (asJson.files.length > 0) {
+			for (const file of asJson.files) {
+				let element = await ImageElements.createImageElementFromImgSrc({ filename: file, type: 'output', subfolder: asJson.folder_path });
+				if (element == undefined) { console.log(`Attempting to add undefined image element in {selectedValue}`); }
+				addElementToImageList(element);
+			}
+		}
+	//}
 }
 
 export function getImageListScrollLevel() {
@@ -677,7 +710,7 @@ app.registerExtension({
 					// we're currently in feed mode. Otherwise they'll be added when switching to feed.
 					feedImages.push(src);
 
-					if (ContextSelector.value == contextSelectorOptionNames.feedName.name) {
+					if (ContextSelector.value == contextSelectorOptionNames.feed.name) {
 						let element = await ImageElements.createImageElementFromImgSrc(src);
 						if (element == undefined) { console.log("attempting to add undefined element in addEventListener"); }
 						addElementToImageList(element);

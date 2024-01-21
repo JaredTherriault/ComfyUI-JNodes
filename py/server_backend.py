@@ -2,16 +2,19 @@ import os
 import re 
 
 from .logger import logger
+from .utils import *
 
 import folder_paths
-
+from pathlib import Path
 from aiohttp import web
 import server
 
 import json
 
+def get_comfyui_directory(directory_name = "JNodes_Styles"):
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)), directory_name)
 
-async def read_data(reader):
+async def read_we_request_content(reader):
     data = await reader.read()
     return data.decode('utf-8')
 
@@ -93,17 +96,54 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
 
     return familiars
 
+def list_files_and_folders(directory):
+    # Get the list of files and folders in the specified directory
+    items = os.listdir(directory)
+    
+    accepted_extensions = ACCEPTED_VIDEO_EXTENSIONS + ACCEPTED_IMAGE_EXTENSIONS
+
+    # Separate files and folders
+    files = [item for item in items if os.path.isfile(os.path.join(directory, item)) and is_acceptable_image_or_video(item)]
+    # folders = [item for item in items if os.path.isdir(os.path.join(directory, item))]
+
+    # Create a list of dictionaries starting with the files in the root directory
+    result = {'folder_path': "", 'files': files}
+
+    # for folder in folders:
+    #     folder_path = os.path.join(directory, folder)
+    #     folder_files = [file for file in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, file))]
+    #
+    #     # Create a dictionary entry for each folder
+    #     result.append({
+    #         'folder': folder,
+    #         'files': folder_files
+    #     })
+
+    return result
+
+def get_output_items(request):
+    return web.json_response(list_files_and_folders(folder_paths.get_output_directory()))
+
 def view_image(request):
     type = "loras"
     if "type" in request.rel_url.query:
         type = request.rel_url.query["type"]
-    file_list = folder_paths.get_filename_list(type)
-    
+        
     output_dir = None
-    for item_name in file_list:
-        if "\\" not in item_name.replace("/", "\\"):
-            file_path = folder_paths.get_full_path(type, item_name)
-            output_dir = os.path.dirname(file_path)
+    
+    if type == "output":
+        output_dir = folder_paths.get_output_directory()
+    elif type == "temp":
+        output_dir = folder_paths.get_temp_directory()
+    else:
+        file_list = folder_paths.get_filename_list(type)
+        
+        for item_name in file_list:
+            if "\\" not in item_name.replace("/", "\\"):
+                file_path = folder_paths.get_full_path(type, item_name)
+                output_dir = os.path.dirname(file_path)
+                if output_dir is not None:
+                    break
             
     if output_dir is None:
         logger.warning(f"Unable to get parent directory for {type}")
@@ -226,7 +266,7 @@ def load_info(request):
 
 async def save_text(request):
     try:
-        request_data = await read_data(request.content)
+        request_data = await read_we_request_content(request.content)
         request_json = json.loads(request_data)
         if "full_path" in request_json:
             full_path = request_json["full_path"]
@@ -244,7 +284,7 @@ async def save_text(request):
 
 async def load_text(request):
     try:
-        request_data = await read_data(request.content)
+        request_data = await read_we_request_content(request.content)
         request_json = json.loads(request_data)
         if "full_path" in request_json:
             full_path = request_json["full_path"]

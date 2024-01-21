@@ -422,7 +422,7 @@ class AddOrSetMetaDataKey:
         return_true = False
         try:
             if extra_pnginfo:
-                extra_pnginfo[key] = value
+                extra_pnginfo[key] = value.strip()
                 return_true = True
         except Exception as e:
             logger.error(f'{e}')

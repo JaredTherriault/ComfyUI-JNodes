@@ -3,7 +3,10 @@ import { getPngMetadata } from "/scripts/pnginfo.js";
 
 import { defaultKeyList, getVal } from "./imageDrawer.js";
 // getValue only prepends 'JNodes.', getVal also prepends 'ImageDrawer.'.
-import { getValue, setSearchTermsOnElement, getMaxZIndex, getLastMousePosition, createDarkContainer, copyToClipboard } from "../common/utils.js"
+import { 
+	getValue, setSearchTermsOnElement, getMaxZIndex, getLastMousePosition, 
+	createDarkContainer, copyToClipboard,
+	 } from "../common/utils.js";
 import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 import { createModal } from "../common/modal.js";
 
@@ -71,7 +74,7 @@ export function updateAndShowTooltip(newTooltipWidget, imageElement) {
 
 export async function createImageElementFromImgSrc(src) {
 	if (!src) { return; }
-	const href = `/view?filename=${encodeURIComponent(src.filename)}&type=${src.type}&subfolder=${encodeURIComponent(src.subfolder)}&t=${+new Date()}`;
+	const href = `/jnodes_view_image?filename=${encodeURIComponent(src.filename)}&type=${src.type}&subfolder=${encodeURIComponent(src.subfolder)}&t=${+new Date()}`;
 	const bIsVideoFormat = src.format?.startsWith("video");
 
 	const imageElement =
@@ -462,7 +465,7 @@ export async function createImageElementFromImgSrc(src) {
 					const blob = await response.blob();
 					const webpArrayBuffer = await blob.arrayBuffer();
 
-					// Use the piexif library to extract Exif data
+					// Use the exif library to extract Exif data
 					const exifData = ExifReader.load(webpArrayBuffer);
 					//console.log("exif: " + JSON.stringify(exifData));
 
