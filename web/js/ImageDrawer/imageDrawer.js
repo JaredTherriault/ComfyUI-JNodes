@@ -3,9 +3,10 @@ import { app } from "/scripts/app.js";
 import { $el } from "/scripts/ui.js";
 
 import * as ExtraNetworks from "./ExtraNetworks.js";
-import * as ImageElements from "./ImageElements.js"
+import * as ImageElements from "./ImageElements.js";
+import * as ContextSelector from "./ContextSelector.js";
 
-import { getValue, setValue, addJNodesSetting, setElementVisibility, decodeReadableStream } from "../common/utils.js"
+import { getValue, setValue, addJNodesSetting, setElementVisibility } from "../common/utils.js"
 
 // Attribution: pythongsssss's Image Feed. So much brilliance in that original script.
 
@@ -15,7 +16,6 @@ let imageDrawer;
 let imageList;
 let DrawerOptionsFlyout;
 let drawerSizeSlider;
-let ContextSelector;
 let SearchBar;
 let ImageDrawerButtonGroup;
 let clearButton;
@@ -28,30 +28,6 @@ const _maximumDrawerSize = 100;
 // UI Settings
 export const defaultKeyList = "prompt, workflow";
 
-// Context selection constants
-const contextSelectorOptionNames = {
-	feed: { name: "feed", description: "The latest generations from this web session (cleared on page refresh)" },
-	temp: { name: "temp/history", description: "The generations you've created since the last comfyUI server restart" },
-	//	input: { name: "input", description: "Images and videos found in your input folder"},
-	output: { name: "output", description: "Images and videos found in your output folder" },
-	lora: { name: "Lora/Lycoris", description: "Lora and Lycoris models found in your Lora directory" },
-	//	embeddings: { name: "Embeddings", description: "Embedding/textual inversion models found in your embeddings directory"},
-	//	pngInfo: { name: "Image Info", description: "Read and display metadata from an image or video"},
-	//	compare: { name: "Compare", description: "Compare generations sent to this context via menu"},
-	//	resources: { name: "Resources", description: "For things like poses, depth images, etc"},
-};
-
-class ContextState {
-	constructor(scrollLevel, searchBarText, childElements) {
-		this.scrollLevel = scrollLevel;
-		this.searchBarText = searchBarText;
-		this.childElements = childElements;
-	}
-};
-
-let lastSelectedContextOption = contextSelectorOptionNames.feed.name;
-let contextCache = new Map();
-
 // localStorage accessors
 export const getVal = (n, d) => {
 	return getValue("ImageDrawer." + n, d);
@@ -63,13 +39,23 @@ export const saveVal = (n, v) => {
 
 // Helpers
 
-export const getImagesInList = () => {
+// Returns all child nodes of any kind
+export function getImageListChildren() {
+	return imageList.childNodes;
+} 
+
+export function replaceImageListChildren(newChildren) {
+	imageList.replaceChildren(newChildren);
+}
+
+// Specifically returns nodes with an image
+export function getImagesInList() {
 	const imgs =
 		[...imageList?.querySelectorAll("img")].map((img) => img.getAttribute("src"));
 	return imgs;
 };
 
-export const clearImageList = () => {
+export function clearImageListChildren() {
 	imageList.replaceChildren();
 };
 
@@ -87,9 +73,9 @@ export const addElementToImageList = (element) => {
 };
 
 export const toggleFeedImageButtonsBasedOnContextAndImageCount = () => {
-	const imgs = getImagesInList();
+	const imgs = getImageListChildren();
 	const bHasImages = imgs.length > 0;
-	const bIsFeedView = ContextSelector?.value == contextSelectorOptionNames.feed.name;
+	const bIsFeedView = ContextSelector.getCurrentContext() == ContextSelector.contextSelectorOptionNames.feed.name;
 
 	setElementVisibility(clearButton, bIsFeedView && bHasImages);
 }
@@ -272,12 +258,10 @@ const createDrawerOptionsFlyout = () => {
 						checked: getVal("drawerDirection", "newest first") == "newest first",
 						onchange: (e) => {
 							saveVal("drawerDirection", getVal("drawerDirection", "newest first") == "newest first" ? "oldest first" : "newest first");
-							const contextKeys = Object.keys(contextCache);
-							for (const key in contextKeys) {
-								contextCache[key].replaceChildren(contextCache[key].reverse());
-							}
 
-							imageList.replaceChildren(...contextCache.get(ContextSelector.value));
+							ContextSelector.reverseItemsInCache()
+
+							imageList.replaceChildren(...ContextSelector.getCacheForKey(ContextSelector.getCurrentContext()));
 						},
 					}),
 				]),
@@ -285,87 +269,7 @@ const createDrawerOptionsFlyout = () => {
 		]);
 };
 
-const createContextSelector = () => {
-
-	function checkContextCache(selectedValue) {
-		const bHasCache = contextCache.has(selectedValue);
-		if (bHasCache) {
-			const cachedContent = contextCache.get(selectedValue);
-			// Replace children
-			imageList.replaceChildren(...cachedContent.childElements); // Spread the array 
-			// Execute Search
-			setSearchTextAndExecute(cachedContent.searchBarText);
-			// Restore scroll level
-			setImageListScrollLevel(cachedContent.scrollLevel);
-		}
-		return bHasCache;
-	}
-
-	ContextSelector = $el("select");
-
-	for (const optionLabel in contextSelectorOptionNames) {
-		if (contextSelectorOptionNames.hasOwnProperty(optionLabel)) {
-			const option = document.createElement("option");
-			option.value = contextSelectorOptionNames[optionLabel].name;
-			option.textContent = contextSelectorOptionNames[optionLabel].name;
-			option.title = contextSelectorOptionNames[optionLabel].description;
-			ContextSelector.appendChild(option);
-		}
-	}
-
-	// Add an event listener for the "change" event
-	ContextSelector.addEventListener("change", async function() {
-		const selectedValue = ContextSelector.value;
-		// Call your custom function or perform actions based on the selected value
-		console.log("ContextSelector selectedValue:" + selectedValue);
-
-		// Create cache for previously selected option
-		if (lastSelectedContextOption) {
-			const childNodesArray = Array.from(imageList.childNodes);
-			contextCache.set(lastSelectedContextOption, new ContextState(getImageListScrollLevel(), getSearchText(), childNodesArray));
-			console.log("contextCache: " + JSON.stringify(contextCache));
-		}
-
-		// Replace imageList with appropriate elements
-		if (selectedValue == contextSelectorOptionNames.feed.name) {
-			if (!checkContextCache(selectedValue)) {
-				clearImageList();
-			}
-			const imageListLength = getImagesInList().length;
-			if (imageListLength < feedImages.length) {
-				for (let imageIndex = imageListLength; imageIndex < feedImages.length; imageIndex++) {
-					const src = feedImages[imageIndex];
-					let element = await ImageElements.createImageElementFromImgSrc(src);
-					if (element == undefined) { console.log(`Attempting to add undefined image element in {selectedValue}`); }
-					addElementToImageList(element);
-				}
-			}
-		}
-		else if (selectedValue == contextSelectorOptionNames.lora.name) {
-			if (!checkContextCache(selectedValue)) {
-				await loadLoras();
-			}
-		}
-		else if (selectedValue == contextSelectorOptionNames.temp.name) {
-			if (!checkContextCache(selectedValue)) {
-				await loadHistory();
-			}
-		}
-		else if (selectedValue == contextSelectorOptionNames.output.name) {
-			if (!checkContextCache(selectedValue)) {
-				await loadOutput();
-			}
-		}
-
-		// Set up lastSelectedContextOption to accommodate future context switching
-		lastSelectedContextOption = selectedValue;
-
-		// Automatically focus search bar and select text to save user a click
-		focusAndSelectSearchText();
-	});
-};
-
-const createSearchBar = () => {
+function createSearchBar() {
 	SearchBar = $el("input", {
 		type: "text",
 		id: "SearchInput",
@@ -378,6 +282,8 @@ const createSearchBar = () => {
 
 	// Attach the handleSearch function to the input's 'input' event
 	SearchBar?.addEventListener('input', handleSearch);
+	
+	return SearchBar;
 }
 
 export function clearSearch() {
@@ -434,82 +340,6 @@ function handleSearch() {
 	let searchTerm = SearchBar?.value;
 
 	executeSearch(searchTerm);
-}
-
-async function loadLoras() {
-	clearImageList();
-	addElementToImageList($el("label", { textContent: "Loading loras..." }));
-	let loraDicts = await ExtraNetworks.getLoras();
-	clearImageList(); // Remove loading indicator
-	//console.log("loraDicts: " + JSON.stringify(loraDicts));
-	const loraKeys = Object.keys(loraDicts);
-	if (loraKeys.length > 0) {
-		let count = 0;
-		let maxCount = 0;
-		for (const lora of loraKeys) {
-			if (maxCount > 0 && count > maxCount) { break; }
-			let element = await ExtraNetworks.createExtraNetworkCard(lora, loraDicts[lora]);
-			if (element == undefined) {
-				console.log("Attempting to add undefined element for lora named: " + lora + " with dict: " + JSON.stringify(loraDicts[lora]));
-			}
-			addElementToImageList(element);
-			count++;
-		}
-	}
-	else {
-		addElementToImageList($el("label", { textContent: "No loras or locons were found." }));
-	}
-}
-
-async function loadHistory() {
-	clearImageList();
-	addElementToImageList($el("label", { textContent: "Loading history..." }));
-	const allHistory = await api.getHistory(100000)
-	clearImageList(); // Remove loading indicator
-	for (const history of allHistory.History) {
-		if (!history.outputs) { continue; }
-
-		const keys = Object.keys(history.outputs);
-		if (keys.length > 0) {
-			for (const key of keys) {
-				//							console.debug(key)
-				if (!history.outputs[key].images) { continue; }
-				for (const src of history.outputs[key].images) {
-					//									console.debug(im)
-					let element = await ImageElements.createImageElementFromImgSrc(src);
-					if (element == undefined) { console.log(`Attempting to add undefined image element in {selectedValue}`); }
-					addElementToImageList(element);
-				}
-			}
-		}
-	}
-}
-
-async function loadOutput() {
-	clearImageList();
-	addElementToImageList($el("label", { textContent: "Loading output folder..." }));
-	const allOutputItems = await api.fetchApi("/jnodes_output_items") //jnodes_output_items
-
-	// Decode into a string
-	const decodedString = await decodeReadableStream(allOutputItems.body);
-
-	// Remove null characters
-	const cleanedString = decodedString.replace(/\u0000/g, '');
-	const jsonReadyString = cleanedString.replace("UNICODE", "")
-
-	const asJson = JSON.parse(jsonReadyString);
-	
-	clearImageList(); // Remove loading indicator
-	//for (const folder of allOutputItems) {
-		//if (!folder.files) { continue; }
-		if (asJson.files.length > 0) {
-			for (const file of asJson.files) {
-				let element = await ImageElements.createImageElementFromImgSrc({ filename: file, type: 'output', subfolder: asJson.folder_path });
-				if (element == undefined) { console.log(`Attempting to add undefined image element in {selectedValue}`); }
-				addElementToImageList(element);
-			}
-		}
-	//}
 }
 
 export function getImageListScrollLevel() {
@@ -601,7 +431,7 @@ app.registerExtension({
 		clearButton = $el("button.JNodes-image-drawer-btn.clear-btn", {
 			textContent: "Clear",
 			onclick: () => {
-				clearImageList();
+				clearImageListChildren();
 				feedImages = [];
 				toggleFeedImageButtonsBasedOnContextAndImageCount();
 			},
@@ -615,12 +445,7 @@ app.registerExtension({
 		// Resizing / View options
 		createDrawerOptionsFlyout();
 
-		// Context dropdown
-		createContextSelector();
-
 		// Search bar
-		createSearchBar();
-
 		const SearchBarClearButton = $el("button.JNodes-search-bar-clear-btn", {
 			textContent: "❌",
 			title: "Clear Search",
@@ -649,7 +474,7 @@ app.registerExtension({
 					flexDirection: 'row',
 				}
 			}, [
-				SearchBar, SearchBarClearButton, RandomizeButton
+				createSearchBar(), SearchBarClearButton, RandomizeButton
 			]);
 
 		const BasicControlsGroup =
@@ -691,7 +516,7 @@ app.registerExtension({
 				},
 			}, [
 				BasicControlsGroup,
-				ContextSelector,
+				ContextSelector.createContextSelector(), // Context Dropdown
 				SearchBarGroup,
 				ImageDrawerButtonGroup,
 			]);
@@ -710,7 +535,7 @@ app.registerExtension({
 					// we're currently in feed mode. Otherwise they'll be added when switching to feed.
 					feedImages.push(src);
 
-					if (ContextSelector.value == contextSelectorOptionNames.feed.name) {
+					if (ContextSelector.getCurrentContext() == ContextSelector.contextSelectorOptionNames.feed.name) {
 						let element = await ImageElements.createImageElementFromImgSrc(src);
 						if (element == undefined) { console.log("attempting to add undefined element in addEventListener"); }
 						addElementToImageList(element);
