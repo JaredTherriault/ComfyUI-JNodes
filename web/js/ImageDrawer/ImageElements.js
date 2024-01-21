@@ -3,10 +3,10 @@ import { getPngMetadata } from "/scripts/pnginfo.js";
 
 import { defaultKeyList, getVal } from "./imageDrawer.js";
 // getValue only prepends 'JNodes.', getVal also prepends 'ImageDrawer.'.
-import { 
-	getValue, setSearchTermsOnElement, getMaxZIndex, getLastMousePosition, 
+import {
+	getValue, setSearchTermsOnElement, getMaxZIndex, getLastMousePosition,
 	createDarkContainer, copyToClipboard,
-	 } from "../common/utils.js";
+} from "../common/utils.js";
 import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 import { createModal } from "../common/modal.js";
 
@@ -368,20 +368,26 @@ export async function createImageElementFromImgSrc(src) {
 
 							const row =
 								$el('tr', [
-									$el('td', [
+									$el('td', {
+										style: {
+											width: '50%',
+										}
+									}, [
 										$el('label', {
 											textContent: `${key}:`,
 											style: {
-												width: "50%",
 												wordBreak: 'break-all', // Break on any character to avoid overflow outside the container
 											}
 										})
 									]),
-									$el('td', [
+									$el('td', {
+										style: {
+											width: '50%',
+										}
+									}, [
 										$el('label', {
 											textContent: `${formattedValue}`,
 											style: {
-												maxWidth: "50%",
 												wordBreak: 'break-all',
 											}
 										})
