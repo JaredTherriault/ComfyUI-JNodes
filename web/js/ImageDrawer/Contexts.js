@@ -170,7 +170,7 @@ export class ContextFeed extends ImageDrawerContext {
 	}
 
 	async switchToContext() {
-		if (!await this.checkAndRestoreContextCache()) {
+		if (!await super.switchToContext()) {
 			clearImageListChildren();
 		}
 
