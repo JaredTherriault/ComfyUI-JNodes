@@ -5,6 +5,7 @@ import { $el } from "/scripts/ui.js";
 import * as ExtraNetworks from "./ExtraNetworks.js";
 import * as ImageElements from "./ImageElements.js";
 import * as ContextSelector from "./ContextSelector.js";
+import { getContexts } from "./Contexts.js"
 
 import { getValue, setValue, addJNodesSetting, setElementVisibility } from "../common/utils.js"
 
@@ -19,6 +20,7 @@ let drawerSizeSlider;
 let SearchBar;
 let ImageDrawerButtonGroup;
 let clearButton;
+let columnInput;
 
 let feedImages = [];
 
@@ -42,10 +44,10 @@ export const saveVal = (n, v) => {
 // Returns all child nodes of any kind
 export function getImageListChildren() {
 	return imageList.childNodes;
-} 
+}
 
 export function replaceImageListChildren(newChildren) {
-	imageList.replaceChildren(newChildren);
+	imageList.replaceChildren(...newChildren); // Spread the array 
 }
 
 // Specifically returns nodes with an image
@@ -79,16 +81,117 @@ export const addElementToImageList = (element) => {
 export const toggleFeedImageButtonsBasedOnContextAndImageCount = () => {
 	const imgs = getImageListChildren();
 	const bHasImages = imgs.length > 0;
-	const bIsFeedView = ContextSelector.getCurrentContext() == ContextSelector.contextSelectorOptionNames.feed.name;
+	const bIsFeedView = ContextSelector.getCurrentContextName() == getContexts().feed.name;
 
 	setElementVisibility(clearButton, bIsFeedView && bHasImages);
 }
 
-export const setDrawerSize = (value, setDrawerSizeSliderValue = false) => {
+export function getColumnCount() {
+	return getVal("ImageSize", 4);
+}
+
+export function setColumnCount(value) {
+	columnInput.parentElement.title = `Controls the number of columns in the drawer (${value} columns).\nClick label to set custom value.`;
+	imageDrawer.style.setProperty("--img-sz", value);
+	saveVal("ImageSize", value);
+	columnInput.max = Math.max(10, value, columnInput.max);
+	columnInput.value = value;
+}
+
+export function getDrawerSize() {
+	return getVal("DrawerSize", 25);
+}
+
+export function setDrawerSize(value, setDrawerSizeSliderValue = false) {
 	saveVal("DrawerSize", value);
 	imageDrawer?.style.setProperty("--max-size", value);
 	if (setDrawerSizeSliderValue && drawerSizeSlider) {
 		drawerSizeSlider.value = value;
+	}
+}
+
+function createSearchBar() {
+	SearchBar = $el("input", {
+		type: "text",
+		id: "SearchInput",
+		placeholder: "Type here to search",
+		autocomplete: "off",
+		style: {
+			width: '-webkit-fill-available',
+		}
+	});
+
+	// Attach the handleSearch function to the input's 'input' event
+	SearchBar?.addEventListener('input', handleSearch);
+
+	return SearchBar;
+}
+
+export function clearSearch() {
+	if (!SearchBar) { return; }
+	SearchBar.value = "";
+}
+
+export function getSearchText() {
+	return SearchBar.value;
+}
+
+export function setSearchText(newText) {
+	if (!SearchBar) { return; }
+	SearchBar.value = newText;
+}
+
+export function setSearchTextAndExecute(newText) {
+	if (!SearchBar) { return; }
+	SearchBar.value = newText;
+	handleSearch();
+}
+
+export function clearAndHandleSearch() {
+	clearSearch();
+	handleSearch();
+}
+
+export function focusSearch() {
+	SearchBar.focus();
+}
+
+export function focusAndSelectSearchText() {
+	SearchBar.select(); // Select focuses already
+}
+
+// Function to execute seach with an explicit searchTerm
+export function executeSearch(searchTerm) {
+
+	// Provision search string
+	searchTerm = searchTerm.toLowerCase().trim();
+
+	// Loop through items and check for a match
+	for (let i = 0; i < imageList?.children?.length; i++) {
+		let itemText = imageList?.children[i]?.getAttribute("searchTerms")?.toLowerCase().trim();
+		//console.log(itemText + " matched against " + searchTerm + ": " + itemText.includes(searchTerm));
+
+		setElementVisibility(imageList?.children[i], itemText ? itemText.includes(searchTerm) : true)
+	}
+}
+
+// Function to execute search using the term entered in the SearchBar
+function handleSearch() {
+	// Get input value
+	let searchTerm = SearchBar?.value;
+
+	executeSearch(searchTerm);
+}
+
+export function getImageListScrollLevel() {
+	if (imageList) {
+		return imageList.scrollTop;
+	}
+}
+
+export function setImageListScrollLevel(newScrollPosition) {
+	if (imageList) {
+		imageList.scrollTop = newScrollPosition;
 	}
 }
 
@@ -187,14 +290,6 @@ const setupUiSettings = () => {
 };
 
 const createDrawerOptionsFlyout = () => {
-	let columnInput;
-	function updateColumnCount(v) {
-		columnInput.parentElement.title = `Controls the number of columns in the drawer (${v} columns).\nClick label to set custom value.`;
-		imageDrawer.style.setProperty("--img-sz", v);
-		saveVal("ImageSize", v);
-		columnInput.max = Math.max(10, v, columnInput.max);
-		columnInput.value = v;
-	}
 
 	drawerSizeSlider = $el("input", {
 		type: "range",
@@ -206,7 +301,7 @@ const createDrawerOptionsFlyout = () => {
 		},
 		$: (el) => {
 			requestAnimationFrame(() => {
-				el.value = getVal("DrawerSize", 25);
+				el.value = getDrawerSize();
 				el.oninput({ target: el });
 			});
 		},
@@ -230,9 +325,9 @@ const createDrawerOptionsFlyout = () => {
 							textDecoration: "underline",
 						},
 						onclick: () => {
-							const v = +prompt("Enter custom column count", 20);
-							if (!isNaN(v)) {
-								updateColumnCount(v);
+							const value = +prompt("Enter custom column count", 20);
+							if (!isNaN(value)) {
+								setColumnCount(value);
 							}
 						},
 					}),
@@ -242,12 +337,12 @@ const createDrawerOptionsFlyout = () => {
 						max: 10,
 						step: 1,
 						oninput: (e) => {
-							updateColumnCount(e.target.value);
+							setColumnCount(e.target.value);
 						},
 						$: (el) => {
 							columnInput = el;
 							requestAnimationFrame(() => {
-								updateColumnCount(getVal("ImageSize", 4));
+								setColumnCount(getColumnCount());
 							});
 						},
 					}),
@@ -262,101 +357,13 @@ const createDrawerOptionsFlyout = () => {
 						checked: getVal("drawerDirection", "newest first") == "newest first",
 						onchange: (e) => {
 							saveVal("drawerDirection", getVal("drawerDirection", "newest first") == "newest first" ? "oldest first" : "newest first");
-
-							ContextSelector.reverseItemsInCache()
-
-							imageList.replaceChildren(...ContextSelector.getCacheForKey(ContextSelector.getCurrentContext()));
+							ContextSelector.reverseItemsInCaches();
 						},
 					}),
 				]),
 			]),
 		]);
 };
-
-function createSearchBar() {
-	SearchBar = $el("input", {
-		type: "text",
-		id: "SearchInput",
-		placeholder: "Type here to search",
-		autocomplete: "off",
-		style: {
-			width: '-webkit-fill-available',
-		}
-	});
-
-	// Attach the handleSearch function to the input's 'input' event
-	SearchBar?.addEventListener('input', handleSearch);
-	
-	return SearchBar;
-}
-
-export function clearSearch() {
-	if (!SearchBar) { return; }
-	SearchBar.value = "";
-}
-
-export function getSearchText() {
-	return SearchBar.value;
-}
-
-export function setSearchText(newText) {
-	if (!SearchBar) { return; }
-	SearchBar.value = newText;
-}
-
-export function setSearchTextAndExecute(newText) {
-	if (!SearchBar) { return; }
-	SearchBar.value = newText;
-	handleSearch();
-}
-
-export function clearAndHandleSearch() {
-	clearSearch();
-	handleSearch();
-}
-
-export function focusSearch() {
-	SearchBar.focus();
-}
-
-export function focusAndSelectSearchText() {
-	SearchBar.select(); // Select focuses already
-}
-
-// Function to execute seach with an explicit searchTerm
-export function executeSearch(searchTerm) {
-
-	// Provision search string
-	searchTerm = searchTerm.toLowerCase().trim();
-
-	// Loop through items and check for a match
-	for (let i = 0; i < imageList?.children?.length; i++) {
-		let itemText = imageList?.children[i]?.getAttribute("searchTerms")?.toLowerCase().trim();
-		//console.log(itemText + " matched against " + searchTerm + ": " + itemText.includes(searchTerm));
-
-		setElementVisibility(imageList?.children[i], itemText ? itemText.includes(searchTerm) : true)
-	}
-}
-
-// Function to execute search using the term entered in the SearchBar
-function handleSearch() {
-	// Get input value
-	let searchTerm = SearchBar?.value;
-
-	executeSearch(searchTerm);
-}
-
-export function getImageListScrollLevel() {
-	if (imageList) {
-		return imageList.scrollTop;
-	}
-}
-
-export function setImageListScrollLevel(newScrollPosition) {
-	if (imageList) {
-		imageList.scrollTop = newScrollPosition;
-	}
-}
 
 app.registerExtension({
 	name: "JNodes.ImageDrawer",
@@ -539,7 +546,7 @@ app.registerExtension({
 					// we're currently in feed mode. Otherwise they'll be added when switching to feed.
 					feedImages.push(src);
 
-					if (ContextSelector.getCurrentContext() == ContextSelector.contextSelectorOptionNames.feed.name) {
+					if (ContextSelector.getCurrentContextName() == getContexts().feed.name) {
 						let element = await ImageElements.createImageElementFromImgSrc(src);
 						if (element == undefined) { console.log("attempting to add undefined element in addEventListener"); }
 						addElementToImageList(element);

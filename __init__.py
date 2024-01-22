@@ -9,13 +9,13 @@ from .py.server_backend import *
 from aiohttp import web
 import server
 
-@server.PromptServer.instance.routes.get('/jnodes_folder_items')
-async def get_folder_items_wrapper(request):
-    return get_folder_items(request)
+@server.PromptServer.instance.routes.get('/jnodes_comfyui_subfolder_items')
+async def get_comfyui_subfolder_items_wrapper(request):
+    return get_comfyui_subfolder_items(request)
 
-@server.PromptServer.instance.routes.get('/jnodes_output_items')
-async def get_output_items_wrapper(request):
-    return get_output_items(request)
+@server.PromptServer.instance.routes.get('/jnodes_model_items')
+async def get_model_items_wrapper(request):
+    return get_model_items(request)
 
 @server.PromptServer.instance.routes.get("/jnodes_view_image")
 async def view_image_wrapper(request):

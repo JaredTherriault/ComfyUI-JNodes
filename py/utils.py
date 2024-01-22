@@ -28,9 +28,9 @@ VIDEO_FORMATS = [x[:-5] for x in os.listdir(VIDEO_FORMATS_DIRECTORY)]
 JNODES_IMAGE_FORMAT_TYPES = ["jpg", "png", "gif", "webp", "apng", "mjpeg"] + VIDEO_FORMATS
 JNODES_VAE_LIST = ["Baked VAE"] + folder_paths.get_filename_list("vae")
 
-
 ACCEPTED_VIDEO_EXTENSIONS = ['webm', 'mp4', 'mkv']
-ACCEPTED_IMAGE_EXTENSIONS = ['gif', 'webp', 'apng', 'mjpeg']
+ACCEPTED_ANIMATED_IMAGE_EXTENSIONS = ['gif', 'webp', 'apng', 'mjpeg']
+ACCEPTED_STILL_IMAGE_EXTENSIONS = ['gif', 'webp', 'png', 'jpg', 'jpeg']
 
 
 @staticmethod
@@ -58,7 +58,7 @@ def is_video(filename):
     return get_extension(filename) in ACCEPTED_VIDEO_EXTENSIONS
 
 def is_acceptable_image_or_video(filename):
-    return get_file_extension_without_dot(filename) in ACCEPTED_VIDEO_EXTENSIONS + ACCEPTED_IMAGE_EXTENSIONS
+    return get_file_extension_without_dot(filename) in JNODES_IMAGE_FORMAT_TYPES
 
 
 def pil2tensor(image: Union[Image.Image, List[Image.Image]]) -> torch.Tensor:

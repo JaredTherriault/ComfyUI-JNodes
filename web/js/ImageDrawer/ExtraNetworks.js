@@ -14,7 +14,7 @@ let cachedLorasObject = undefined;
 export async function getLoras(bForceRefresh = false) {
 	if (bForceRefresh || cachedLorasObject == undefined) {
 		const resp = await api.fetchApi(
-			'/jnodes_folder_items', { "type": "loras", cache: "no-store" });
+			'/jnodes_model_items', { "type": "loras", cache: "no-store" });
 		const asJson = await resp.json();
 		//console.log("Size of loras info: " + JSON.stringify(asJson).length)
 		cachedLorasObject = asJson;

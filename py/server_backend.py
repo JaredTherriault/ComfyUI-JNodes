@@ -11,14 +11,23 @@ import server
 
 import json
 
-def get_comfyui_directory(directory_name = "JNodes_Styles"):
-    return os.path.join(os.path.dirname(os.path.realpath(__file__)), directory_name)
+def get_comfyui_subfolder(directory_name = "output"):
+    # Get the directory containing this file
+    directory = os.path.dirname(os.path.realpath(__file__))
+    
+    # Find the position of base ComfyUI path
+    index = directory.find("custom_nodes")
+    
+    # Chop off everything after "ComfyUI"
+    comfy_path = os.path.join(directory[:index])
+    
+    return os.path.join(comfy_path, directory_name)
 
 async def read_we_request_content(reader):
     data = await reader.read()
     return data.decode('utf-8')
 
-def get_folder_items(request):
+def get_model_items(request):
     type = "loras"
     if "type" in request.rel_url.query:
         type = request.rel_url.query["type"]
@@ -100,7 +109,7 @@ def list_files_and_folders(directory):
     # Get the list of files and folders in the specified directory
     items = os.listdir(directory)
     
-    accepted_extensions = ACCEPTED_VIDEO_EXTENSIONS + ACCEPTED_IMAGE_EXTENSIONS
+    accepted_extensions = JNODES_IMAGE_FORMAT_TYPES
 
     # Separate files and folders
     files = [item for item in items if os.path.isfile(os.path.join(directory, item)) and is_acceptable_image_or_video(item)]
@@ -121,8 +130,8 @@ def list_files_and_folders(directory):
 
     return result
 
-def get_output_items(request):
-    return web.json_response(list_files_and_folders(folder_paths.get_output_directory()))
+def get_comfyui_subfolder_items(request):
+    return web.json_response(list_files_and_folders(get_comfyui_subfolder(request.rel_url.query["subfolder"])))
 
 def view_image(request):
     type = "loras"
@@ -131,19 +140,20 @@ def view_image(request):
         
     output_dir = None
     
-    if type == "output":
-        output_dir = folder_paths.get_output_directory()
-    elif type == "temp":
-        output_dir = folder_paths.get_temp_directory()
-    else:
+    try:
         file_list = folder_paths.get_filename_list(type)
-        
-        for item_name in file_list:
-            if "\\" not in item_name.replace("/", "\\"):
-                file_path = folder_paths.get_full_path(type, item_name)
-                output_dir = os.path.dirname(file_path)
-                if output_dir is not None:
-                    break
+        if file_list:
+             for item_name in file_list:
+                if "\\" not in item_name.replace("/", "\\"):
+                    file_path = folder_paths.get_full_path(type, item_name)
+                    output_dir = os.path.dirname(file_path)
+                    if output_dir is not None:
+                        break
+    except:
+        try:
+            output_dir = get_comfyui_subfolder(type)
+        except Exception as e:
+            print(f"Error finding folder {type}. Error: {e}")
             
     if output_dir is None:
         logger.warning(f"Unable to get parent directory for {type}")
