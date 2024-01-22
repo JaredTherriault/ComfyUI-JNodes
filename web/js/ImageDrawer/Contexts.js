@@ -5,7 +5,7 @@ import * as ExtraNetworks from "./ExtraNetworks.js";
 import * as ImageElements from "./ImageElements.js";
 import {
 	getImageListChildren, replaceImageListChildren, clearImageListChildren,
-	addElementToImageList, setImageListScrollLevel, setSearchTextAndExecute,
+	addElementToImageList, setImageListScrollLevel, setSearchTextAndExecute, clearAndHandleSearch,
 	getTrackedFeedImages, setColumnCount, setDrawerSize
 } from "./imageDrawer.js"
 
@@ -91,7 +91,7 @@ class ImageDrawerContext {
 	async switchToContext() {
 		const bSuccessfulRestore = await this.checkAndRestoreContextCache();
 		if (!bSuccessfulRestore) {
-			setSearchTextAndExecute(""); // Reset search if no cache
+			clearAndHandleSearch(); // Reset search if no cache
 		}
 		return bSuccessfulRestore;
 	}
