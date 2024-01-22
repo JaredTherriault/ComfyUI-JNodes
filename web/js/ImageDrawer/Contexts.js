@@ -95,6 +95,10 @@ class ImageDrawerContext {
 		}
 		return bSuccessfulRestore;
 	}
+	
+	async makeToolbar() {
+		
+	}
 
 	async checkAndRestoreContextCache() {
 		if (this.hasCache()) {
@@ -273,7 +277,7 @@ export class ContextSavedPrompts extends SubFolderExplorer {
 	constructor() {
 		super(
 			"Saved Prompts",
-			"Images and videos found in the JNodes/SavedPrompts folder and its subfolders. Title comes from filename",
+			"Images and videos found in the JNodes/saved_prompts folder and its subfolders. Title comes from filename",
 			"JNodes/saved_prompts");
 	}
 }
