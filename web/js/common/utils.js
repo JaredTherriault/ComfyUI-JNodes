@@ -92,7 +92,7 @@ export const setElementVisibility = (element, bNewVisible) => {
 }
 
 export function setSearchTermsOnElement(element, searchTerms) {
-	element.setAttribute('searchTerms', searchTerms);
+	element.searchTerms = searchTerms;
 }
 
 export function getMaxZIndex(element) {
@@ -106,8 +106,16 @@ export function getMaxZIndex(element) {
 	return maxZIndex;
 }
 
+export async function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export function clamp(value, min, max) {
 	return Math.min(Math.max(value, min), max);
+}
+
+export function isEmptyObject(obj) {
+  return Object.keys(obj).length === 0;
 }
 
 export function copyToClipboard(text) {
@@ -128,31 +136,40 @@ export function copyToClipboard(text) {
 	document.body.removeChild(textArea);
 }
 
+export function checkIfAllImagesAreComplete(newImages) {
+	for (const image of newImages) {
+		if (!image.complete) {
+			return false;
+		}
+	}
+	return true; // Set to true if all images are complete
+}
+
 export async function decodeReadableStream(readableStream) {
-  const reader = readableStream.getReader();
-  const chunks = [];
+	const reader = readableStream.getReader();
+	const chunks = [];
 
-  while (true) {
-    const { done, value } = await reader.read();
+	while (true) {
+		const { done, value } = await reader.read();
 
-    if (done) {
-      break;
-    }
+		if (done) {
+			break;
+		}
 
-    chunks.push(value);
-  }
+		chunks.push(value);
+	}
 
-  // Assuming the stream is text data
-  const concatenatedChunks = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
-  let offset = 0;
+	// Assuming the stream is text data
+	const concatenatedChunks = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+	let offset = 0;
 
-  for (const chunk of chunks) {
-    concatenatedChunks.set(chunk, offset);
-    offset += chunk.length;
-  }
+	for (const chunk of chunks) {
+		concatenatedChunks.set(chunk, offset);
+		offset += chunk.length;
+	}
 
-  const text = new TextDecoder().decode(concatenatedChunks);
-  return text;
+	const text = new TextDecoder().decode(concatenatedChunks);
+	return text;
 }
 
 function createExpandableArea() {

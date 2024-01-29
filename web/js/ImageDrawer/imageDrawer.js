@@ -1,11 +1,9 @@
-import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
 import { $el } from "/scripts/ui.js";
 
 import * as ExtraNetworks from "./ExtraNetworks.js";
-import * as ImageElements from "./ImageElements.js";
 import * as ContextSelector from "./ContextSelector.js";
-import { getContexts } from "./Contexts.js"
+import * as Sorting from "./Sorting.js";
 
 import { getValue, setValue, addJNodesSetting, setElementVisibility } from "../common/utils.js"
 
@@ -18,11 +16,8 @@ let imageList;
 let DrawerOptionsFlyout;
 let drawerSizeSlider;
 let SearchBar;
-let ImageDrawerButtonGroup;
-let clearButton;
+let ImageDrawerContextToolbar;
 let columnInput;
-
-let feedImages = [];
 
 const _minimumDrawerSize = 4;
 const _maximumDrawerSize = 100;
@@ -47,7 +42,7 @@ export function getImageListChildren() {
 }
 
 export function replaceImageListChildren(newChildren) {
-	imageList.replaceChildren(...newChildren); // Spread the array 
+	imageList.replaceChildren(...newChildren); // Spread the array because replaceChildren expects individual entries, not a single array
 }
 
 // Specifically returns nodes with an image
@@ -61,30 +56,16 @@ export function clearImageListChildren() {
 	imageList.replaceChildren();
 };
 
-export function getTrackedFeedImages() {
-	return feedImages;
-}
-
-export const addElementToImageList = (element) => {
+export async function addElementToImageList(element) {
 	//console.log("adding element: " + element);
 	if (element != undefined) {
-		const method = getVal("drawerDirection", "newest first") === "newest first" ? "prepend" : "append";
-		imageList[method](element);
-		toggleFeedImageButtonsBasedOnContextAndImageCount();
+		imageList.appendChild(element);
 		handleSearch();
 	}
 	else {
 		console.log("Attempted to add undefined element");
 	}
 };
-
-export const toggleFeedImageButtonsBasedOnContextAndImageCount = () => {
-	const imgs = getImageListChildren();
-	const bHasImages = imgs.length > 0;
-	const bIsFeedView = ContextSelector.getCurrentContextName() == getContexts().feed.name;
-
-	setElementVisibility(clearButton, bIsFeedView && bHasImages);
-}
 
 export function getColumnCount() {
 	return getVal("ImageSize", 4);
@@ -168,7 +149,7 @@ export function executeSearch(searchTerm) {
 
 	// Loop through items and check for a match
 	for (let i = 0; i < imageList?.children?.length; i++) {
-		let itemText = imageList?.children[i]?.getAttribute("searchTerms")?.toLowerCase().trim();
+		let itemText = imageList?.children[i]?.searchTerms?.toLowerCase().trim();
 		//console.log(itemText + " matched against " + searchTerm + ": " + itemText.includes(searchTerm));
 
 		setElementVisibility(imageList?.children[i], itemText ? itemText.includes(searchTerm) : true)
@@ -193,6 +174,14 @@ export function setImageListScrollLevel(newScrollPosition) {
 	if (imageList) {
 		imageList.scrollTop = newScrollPosition;
 	}
+}
+
+export function setContextToolbarWidget(widget) {
+	ImageDrawerContextToolbar.replaceChildren(widget);
+}
+
+export function setSortingOptions(options) {
+	ImageDrawerContextToolbar.replaceChildren(widget);
 }
 
 const setupUiSettings = () => {
@@ -317,7 +306,7 @@ const createDrawerOptionsFlyout = () => {
 					}),
 					drawerSizeSlider,
 				]),
-				$el("section.size-control.image-size-control", [
+				$el("section.size-control.column-count-control", [
 					$el("a", {
 						textContent: "Column count",
 						style: {
@@ -347,21 +336,30 @@ const createDrawerOptionsFlyout = () => {
 						},
 					}),
 				]),
-				// Add a checkbox and label
-				$el("section.size-control.checkbox-control", [
+				// Location Select
+				$el("section.drawer-location-control", [
 					$el("label", {
-						textContent: "Show Newest First",
+						textContent: "Image Drawer Location:",
 					}),
-					$el("input", {
-						type: "checkbox",
-						checked: getVal("drawerDirection", "newest first") == "newest first",
-						onchange: (e) => {
-							saveVal("drawerDirection", getVal("drawerDirection", "newest first") == "newest first" ? "oldest first" : "newest first");
-							ContextSelector.reverseItemsInCaches();
+					$el(
+						"select",
+						{
+							oninput: (e) => {
+								saveVal("DrawerLocation", e.target.value);
+								imageDrawer.className =
+									`JNodes-image-drawer JNodes-image-drawer--${e.target.value}`;
+							},
 						},
-					}),
+						["left", "top", "right", "bottom"].map((m) =>
+							$el("option", {
+								value: m,
+								textContent: m,
+								selected: getVal("DrawerLocation", "left") === m,
+							})
+						)
+					)
 				]),
-			]),
+			])
 		]);
 };
 
@@ -437,21 +435,7 @@ app.registerExtension({
 			},
 		});
 
-		// Remove all images from the list (only for Feed)
-		// Only shown when the imageList has elements within
-		clearButton = $el("button.JNodes-image-drawer-btn.clear-btn", {
-			textContent: "Clear",
-			onclick: () => {
-				clearImageListChildren();
-				feedImages = [];
-				toggleFeedImageButtonsBasedOnContextAndImageCount();
-			},
-			style: {
-				display: "none", // Initially hide the button
-				width: "fit-content",
-				padding: '3px',
-			},
-		});
+
 
 		// Resizing / View options
 		createDrawerOptionsFlyout();
@@ -499,37 +483,43 @@ app.registerExtension({
 				}
 			}, [hideButton, DrawerOptionsFlyout]);
 
-		ImageDrawerButtonGroup =
-			$el("div.JNodes-image-drawer-btn-group", [
-				$el("div", { //Inner container so it can maintain 'flex' display attribute
-					style: {
-						alignItems: 'left',
-						display: 'flex',
-						gap: '.5rem',
-						flex: '0 1 fit-content',
-						justifyContent: 'flex-start',
-					}
-				}, [clearButton]
-				)
-			]);
+		ImageDrawerContextToolbar =
+			$el("div.JNodes-image-drawer-context-toolbar");
+
+		function makeDropDownComboContainer() {
+			// Context and sorting Dropdowns
+			const sorting = Sorting.makeSortingWidget(); // Sorting first since contexts act upon sorting
+			sorting.style.width = '50%';
+			const context = ContextSelector.createContextSelector();
+			context.style.width = '50%';
+			
+			const DropDownComboContainer = $el("div", {
+				style: {
+					display: "flex",
+					flexDirection: "row"
+				}
+			}, [ context, sorting ]);
+			
+			return DropDownComboContainer;
+		}
 
 		const ImageDrawerMenu =
 			$el("div.JNodes-image-drawer-menu", {
 				style: {
-					minHeight: '10%',
+					minHeight: 'fit-content',
+					minWidth: 'fit-content',
 					position: 'relative',
 					flex: '0 1 min-content',
 					display: 'flex',
 					gap: '3px',
-					padding: '5px',
+					padding: '3px',
 					justifyContent: 'flex-start',
-					minWidth: 'fit-content',
 				},
 			}, [
 				BasicControlsGroup,
-				ContextSelector.createContextSelector(), // Context Dropdown
+				makeDropDownComboContainer(),
 				SearchBarGroup,
-				ImageDrawerButtonGroup,
+				ImageDrawerContextToolbar,
 			]);
 		imageDrawer.append(ImageDrawerMenu, imageList);
 
@@ -538,21 +528,5 @@ app.registerExtension({
 			hideButton.onclick();
 		}
 
-		api.addEventListener("executed", async ({ detail }) => {
-			const outImages = detail?.output?.images;
-			if (outImages) {
-				for (const src of outImages) {
-					// Always add feed images to the record, but only add thumbs to the imageList if
-					// we're currently in feed mode. Otherwise they'll be added when switching to feed.
-					feedImages.push(src);
-
-					if (ContextSelector.getCurrentContextName() == getContexts().feed.name) {
-						let element = await ImageElements.createImageElementFromImgSrc(src);
-						if (element == undefined) { console.log("attempting to add undefined element in addEventListener"); }
-						addElementToImageList(element);
-					}
-				}
-			}
-		});
 	},
 });

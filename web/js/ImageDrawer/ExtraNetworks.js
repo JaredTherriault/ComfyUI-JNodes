@@ -7,14 +7,15 @@ import { setSearchTextAndExecute } from "./imageDrawer.js";
 const NoImagePlaceholder = new URL(`../assets/NoImage.png`, import.meta.url);
 
 let cachedLorasObject = undefined;
+let cachedEmbeddingsObject = undefined;
+
 /**
- * Gets a list of embedding names
+ * Gets a list of lora names
  * @returns An array of script urls to import
  */
 export async function getLoras(bForceRefresh = false) {
-	if (bForceRefresh || cachedLorasObject == undefined) {
-		const resp = await api.fetchApi(
-			'/jnodes_model_items', { "type": "loras", cache: "no-store" });
+	if (bForceRefresh || !cachedLorasObject) {
+		const resp = await api.fetchApi('/jnodes_model_items?type=loras');
 		const asJson = await resp.json();
 		//console.log("Size of loras info: " + JSON.stringify(asJson).length)
 		cachedLorasObject = asJson;
@@ -24,21 +25,41 @@ export async function getLoras(bForceRefresh = false) {
 	return cachedLorasObject;
 }
 
-export async function createExtraNetworkCard(loraNameText, familiars) {
+/**
+ * Gets a list of embedding names
+ * @returns An array of script urls to import
+ */
+export async function getEmbeddings(bForceRefresh = false) {
+	if (bForceRefresh || !cachedEmbeddingsObject) {
+		const resp = await api.fetchApi('/jnodes_model_items?type=embeddings');
+		const asJson = await resp.json();
+		//console.log("Size of embeddings info: " + JSON.stringify(asJson).length)
+		cachedLorasObject = asJson;
+		return asJson;
+	}
 
-	if (!loraNameText) {
+	return cachedLorasObject;
+}
+
+export async function createExtraNetworkCard(nameText, familiars, type) {
+
+	if (!nameText) {
 		return;
 	}
 
-	let loraNameToUse = loraNameText;
+	let nameToUse = nameText;
 	let trainedWords = [];
 	let tags = [];
+	let modelId; // The base model ID for civit.ai. Not specific to any version of the model.
+	let lastViewedImageIndex = 0;
+
+	const bIsLora = type == "loras";
 
 	// Load the first image as the object cover image. 
 	// If one does not exist, fall back to placeholder image.
 	function getHrefForFamiliarImage(index) {
 		if (familiars?.familiar_images?.length > 0) {
-			return `/jnodes_view_image?filename=${encodeURIComponent(familiars.familiar_images[index])}&type=${"loras"}`;
+			return `/jnodes_view_image?filename=${encodeURIComponent(familiars.familiar_images[index])}&type=${type}`;
 		}
 		return NoImagePlaceholder;
 	}
@@ -57,28 +78,53 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 						}
 					}
 				} catch (jsonError) {
-					console.error(`Error parsing JSON: ${jsonError}`);
+					console.error(`Error parsing JSON: ${jsonError}, orginal text: ${familiar_info}`);
 				}
 			}
 		}
 
-		if (infoMap['model'] && infoMap['model']['name']) {
-			loraNameToUse = `${infoMap['model']['name']} (${loraNameToUse})`;
+		// Prefer user set friendlyName over data from civit.ai
+		if (infoMap.friendlyName) {
+			if (infoMap.friendlyName.trim() != nameToUse.trim()) {
+				nameToUse = `${infoMap.friendlyName} (${nameToUse})`;
+			}
+		} else if (infoMap.model && infoMap.model.name) {
+			if (infoMap.model.name.trim() != nameToUse.trim()) {
+				nameToUse = `${infoMap.model.name} (${nameToUse})`;
+			}
 		}
 
-		if (infoMap['tags']) {
-			for (const tag of infoMap['tags']) {
+		// Prefer user set tags over data from civit.ai
+		if (infoMap.userTags) {
+			for (const tag of infoMap.userTags) {
+				tags.push(tag.trim());
+			}
+		} else if (infoMap.tags) {
+			for (const tag of infoMap.tags) {
 				tags.push(tag.trim());
 			}
 		}
 
-		if (infoMap['trainedWords']) {
-			trainedWords = (`${infoMap['trainedWords']}`).trim();
+		// Prefer user set trainedWords over data from civit.ai
+		if (infoMap.userTrainedWords) {
+			trainedWords = (`${infoMap.userTrainedWords}`).trim();
+			if (!trainedWords.endsWith(",")) {
+				trainedWords += ",";
+			}
+			trainedWords = trainedWords.replace("\\(", "(").replace("\\)", ")").replace('\\"', '"');
+		} else if (infoMap.trainedWords) {
+			trainedWords = (`${infoMap.trainedWords}`).trim();
 			if (!trainedWords.endsWith(",")) {
 				trainedWords += ",";
 			}
 			trainedWords = trainedWords.replace("\\(", "(").replace("\\)", ")").replace('\\"', '"');
 		}
+		
+		if (infoMap.lastViewedImageIndex) {
+			lastViewedImageIndex = infoMap.lastViewedImageIndex;
+		}
+
+		modelId = infoMap.modelId || infoMap.id || undefined;
 
 		return infoMap;
 	}
@@ -129,14 +175,14 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 
 	const backgroundImage =
 		$el("img", {
-			lastViewedImageIndex: 0,
+			lastViewedImageIndex: lastViewedImageIndex,
 			style: {
 				objectFit: "cover",
 				width: "100%",
 				height: "100%",
 			}
 		});
-	backgroundImage.src = getHrefForFamiliarImage(backgroundImage.lastViewedImageIndex);
+	backgroundImage.src = getHrefForFamiliarImage(lastViewedImageIndex);
 
 	let imageCounterLabel;
 
@@ -191,11 +237,11 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 				return buttonElement;
 			}
 
-			let copyLoraText = `<lora:${loraNameText}:1:1>`;
+			let copyModelText = bIsLora ? `<lora:${nameText}:1:1>` : `(embedding:${nameText}:1)`;
 
-			if (trainedWords.length > 0) {
+			if (bIsLora && trainedWords.length > 0) {
 				//Copy all
-				let copyAllText = copyLoraText + ", " + trainedWords;
+				let copyAllText = copyModelText + " " + trainedWords;
 				buttonsRow.appendChild(
 					createButton(
 						$el("label", {
@@ -224,19 +270,35 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 				);
 			}
 
-			// Copy text lora button
+			// Copy model text button
 			buttonsRow.appendChild(
 				createButton(
 					$el("label", {
 						textContent: "📜",
 					}),
-					`Copy lora as a1111-style text (${copyLoraText})`,
+					bIsLora ? `Copy lora as a1111-style text (${copyModelText})` : `Copy embedding as comfy-style text (${copyModelText})`,
 					function(e) {
-						copyToClipboard(copyLoraText)
+						copyToClipboard(copyModelText)
 						e.preventDefault();
 					}
 				)
 			);
+
+			// Go to civit.ai link
+			if (modelId) {
+				const href = `https://civitai.com/models/${modelId}`;
+				buttonsRow.appendChild(
+					createButton(
+						$el("a", {
+							target: "_blank",
+							href,
+							textContent: "🔗",
+						}),
+						`View model on civit.ai (${href})`,
+						function(e) { } // Empty function, link handled by href
+					)
+				);
+			}
 		}
 
 		const buttonsRow = $el("div", {
@@ -312,7 +374,7 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 			}
 		}, [
 			$el("label", {
-				textContent: loraNameToUse,
+				textContent: nameToUse,
 				style: {
 					fontSize: 'calc(var(--max-size) * 0.02vw)',
 					top: '5%',
@@ -329,12 +391,12 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 		return mainContainer;
 	}
 
-	//console.log("loraNameToUse: " + loraNameToUse);
+	//console.log("nameToUse: " + nameToUse);
 
-	const loraElement =
+	const modelElement =
 		$el("div", {
 			id: "extra-networks-card",
-			"data-name": loraNameToUse,
+			"data-name": nameToUse,
 			style: {
 				textAlign: 'center',
 				objectFit: 'var(--div-fit, contain)',
@@ -345,18 +407,23 @@ export async function createExtraNetworkCard(loraNameText, familiars) {
 			},
 		});
 
-	loraElement.appendChild(backgroundImage);
+	modelElement.appendChild(backgroundImage);
 	const leftImageSwitchButton = createImageSwitchButton(true);
-	if (leftImageSwitchButton) { loraElement.appendChild(leftImageSwitchButton); }
+	if (leftImageSwitchButton) { modelElement.appendChild(leftImageSwitchButton); }
 	const rightImageSwitchButton = createImageSwitchButton(false);
-	if (rightImageSwitchButton) { loraElement.appendChild(rightImageSwitchButton); }
-	loraElement.appendChild(createImageCounterElement());
-	loraElement.appendChild(createButtonToolbar());
-	loraElement.appendChild(createNameAndTagContainer());
+	if (rightImageSwitchButton) { modelElement.appendChild(rightImageSwitchButton); }
+	modelElement.appendChild(createImageCounterElement());
+	modelElement.appendChild(createButtonToolbar());
+	modelElement.appendChild(createNameAndTagContainer());
 
-	loraElement.title = JSON.stringify(infoMap);
+	modelElement.title = JSON.stringify(infoMap);
 
-	setSearchTermsOnElement(loraElement, `${loraNameToUse}, ${trainedWords}, ${tags.join(', ')}`);
+	// Sorting meta information
+	modelElement.filename = nameText;
+	modelElement.friendlyName = nameToUse;
+	modelElement.file_age = familiars.file_age;
 
-	return loraElement;
+	setSearchTermsOnElement(modelElement, `${nameToUse}, ${trainedWords}, ${tags.join(', ')}`);
+
+	return modelElement;
 }

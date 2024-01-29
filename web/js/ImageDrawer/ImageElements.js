@@ -5,7 +5,7 @@ import { defaultKeyList, getVal } from "./imageDrawer.js";
 // getValue only prepends 'JNodes.', getVal also prepends 'ImageDrawer.'.
 import {
 	getValue, setSearchTermsOnElement, getMaxZIndex, getLastMousePosition,
-	createDarkContainer, copyToClipboard,
+	createDarkContainer, copyToClipboard, isEmptyObject
 } from "../common/utils.js";
 import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 import { createModal } from "../common/modal.js";
@@ -79,6 +79,7 @@ export async function createImageElementFromImgSrc(src) {
 
 	const imageElement =
 		$el("div.imageElement", {
+			complete: false,
 			style: {
 				//				textAlign: 'center',
 				//				objectFit: 'var(--div-fit, contain)',
@@ -133,25 +134,27 @@ export async function createImageElementFromImgSrc(src) {
 					}
 				});
 
-				contextMenu.appendChild(
-					createButton(
-						$el("label", {
-							textContent: "📋 Copy Positive Prompt",
-							style: {
-								color: 'rgb(250,250,250)',
+				if (imageElement?.metadata?.positive_prompt) {
+					contextMenu.appendChild(
+						createButton(
+							$el("label", {
+								textContent: "📋 Copy Positive Prompt",
+								style: {
+									color: 'rgb(250,250,250)',
+								}
+							}),
+							'Copy positive prompt',
+							function(e) {
+								let positive_prompt = imageElement?.metadata?.positive_prompt;
+								if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
+								if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
+								copyToClipboard(positive_prompt);
+								removeOptionsMenu();
+								e.preventDefault();
 							}
-						}),
-						'Copy positive prompt',
-						function(e) {
-							let positive_prompt = imageElement?.metadata?.positive_prompt;
-							if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
-							if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
-							copyToClipboard(positive_prompt);
-							removeOptionsMenu();
-							e.preventDefault();
-						}
-					)
-				);
+						)
+					);
+				}
 
 				return contextMenu;
 			}
@@ -301,6 +304,10 @@ export async function createImageElementFromImgSrc(src) {
 				}
 
 				function makeTooltipWidgetFromMetadata(metadata) {
+					if (isEmptyObject(metadata)) {
+						return null;
+					}
+					
 					const positivePromptKey = 'positive_prompt';
 					const negativePromptKey = 'negative_prompt';
 
@@ -450,21 +457,28 @@ export async function createImageElementFromImgSrc(src) {
 					}
 				}
 
+				function setMetadataAndUpdateTooltipAndSearchTerms(metadata) {
+
+					imageElement.metadata = metadata;
+
+					const toolTipWidget = makeTooltipWidgetFromMetadata(metadata);
+
+					if (toolTipWidget) {
+						setTooltipFromWidget(toolTipWidget);
+					}
+
+					// Finally, set search terms on the element
+					setSearchTermsOnElement(imageElement, href + " " + getDisplayTextFromMetadata(metadata));
+				}
+
 				// Hover mouse over image to show meta
 				//console.log(href);
 				if (href.includes(".png")) {
 					const response = await fetch(href);
 					const blob = await response.blob();
 					const pnginfo = await getPngMetadata(blob);
-
-					imageElement.metadata = pnginfo;
-
-					const toolTipWidget = makeTooltipWidgetFromMetadata(pnginfo);
-
-					setTooltipFromWidget(toolTipWidget);
-
-					// Optionally, set search terms on the element
-					setSearchTermsOnElement(imageElement, getDisplayTextFromMetadata(pnginfo));
+					
+					setMetadataAndUpdateTooltipAndSearchTerms(pnginfo);
 				}
 				else if (href.includes(".webp")) {
 					const response = await fetch(href);
@@ -492,15 +506,14 @@ export async function createImageElementFromImgSrc(src) {
 
 					const asJson = JSON.parse(jsonReadyString);
 
-					imageElement.metadata = asJson;
-
-					const toolTipWidget = makeTooltipWidgetFromMetadata(asJson);
-
-					setTooltipFromWidget(toolTipWidget);
-
-					// Optionally, set search terms on the element
-					setSearchTermsOnElement(imageElement, getDisplayTextFromMetadata(asJson));
+					setMetadataAndUpdateTooltipAndSearchTerms(asJson);
 				}
+
+				// Sorting meta information
+				imageElement.filename = src.filename;
+				imageElement.friendlyName = imageElement.metadata?.friendlyName || imageElement.filename;
+				imageElement.file_age = src.file_age;
+				imageElement.complete = true;
 			}
 			else {
 				console.log('Image is still loading.');

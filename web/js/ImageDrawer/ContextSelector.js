@@ -1,8 +1,9 @@
 import { $el } from "/scripts/ui.js";
 
 import * as Contexts from "./Contexts.js";
+import * as Sorting from "./Sorting.js";
 import {
-	getImageListChildren, getImageListScrollLevel, getSearchText, 
+	getImageListChildren, getImageListScrollLevel, getSearchText,
 	focusAndSelectSearchText, getColumnCount, getDrawerSize
 } from "./imageDrawer.js"
 
@@ -27,13 +28,51 @@ export function reverseItemsInCaches() {
 		Contexts.getContexts()[context]?.reverseItemsInCache();
 	}
 
-	getCurrentContextObject()?.switchToContext();
+	const bSkipRestore = true;
+	getCurrentContextObject()?.switchToContext(bSkipRestore);
+}
+
+export function setOptionSelected(option) {
+	ContextSelector.value = option;
+	onOptionSelected(option);
+}
+
+export async function onOptionSelected(selectedValue) {
+	//		console.log("ContextSelector selectedValue:" + selectedValue);
+
+	// Create cache for previously selected option
+	if (lastSelectedContextOption) {
+		const childNodesArray = Array.from(getImageListChildren());
+		const newCache =
+			new Contexts.ImageDrawerContextCache(
+				getImageListScrollLevel(), getSearchText(), getColumnCount(),
+				getDrawerSize(), childNodesArray, Sorting.getCurrentSortTypeName());
+		Contexts.getContextObjectFromName(lastSelectedContextOption)?.setCache(newCache);
+	}
+
+	const NewContext = Contexts.getContextObjectFromName(selectedValue);
+	await NewContext.switchToContext();
+
+	// Set up lastSelectedContextOption to accommodate future context switching
+	lastSelectedContextOption = selectedValue;
+
+	// Setup sorting
+	Sorting.setSortingOptionsFromSortTypeArray(NewContext.getSupportedSortTypes());
+	const sortType = NewContext.getDesiredSortType();
+	if (sortType && typeof sortType === 'object') {
+		Sorting.setOptionSelectedFromSortType(sortType.type, sortType.bIsAscending);
+	} else if (sortType && typeof sortType === 'string') {
+		Sorting.setOptionSelectedFromOptionName(sortType);
+	}
+
+	// Automatically focus search bar and select text to save user a click
+	focusAndSelectSearchText();
 }
 
 export const createContextSelector = () => {
 
 	ContextSelector = $el("select");
-	
+
 	Contexts.initializeContexts();
 
 	lastSelectedContextOption = Contexts.getContexts().feed.name;
@@ -50,27 +89,11 @@ export const createContextSelector = () => {
 	// Add an event listener for the "change" event
 	ContextSelector.addEventListener("change", async function() {
 		const selectedValue = ContextSelector.value;
-		// Call your custom function or perform actions based on the selected value
-//		console.log("ContextSelector selectedValue:" + selectedValue);
-
-		// Create cache for previously selected option
-		if (lastSelectedContextOption) {
-			const childNodesArray = Array.from(getImageListChildren());
-			const newCache = 
-				new Contexts.ImageDrawerContextCache(
-					getImageListScrollLevel(), getSearchText(), getColumnCount(), getDrawerSize(), childNodesArray);
-			Contexts.getContextObjectFromName(lastSelectedContextOption)?.setCache(newCache);
-		}
-		
-		const NewContext = Contexts.getContextObjectFromName(selectedValue);
-		await NewContext.switchToContext();
-
-		// Set up lastSelectedContextOption to accommodate future context switching
-		lastSelectedContextOption = selectedValue;
-
-		// Automatically focus search bar and select text to save user a click
-		focusAndSelectSearchText();
+		onOptionSelected(selectedValue);
 	});
+
+	// Initialize
+	setOptionSelected(lastSelectedContextOption);
 
 	return ContextSelector;
 };

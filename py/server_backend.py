@@ -56,6 +56,9 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
         #logger.info(f"file_name_no_ext: {file_name_no_ext}")
         file_path = folder_paths.get_full_path(type, item_name)
         #logger.info(f"file_path: {file_path}")
+        
+        # Get time of creation since the last epoch, in seconds
+        file_age = os.path.getctime(file_path)
 
         if file_path is None:
             logger.warning(f"Unable to get path for {type} {item_name}")
@@ -79,6 +82,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
         familiar_dictionaries[file_name_no_ext] = {
             "containing_directory": containing_directory, 
             "full_name": item_name, 
+            "file_age": file_age, 
             "familiar_images": familiar_images, 
             "familiar_infos": familiar_infos
         }
@@ -112,7 +116,15 @@ def list_files_and_folders(directory):
     accepted_extensions = JNODES_IMAGE_FORMAT_TYPES
 
     # Separate files and folders
-    files = [item for item in items if os.path.isfile(os.path.join(directory, item)) and is_acceptable_image_or_video(item)]
+    files = []
+    for item in items:
+        file_path = os.path.join(directory, item)
+        if os.path.isfile(file_path) and is_acceptable_image_or_video(item):
+             # Get time of creation since the last epoch, in seconds
+             file_age = os.path.getctime(file_path)
+             
+             files.append({'item': item, 'file_age': file_age})
+        
     # folders = [item for item in items if os.path.isdir(os.path.join(directory, item))]
 
     # Create a list of dictionaries starting with the files in the root directory
