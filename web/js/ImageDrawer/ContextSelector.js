@@ -58,6 +58,7 @@ export async function onOptionSelected(selectedValue) {
 
 	// Setup sorting
 	Sorting.setSortingOptionsFromSortTypeArray(NewContext.getSupportedSortTypes());
+	
 	const sortType = NewContext.getDesiredSortType();
 	if (sortType && typeof sortType === 'object') {
 		Sorting.setOptionSelectedFromSortType(sortType.type, sortType.bIsAscending);

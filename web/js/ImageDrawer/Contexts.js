@@ -11,7 +11,7 @@ import {
 	clearAndHandleSearch, setColumnCount, setDrawerSize, setContextToolbarWidget
 } from "./imageDrawer.js"
 
-import { decodeReadableStream, sleep, checkIfAllImagesAreComplete } from "../common/utils.js"
+import { decodeReadableStream, waitForImageCompletion } from "../common/utils.js"
 
 let Contexts;
 
@@ -136,7 +136,7 @@ class ImageDrawerContext {
 	}
 
 	getSupportedSortTypes() {
-		return [Sorting.SortTypeFriendlyName, Sorting.SortTypeFilename, Sorting.SortTypeDate];
+		return [Sorting.SortTypeFilename, Sorting.SortTypeDate];
 	}
 
 	getDesiredSortType() {
@@ -144,7 +144,7 @@ class ImageDrawerContext {
 	}
 
 	getDefaultSortType() {
-		return { type: Sorting.SortTypeFriendlyName, bIsAscending: true };
+		return { type: Sorting.SortTypeFilename, bIsAscending: true };
 	}
 }
 
@@ -242,6 +242,14 @@ class ContextModel extends ContextRefreshable {
 		await this.loadModels(true);
 		super.onRefreshClicked();
 	}
+	
+	getSupportedSortTypes() {
+		return super.getSupportedSortTypes().concat([Sorting.SortTypeFriendlyName]);
+	}
+
+	getDefaultSortType() {
+		return { type: Sorting.SortTypeFriendlyName, bIsAscending: true };
+	}
 }
 
 class ContextSubFolderExplorer extends ContextRefreshable {
@@ -309,30 +317,19 @@ export class ContextFeed extends ContextClearable {
 		});
 	}
 
-	async addNewUncachedFeedImages() {
+	async addNewUncachedFeedImages(bShouldSort = true) {
 		const imageListLength = getImageListChildren().length;
 		if (imageListLength < this.feedImages.length) {
-			let newImages = [];
 			for (let imageIndex = imageListLength; imageIndex < this.feedImages.length; imageIndex++) {
 				let src = this.feedImages[imageIndex];
 				let element = await ImageElements.createImageElementFromImgSrc(src);
 				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
 				await addElementToImageList(element);
-				newImages.push(element);
 			}
 
-			async function waitForImageCompletion() {
-				let bAreAllImagesComplete = false;
-				while (!bAreAllImagesComplete) {
-					bAreAllImagesComplete = checkIfAllImagesAreComplete(newImages);
-					if (!bAreAllImagesComplete) {
-						await sleep(1); // Introduce a 1ms delay using asynchronous sleep
-					}
-				}
+			if (bShouldSort) {
+				Sorting.sortWithCurrentType();
 			}
-
-			await waitForImageCompletion();
-			Sorting.sortWithCurrentType();
 
 		}
 	}
@@ -342,7 +339,7 @@ export class ContextFeed extends ContextClearable {
 			clearImageListChildren();
 		}
 
-		await this.addNewUncachedFeedImages();
+		await this.addNewUncachedFeedImages(false);
 	}
 
 	async onClearClicked() {
@@ -355,44 +352,9 @@ export class ContextFeed extends ContextClearable {
 	}
 }
 
-export class ContextTemp extends ContextRefreshable {
+export class ContextTemp extends ContextSubFolderExplorer {
 	constructor() {
-		super("Temp / History", "The generations you've created since the last comfyUI server restart");
-	}
-
-	async loadHistory() {
-		clearImageListChildren();
-		await addElementToImageList($el("label", { textContent: "Loading history..." }));
-		const allHistory = await api.getHistory(100000)
-		clearImageListChildren(); // Remove loading indicator
-		for (const history of allHistory.History) {
-			if (!history.outputs) { continue; }
-
-			const keys = Object.keys(history.outputs);
-			if (keys.length > 0) {
-				for (const key of keys) {
-					//							console.debug(key)
-					if (!history.outputs[key].images) { continue; }
-					for (const src of history.outputs[key].images) {
-						//									console.debug(im)
-						let element = await ImageElements.createImageElementFromImgSrc(src);
-						if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
-						await addElementToImageList(element);
-					}
-				}
-			}
-		}
-	}
-
-	async switchToContext() {
-		if (!await super.switchToContext()) {
-			await this.loadHistory();
-		}
-	}
-
-	async onRefreshClicked() {
-		await this.loadHistory();
-		super.onRefreshClicked();
+		super("Temp / History", "The generations you've created since the last comfyUI server restart", "temp");
 	}
 
 	getDefaultSortType() {

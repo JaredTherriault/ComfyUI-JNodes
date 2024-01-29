@@ -1,4 +1,3 @@
-import { api } from "../../../../scripts/api.js";
 import { app } from "../../../../scripts/app.js";
 import { $el } from "../../../../scripts/ui.js";
 
@@ -115,7 +114,7 @@ export function clamp(value, min, max) {
 }
 
 export function isEmptyObject(obj) {
-  return Object.keys(obj).length === 0;
+	return Object.keys(obj).length === 0;
 }
 
 export function copyToClipboard(text) {
@@ -143,6 +142,22 @@ export function checkIfAllImagesAreComplete(newImages) {
 		}
 	}
 	return true; // Set to true if all images are complete
+}
+
+export function removeCompleteImages(newImages) {
+	return newImages.filter(image => !image.complete);
+}
+
+export async function waitForImageCompletion(newImages) {
+	let images = removeCompleteImages(newImages);
+	let bAreAllImagesComplete = false;
+	while (!bAreAllImagesComplete) {
+		bAreAllImagesComplete = checkIfAllImagesAreComplete(images);
+		images = removeCompleteImages(images);
+		if (!bAreAllImagesComplete) {
+			await sleep(1); // Introduce a 1ms delay using asynchronous sleep
+		}
+	}
 }
 
 export async function decodeReadableStream(readableStream) {

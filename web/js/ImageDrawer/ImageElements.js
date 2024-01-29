@@ -307,7 +307,7 @@ export async function createImageElementFromImgSrc(src) {
 					if (isEmptyObject(metadata)) {
 						return null;
 					}
-					
+
 					const positivePromptKey = 'positive_prompt';
 					const negativePromptKey = 'negative_prompt';
 
@@ -477,7 +477,7 @@ export async function createImageElementFromImgSrc(src) {
 					const response = await fetch(href);
 					const blob = await response.blob();
 					const pnginfo = await getPngMetadata(blob);
-					
+
 					setMetadataAndUpdateTooltipAndSearchTerms(pnginfo);
 				}
 				else if (href.includes(".webp")) {
@@ -508,11 +508,7 @@ export async function createImageElementFromImgSrc(src) {
 
 					setMetadataAndUpdateTooltipAndSearchTerms(asJson);
 				}
-
-				// Sorting meta information
-				imageElement.filename = src.filename;
-				imageElement.friendlyName = imageElement.metadata?.friendlyName || imageElement.filename;
-				imageElement.file_age = src.file_age;
+				
 				imageElement.complete = true;
 			}
 			else {
@@ -531,6 +527,10 @@ export async function createImageElementFromImgSrc(src) {
 	aElement.appendChild(img);
 	const buttonToolbar = createButtonToolbar(imageElement)
 	imageElement.appendChild(buttonToolbar);
+
+	// Sorting meta information
+	imageElement.filename = src.filename;
+	imageElement.file_age = src.file_age;
 
 	return imageElement;
 }
