@@ -1,6 +1,6 @@
 import { api } from "/scripts/api.js";
 import { $el } from "/scripts/ui.js";
-import { copyToClipboard, setSearchTermsOnElement, createDarkContainer, getDarkColor } from "../common/utils.js"
+import { copyToClipboard, createDarkContainer, getDarkColor } from "../common/utils.js"
 
 import { setSearchTextAndExecute } from "./imageDrawer.js";
 
@@ -423,7 +423,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 	modelElement.friendlyName = nameToUse;
 	modelElement.file_age = familiars.file_age;
 
-	setSearchTermsOnElement(modelElement, `${nameToUse}, ${trainedWords}, ${tags.join(', ')}`);
+	modelElement.searchTerms = `${nameToUse}, ${trainedWords}, ${tags.join(', ')}`;
 
 	return modelElement;
 }

@@ -4,7 +4,7 @@ import { getPngMetadata } from "/scripts/pnginfo.js";
 import { defaultKeyList, getVal } from "./imageDrawer.js";
 // getValue only prepends 'JNodes.', getVal also prepends 'ImageDrawer.'.
 import {
-	getValue, setSearchTermsOnElement, getMaxZIndex, getLastMousePosition,
+	getValue, getMaxZIndex, getLastMousePosition,
 	createDarkContainer, copyToClipboard, isEmptyObject
 } from "../common/utils.js";
 import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
@@ -14,6 +14,8 @@ let toolTip;
 
 const toolTipOffsetX = 10; // Adjust the offset from the mouse pointer
 const toolTipOffsetY = 10;
+
+const bUseWideTooltip = true;
 
 function createToolTip(imageElement) {
 
@@ -34,7 +36,7 @@ function createToolTip(imageElement) {
 			boxShadow: "-2px 2px 5px rgba(0, 0, 0, 0.2)",
 			transition: "opacity 0.3s, visibility 0s",
 			color: "white",
-			maxWidth: "20vw",
+			maxWidth: bUseWideTooltip ? "40vw" : "20vw",
 			pointerEvents: 'none',
 			zIndex: zIndex > 0 ? zIndex + 1 : 1002,
 		}
@@ -130,6 +132,8 @@ export async function createImageElementFromImgSrc(src) {
 						width: 'fit-content',
 						display: 'flex',
 						flexDirection: 'column',
+						alignItems: 'flex-start',
+						textAlign: 'left',
 						//						position: 'absolute',
 					}
 				});
@@ -149,6 +153,35 @@ export async function createImageElementFromImgSrc(src) {
 								if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
 								if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
 								copyToClipboard(positive_prompt);
+								removeOptionsMenu();
+								e.preventDefault();
+							}
+						)
+					);
+				}
+
+				let metadataKeys = Object.keys(imageElement.metadata);
+				metadataKeys.sort();
+				for (const key of metadataKeys) {
+					if (key == "positive_prompt") {
+						continue;
+					}
+
+					let data = imageElement.metadata[key];
+
+					contextMenu.appendChild(
+						createButton(
+							$el("label", {
+								textContent: `📋 Copy ${key}`,
+								style: {
+									color: 'rgb(250,250,250)',
+								}
+							}),
+							`Copy ${key}`,
+							function(e) {
+								if (data.startsWith('"')) { data = data.slice(1); }
+								if (data.endsWith('"')) { data = data.slice(0, data.length - 1); }
+								copyToClipboard(data);
 								removeOptionsMenu();
 								e.preventDefault();
 							}
@@ -218,10 +251,9 @@ export async function createImageElementFromImgSrc(src) {
 						position: 'relative',
 						width: '99vw',
 						height: '99vh',
-						maxWidth: 'fit-content',
-						maxHeight: 'fit-content',
-						display: "block",
-						margin: "auto",
+						objectFit: 'contain',
+						display: 'block',
+						margin: 'auto',
 					},
 				});
 
@@ -262,6 +294,9 @@ export async function createImageElementFromImgSrc(src) {
 				//console.log('Image has been completely loaded.');
 
 				function getDisplayTextFromMetadata(metadata) {
+
+					if (!metadata) { return ''; }
+
 					const positivePromptKey = 'positive_prompt';
 					const negativePromptKey = 'negative_prompt';
 
@@ -377,25 +412,25 @@ export async function createImageElementFromImgSrc(src) {
 								$el('tr', [
 									$el('td', {
 										style: {
-											width: '50%',
+											width: bUseWideTooltip ? '25%' : '50%',
 										}
 									}, [
 										$el('label', {
 											textContent: `${key}:`,
 											style: {
-												wordBreak: 'break-all', // Break on any character to avoid overflow outside the container
+												wordBreak: bUseWideTooltip ? 'break-all' : 'none', // Break on any character to avoid overflow outside the container
 											}
 										})
 									]),
 									$el('td', {
 										style: {
-											width: '50%',
+											width: bUseWideTooltip ? '75%' : '50%',
 										}
 									}, [
 										$el('label', {
 											textContent: `${formattedValue}`,
 											style: {
-												wordBreak: 'break-all',
+												wordBreak: bUseWideTooltip ? 'break-all' : 'none',
 											}
 										})
 									]),
@@ -468,19 +503,18 @@ export async function createImageElementFromImgSrc(src) {
 					}
 
 					// Finally, set search terms on the element
-					setSearchTermsOnElement(imageElement, href + " " + getDisplayTextFromMetadata(metadata));
+					imageElement.searchTerms += " " + getDisplayTextFromMetadata(metadata);
 				}
 
 				// Hover mouse over image to show meta
 				//console.log(href);
+				let metadata = null;
 				if (href.includes(".png")) {
 					const response = await fetch(href);
 					const blob = await response.blob();
-					const pnginfo = await getPngMetadata(blob);
+					metadata = await getPngMetadata(blob);
 
-					setMetadataAndUpdateTooltipAndSearchTerms(pnginfo);
-				}
-				else if (href.includes(".webp")) {
+				} else if (href.includes(".webp")) {
 					const response = await fetch(href);
 					const blob = await response.blob();
 					const webpArrayBuffer = await blob.arrayBuffer();
@@ -491,24 +525,27 @@ export async function createImageElementFromImgSrc(src) {
 
 					const metadata = exifData['UserComment'];
 
-					// Convert the byte array to a Uint16Array
-					const uint16Array = new Uint16Array(metadata.value);
+					if (metadata) {
 
-					// Create a TextDecoder for UTF-16 little-endian
-					const textDecoder = new TextDecoder('utf-16le');
+						// Convert the byte array to a Uint16Array
+						const uint16Array = new Uint16Array(metadata.value);
 
-					// Decode the Uint16Array to a string
-					const decodedString = textDecoder.decode(uint16Array);
+						// Create a TextDecoder for UTF-16 little-endian
+						const textDecoder = new TextDecoder('utf-16le');
 
-					// Remove null characters
-					const cleanedString = decodedString.replace(/\u0000/g, '');
-					const jsonReadyString = cleanedString.replace("UNICODE", "")
+						// Decode the Uint16Array to a string
+						const decodedString = textDecoder.decode(uint16Array);
 
-					const asJson = JSON.parse(jsonReadyString);
+						// Remove null characters
+						const cleanedString = decodedString.replace(/\u0000/g, '');
+						const jsonReadyString = cleanedString.replace("UNICODE", "")
 
-					setMetadataAndUpdateTooltipAndSearchTerms(asJson);
+						metadata = JSON.parse(jsonReadyString);
+					}
 				}
-				
+
+				setMetadataAndUpdateTooltipAndSearchTerms(metadata);
+
 				imageElement.complete = true;
 			}
 			else {
@@ -531,6 +568,7 @@ export async function createImageElementFromImgSrc(src) {
 	// Sorting meta information
 	imageElement.filename = src.filename;
 	imageElement.file_age = src.file_age;
+	imageElement.searchTerms = href; // Search terms to start with, onload will add more
 
 	return imageElement;
 }

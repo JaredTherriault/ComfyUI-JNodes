@@ -141,53 +141,70 @@ app.registerExtension({
 	name: "JNodes.BatchCommenting",
 	async setup() {
 
-		const labelWidget = $el("label", {
-			textContent: "Batch-commenting Hotkey:",
-		});
+		{
+			const labelWidget = $el("label", {
+				textContent: "Batch-commenting Hotkey:",
+			});
 
-		const modifierKeysWidget = $el(
-			"select",
-			{
-				oninput: (e) => {
-					saveVal("ModifierKeyCombo", e.target.value);
-					setFontOnAllTextAreas();
+			const modifierKeysWidget = $el(
+				"select",
+				{
+					oninput: (e) => {
+						saveVal("ModifierKeyCombo", e.target.value);
+						setFontOnAllTextAreas();
+					},
 				},
-			},
-			getModifierKeyCombos().map((m) =>
-				$el("option", {
-					value: m,
-					textContent: m,
-					selected: getVal("ModifierKeyCombo", getModifierKeyCombos()[0]) === m,
-				})
-			)
-		);
+				getModifierKeyCombos().map((m) =>
+					$el("option", {
+						value: m,
+						textContent: m,
+						selected: getVal("ModifierKeyCombo", getModifierKeyCombos()[0]) === m,
+					})
+				)
+			);
 
-		const keyCodeWidget = $el(
-			"select",
-			{
-				oninput: (e) => {
-					saveVal("KeyCode", e.target.value);
-					setFontOnAllTextAreas();
+			const keyCodeWidget = $el(
+				"select",
+				{
+					oninput: (e) => {
+						saveVal("KeyCode", e.target.value);
+						setFontOnAllTextAreas();
+					},
 				},
-			},
-			getKeyList().map((m) =>
-				$el("option", {
-					value: m,
-					textContent: m,
-					selected: getVal("KeyCode", 'Slash') === m,
-				})
-			)
-		);
+				getKeyList().map((m) =>
+					$el("option", {
+						value: m,
+						textContent: m,
+						selected: getVal("KeyCode", 'Slash') === m,
+					})
+				)
+			);
 
-		const settingWidget = $el("div", {}, [modifierKeysWidget, keyCodeWidget]);
+			const settingWidget = $el("div", {}, [modifierKeysWidget, keyCodeWidget]);
 
-		const tooltip =
-			"A key combo that, when pressed, will insert text at the beginning of the selected " +
-			"lines in a multiline textarea, assuming it is the active element. If no text is " +
-			"selected, the text will be inserted at the beginning of the line where the cursor " +
-			"currently sits. This text will not automatically dummy out any lines, you will need " +
-			"to pass the resulting text into a custom node that removes lines marked as 'commented'.";
-		addJNodesSetting(labelWidget, settingWidget, tooltip);
+			const tooltip =
+				"A key combo that, when pressed, will insert text at the beginning of the selected " +
+				"lines in a multiline textarea, assuming it is the active element. If no text is " +
+				"selected, the text will be inserted at the beginning of the line where the cursor " +
+				"currently sits. This text will not automatically dummy out any lines, you will need " +
+				"to pass the resulting text into a custom node that removes lines marked as 'commented'.";
+			addJNodesSetting(labelWidget, settingWidget, tooltip);
+		}
+
+		{
+			const labelWidget = $el("label", {
+				textContent: "Batch-commenting Token:",
+			});
+			
+			const settingWidget = $el("input", {
+				value:  getVal("Token", '#'),
+				onchange: function () { saveVal("Token", settingWidget.value ); }
+			});
+			
+			const tooltip = 
+				"The token that will be inserted/removed when performing a batch comment operation"
+			addJNodesSetting(labelWidget, settingWidget, tooltip);
+		}
 
 		window.addEventListener("keydown", function(event) {
 			const { ctrlKey, metaKey, shiftKey, altKey, code } = event;
@@ -201,7 +218,7 @@ app.registerExtension({
 				const textarea = document.activeElement;
 
 				if (textarea.tagName === 'TEXTAREA') {
-					toggleTextAtTheBeginningOfEachSelectedLine('#', textarea);
+					toggleTextAtTheBeginningOfEachSelectedLine(getVal("Token", '#'), textarea);
 				}
 			}
 		}, true);

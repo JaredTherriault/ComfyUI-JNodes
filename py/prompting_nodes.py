@@ -3,7 +3,7 @@ import os
 import folder_paths
 from .logger import logger
 
-from .utils import any, AnyType, return_random_int, make_exclusive_list
+from .utils import any, AnyType, return_random_int, make_exclusive_list, search_and_replace_from_dict
 
 import random
 import re
@@ -13,6 +13,7 @@ import comfy.sd
 from typing import Dict, List
 
 from token_count import *
+from aiofiles.os import replace
 
 class SyncedStringLiteral:
     @classmethod
@@ -132,7 +133,90 @@ class ParseDynamicPrompts:
             match_count += 1
             
         return (text,)
+    
+class RemoveCommentedText:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "text": ("STRING", {"multiline": True}),
+                "starting_line_comment": ("STRING", {"multiline": False, "default": "#"}),
+                "enclosed_comment_start": ("STRING", {"multiline": False, "default": "##"}),
+                "enclosed_comment_end": ("STRING", {"multiline": False, "default": "##"}),
+        }
+    }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "remove_commented_text"
+
+    CATEGORY = "text"
+    
+    def remove_commented_text(
+            self, text, starting_line_comment, enclosed_comment_start, enclosed_comment_end):
+        # Remove text enclosed in comment decorators
+        text = re.sub(rf'{re.escape(enclosed_comment_start)}[\s\S]+?{re.escape(enclosed_comment_end)}', '', text)
         
+        # Then actually remove the decorators
+        text = text.replace(f"{re.escape(enclosed_comment_start)}{re.escape(enclosed_comment_end)}", "")
+        
+        # Remove lines that start with a single "#"
+        lines = text.split("\n")
+        
+        # Skip lines that are commented out, empty, or just a comma
+        non_commented_lines = [line for line in lines if not line.strip().startswith(starting_line_comment)]
+        
+        # Join the non-commented lines back into a single string
+        return_text = "\n".join(non_commented_lines)
+
+        return (return_text,)
+    
+class SplitAndJoin:
+    """
+    Splits the text at the given 'split_at' token and removes items that have no text, then rejoins 
+    the text using the 'join_with' token. Useful for removing multiple commas, spaces, newlines, etc.
+    """
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "text": ("STRING", {"multiline": True}),
+                "split_at": ("STRING", {"multiline": False}),
+                "join_with": ("STRING", {"multiline": False}),
+        }
+    }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "split_and_join"
+
+    CATEGORY = "text"
+        
+    def split_and_join(self, text, split_at, join_with):
+        if split_at is None or join_with is None:
+            return (text,)
+        split = text.split(split_at)
+        valid_lines = [line for line in split if line.strip() != ""]
+        
+        return (join_with.join(valid_lines),)
+    
+class TrimAndStrip:
+    """
+    Simply removes whitespace from the head and tail of the given text.
+    """
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "text": ("STRING", {"multiline": True}),
+        }
+    }
+        
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "trim_and_strip"
+
+    CATEGORY = "text"
+    
+    def trim_and_strip(self, text):        
+        return (text.strip(),)
     
 class ParseWildcards:
     @classmethod
@@ -144,12 +228,11 @@ class ParseWildcards:
                 "mode": (["seed", "index"],),
                 "seed": ("INT", {"default": 0, "max": 0xffffffffffffffff}),
                 "use_same_seed_for_multiple_occurrences": ("BOOLEAN", {"default":False}),
-                "remove_comments_and_unwanted_whitespace_and_commas": ("BOOLEAN", {"default":True}),
         }
     }
 
     RETURN_TYPES = ("STRING",)
-    FUNCTION = "parse_wildcards_and_comments"
+    FUNCTION = "parse_wildcards"
 
     CATEGORY = "wildcards"
     
@@ -186,42 +269,10 @@ class ParseWildcards:
             return_value = return_value.split(commentary_divider)[1]
             
         return return_value.strip()
-    
-    def remove_commented_text_and_trim_unwanted_whitespace_and_commas(self, text):
-        # Remove text enclosed in "##" on both sides
-        text = re.sub(r'##[^#]+##', '', text)
-        
-        # Remove whitespace surrounding a comma on both sides
-        text = re.sub(r' *, *', ',', text);
-        
-        # Replace multiple commas with a single comma
-        text = re.sub(r',+',',', text)
-        
-        # Then actually remove the decorators
-        text = text.replace("####", "")
-        
-        # Remove head comma, if applicable
-        if text.startswith(","):
-            text = text[1:]
-            
-        # Remove tail comma, if applicable
-        if text.endswith(","):
-            text = text[:-1]
-        
-        # Remove lines that start with a single "#"
-        lines = text.split("\n")
-        
-        # Skip lines that are commented out, empty, or just a comma
-        non_commented_lines = [line for line in lines if not line.strip().startswith("#") and line.strip() != "" and line.strip() != ","]
-        
-        # Join the non-commented lines back into a single string
-        return_text = "\n".join(non_commented_lines)
-        
-        return return_text
 
-    def parse_wildcards_and_comments(
+    def parse_wildcards(
             self, text: str, absolute_path_to_wildcards_directory: str, 
-            mode, seed, use_same_seed_for_multiple_occurrences, remove_comments_and_unwanted_whitespace_and_commas):
+            mode, seed, use_same_seed_for_multiple_occurrences):
         
         """
         Takes in a string with wildcard notation, e.g. "My hair is __HairColors__"
@@ -253,9 +304,6 @@ class ParseWildcards:
         files, folders_all = folder_paths.recursive_search(absolute_path_to_wildcards_directory)
         
         previously_found_wildcards = []
-        
-        if remove_comments_and_unwanted_whitespace_and_commas:
-            text = self.remove_commented_text_and_trim_unwanted_whitespace_and_commas(text)
 
         re_match = self.find_match(text)
         while re_match is not None:
@@ -358,7 +406,40 @@ class PromptBuilderSingleSubject:
     def get_string(self, subject = "", hair = "", clothing = "", actions = "", extras = "", network_definitions_and_triggers = ""):
         return (f"{subject}\n{hair}\n{clothing}\n{actions}\n{extras}\n{network_definitions_and_triggers}",)
     
-class PromptEditor:
+class SearchAndReplaceFromList:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "text": ("STRING", {"multiline": True}),
+                "list": ("STRING", {"multiline": False}),
+        }
+    }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "search_and_replace_from_list"
+    
+    def search_and_replace_from_list(self, text: str, list: str):
+        
+        """
+        Takes in a string list structured as below, on each line with a -> between the search and replace strings, into a list
+        ---
+        search0->replace0
+        search string->replace string
+        ---
+        Then replaces all occurrences of the list's search strings with the list's replace strings in one go
+        """
+        
+        replacements = list.split('\n')
+    
+        replacement_dict = {}
+        for line in replacements:
+            search, replace = line.strip().split("->")
+            replacement_dict[search] = replace
+
+        return (search_and_replace_from_dict(text, replacement_dict),)
+    
+class SearchAndReplaceFromFile:
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -369,9 +450,9 @@ class PromptEditor:
     }
 
     RETURN_TYPES = ("STRING",)
-    FUNCTION = "replace_terms_in_string_based_on_replacements_file"
+    FUNCTION = "search_and_replace_from_file"
     
-    def replace_terms_in_string_based_on_replacements_file(self, text: str, replacements_file_path: str):
+    def search_and_replace_from_file(self, text: str, replacements_file_path: str):
         
         """
         loads a file with strings structured as below, on each line with a -> between the search and replace strings, into a list
@@ -394,10 +475,28 @@ class PromptEditor:
             search, replace = line.strip().split("->")
             replacement_dict[search] = replace
 
-        def replace(match_text):
-            return replacement_dict[match_text.group(0)]
+        return (search_and_replace_from_dict(text, replacement_dict),)
+    
+class SearchAndReplace:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "text": ("STRING", {"multiline": True}),
+                "search_term": ("STRING", {"multiline": False}),
+                "replace_with": ("STRING", {"multiline": False}),
+        }
+    }
 
-        return (re.sub('|'.join(r'\b%s\b' % re.escape(s) for s in replacement_dict.keys()), replace, text).strip(),)
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "search_and_replace"
+    
+    def search_and_replace(self, text : str, search_term : str, replace_with : str):
+        
+        replacement_dict = {}
+        replacement_dict[search_term] = replace_with
+
+        return (search_and_replace_from_dict(text, replacement_dict),)
     
 class AddOrSetMetaDataKey:
 
@@ -438,7 +537,7 @@ class SetPositivePromptInMetaData:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "prompt": ("STRING", {"default": 'unknown', "multiline": True}),
+                "prompt": ("STRING", {"default": '', "multiline": True}),
             },
             "hidden": {
                 "extra_pnginfo": "EXTRA_PNGINFO"
@@ -480,7 +579,7 @@ class RemoveMetaDataKey:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "key": ("STRING", {"default": 'unknown', "multiline": False}),
+                "key": ("STRING", {"default": '', "multiline": False}),
             },
             "hidden": {
                 "extra_pnginfo": "EXTRA_PNGINFO"

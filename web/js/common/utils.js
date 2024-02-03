@@ -90,10 +90,6 @@ export const setElementVisibility = (element, bNewVisible) => {
 	element.style.display = bNewVisible ? "unset" : "none";
 }
 
-export function setSearchTermsOnElement(element, searchTerms) {
-	element.searchTerms = searchTerms;
-}
-
 export function getMaxZIndex(element) {
 	let maxZIndex = element.style.zIndex;
 	let parent = element.parentElement;
@@ -114,7 +110,7 @@ export function clamp(value, min, max) {
 }
 
 export function isEmptyObject(obj) {
-	return Object.keys(obj).length === 0;
+	return !obj || Object.keys(obj).length === 0;
 }
 
 export function copyToClipboard(text) {

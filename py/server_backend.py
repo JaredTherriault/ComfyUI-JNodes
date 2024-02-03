@@ -110,37 +110,35 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
     return familiars
 
 def list_files_and_folders(directory):
-    # Get the list of files and folders in the specified directory
-    items = os.listdir(directory)
     
-    accepted_extensions = JNODES_IMAGE_FORMAT_TYPES
-
-    # Separate files and folders
-    files = []
-    for item in items:
-        file_path = os.path.join(directory, item)
-        if os.path.isfile(file_path) and is_acceptable_image_or_video(item):
-             # Get time of creation since the last epoch, in seconds
-             file_age = os.path.getctime(file_path)
-             
-             files.append({'item': item, 'file_age': file_age})
+    results = [];
+    
+    def recurse(folder):
+        # Get the list of files and folders in the specified directory
+        full_directory = os.path.join(directory, folder)
+        items = os.listdir(full_directory)
+    
+        # Separate files and folders
+        files = []
+        for item in items:
+            file_path = os.path.join(full_directory, item)
+            if os.path.isfile(file_path) and is_acceptable_image_or_video(item):
+                 # Get time of creation since the last epoch, in seconds
+                 file_age = os.path.getctime(file_path)
+                 
+                 files.append({'item': item, 'file_age': file_age})
+                 
+            elif os.path.isdir(os.path.join(full_directory, item)):
+                recurse(os.path.join(folder, item))
+    
+        # Create a list of dictionaries starting with the files in the root directory
+        results.append({'folder_path': f'{folder}', 'files': files})
         
-    # folders = [item for item in items if os.path.isdir(os.path.join(directory, item))]
+    recurse("")
+    
+    results.sort(key = lambda result: result['folder_path'])
 
-    # Create a list of dictionaries starting with the files in the root directory
-    result = {'folder_path': "", 'files': files}
-
-    # for folder in folders:
-    #     folder_path = os.path.join(directory, folder)
-    #     folder_files = [file for file in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, file))]
-    #
-    #     # Create a dictionary entry for each folder
-    #     result.append({
-    #         'folder': folder,
-    #         'files': folder_files
-    #     })
-
-    return result
+    return results
 
 def get_comfyui_subfolder_items(request):
     return web.json_response(list_files_and_folders(get_comfyui_subfolder(request.rel_url.query["subfolder"])))
@@ -171,14 +169,16 @@ def view_image(request):
         logger.warning(f"Unable to get parent directory for {type}")
         return web.Response(status=400)
     
+    subfolder = ''
+    if "subfolder" in request.rel_url.query:
+        subfolder = request.rel_url.query["subfolder"]
+        output_dir = os.path.join(output_dir, subfolder)
+    
     if "filename" in request.rel_url.query:
         filename = request.rel_url.query["filename"]
 
         # validation for security: prevent accessing arbitrary path
         if filename[0] == '/' or '..' in filename:
-            return web.Response(status=400)
-
-        if output_dir is None:
             return web.Response(status=400)
 
         #filename = os.path.basename(filename)
@@ -245,6 +245,36 @@ def view_image(request):
                 return web.FileResponse(file, headers={"Content-Disposition": f"filename=\"{filename}\""})
 
     return web.Response(status=404)
+
+
+
+async def save_model_config(request):
+    type = "loras"
+    if "type" in request.rel_url.query:
+        type = request.rel_url.query["type"]
+    if "item_name" in request.rel_url.query:
+        item_name = request.rel_url.query["item_name"]
+    if "subfolder" in request.rel_url.query:
+        subfolder = request.rel_url.query["subfolder"]
+    if "key" in request.rel_url.query:
+        key = request.rel_url.query["key"]
+    if "value" in request.rel_url.query:
+        value = request.rel_url.query["value"]
+
+    if item_name is None :
+        logger.warning(f"Missing item_name, unable to update model config.")
+        return web.Response(status=400)
+    if key is None :
+        logger.warning(f"Missing key, unable to update model config for '{item_name}'.")
+        return web.Response(status=400)
+    if value is None :
+        logger.warning(f"Missing value, unable to update model config for '{item_name}' at key '{key}'.")
+        return web.Response(status=400)
+    
+    
+    file_path = folder_paths.get_full_path(type, subfolder + '/' + item_name if subfolder is not None else item_name)
+    #logger.info(familiar_dictionaries)
+    return web.json_response(familiar_dictionaries)
 
 def load_info(request):
     type = "loras"

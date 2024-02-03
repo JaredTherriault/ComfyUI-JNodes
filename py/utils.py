@@ -66,3 +66,13 @@ def pil2tensor(image: Union[Image.Image, List[Image.Image]]) -> torch.Tensor:
         return torch.cat([pil2tensor(img) for img in image], dim=0)
 
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
+
+def search_and_replace_from_dict(text, replacement_dict : Dict, consider_special_characters = True):
+    
+    def replace(match_text):
+        return replacement_dict[match_text.group(0)]
+
+    if consider_special_characters:
+        return re.sub('|'.join(map(re.escape, replacement_dict.keys())), replace, text).strip()
+    else:
+        return re.sub('|'.join(r'\b%s\b' % re.escape(s) for s in replacement_dict.keys()), replace, text).strip()

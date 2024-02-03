@@ -242,7 +242,7 @@ class ContextModel extends ContextRefreshable {
 		await this.loadModels(true);
 		super.onRefreshClicked();
 	}
-	
+
 	getSupportedSortTypes() {
 		return super.getSupportedSortTypes().concat([Sorting.SortTypeFriendlyName]);
 	}
@@ -256,6 +256,10 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 	constructor(name, description, folderName) {
 		super(name, description);
 		this.folderName = folderName;
+		this.rootFolderDisplayName = '/root';
+		this.bIncludeSubfolders = false;
+		this.fileMap = null;
+		this.subfolderSelector = null;
 	}
 
 	async loadFolder() {
@@ -266,19 +270,136 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		// Decode into a string
 		const decodedString = await decodeReadableStream(allItems.body);
 
-		const asJson = JSON.parse(decodedString);
+		this.fileMap = JSON.parse(decodedString);
 
-		clearImageListChildren(); // Remove loading indicator
-		//for (const folder of allOutputItems) {
-		//if (!folder.files) { continue; }
-		if (asJson.files.length > 0) {
-			for (const file of asJson.files) {
+		// Fill out combo box options based on folder paths
+		for (let folderIndex = 0; folderIndex < this.fileMap.length; folderIndex++) {
+			const bIsRoot = folderIndex == 0;
+			const result = this.fileMap[folderIndex];
+
+			const option = document.createElement("option");
+			const folder_path = bIsRoot ? this.rootFolderDisplayName : result.folder_path;
+			option.value = bIsRoot ? '' : folder_path;
+			option.textContent = folder_path;
+			option.title = folder_path;
+			this.subfolderSelector.appendChild(option);
+		}
+
+		// Load root folder (even if there are no images within)
+		await this.loadImagesInFolder('');
+	}
+
+	findFileMapByFolderPath(folder_path) {
+
+		if (folder_path == '') {
+			return this.fileMap[0];
+		}
+
+		const values = Object.values(this.fileMap);
+
+		let foundValue;
+
+		for (const value of values) {
+			if (value.folder_path.includes(folder_path)) {
+				foundValue = value;
+				break;
+			}
+		}
+
+		if (foundValue) {
+			return foundValue;
+		} else {
+			console.error(`fileMap with name '${foundValue}' not found.`);
+			return null;
+		}
+	}
+
+	async loadImagesInFolder(folder_path) {
+
+		if (!this.fileMap) { return; }
+
+		const bIsRoot = folder_path == '';
+
+		clearImageListChildren(); 
+
+		const values = Object.values(this.fileMap);
+		for (let valueIndex = 0; valueIndex < values.length; valueIndex++) {
+
+			const value = values[valueIndex];
+
+			if (this.bIncludeSubfolders) {
+				if (!bIsRoot && !value.folder_path.startsWith(folder_path)) {
+					// If we want to include subfolders and we're not starting from root, require that value.folder_path starts with folder_path
+					continue;
+				}
+			} else {
+				if (!bIsRoot && value.folder_path != folder_path) {
+					// Require an exact match when not including subfolders
+					continue;
+				}
+			}
+
+			for (const file of value.files) {
 				let element = await ImageElements.createImageElementFromImgSrc(
-					{ filename: file.item, type: this.folderName, subfolder: asJson.folder_path, file_age: file.file_age });
+					{
+						filename: file.item,
+						type: this.folderName,
+						subfolder: value.folder_path,
+						file_age: file.file_age
+					});
 				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
 				await addElementToImageList(element);
 			}
+
+			// We only need one match if we're not including subfolders
+			if (!this.bIncludeSubfolders) {
+				break;
+			}
 		}
+	}
+
+	async makeToolbar() {
+
+		const container = await super.makeToolbar();
+		const self = this;
+
+		const IncludeSubfoldersToggle = $el("input", {
+			id: 'IncludeSubfoldersToggle',
+			type: 'checkbox',
+			checked: self.bIncludeSubfolders,
+			onchange: (e) => {
+				self.bIncludeSubfolders = e.target.checked;
+				self.loadImagesInFolder(self.subfolderSelector.value);
+			}
+		});
+
+		container.insertBefore($el("div", {
+			style: {
+				display: 'flex',
+				flexDirection: 'row'
+			}
+		}, [
+			$el("label", {
+				textContent: 'Include subfolders?',
+				toolTip: 'Include items found in subfolders? Be careful, this can be very memory-intensive if there are too many items. Browsers can crash.',
+			}), IncludeSubfoldersToggle]),
+			container.firstChild);
+
+		this.subfolderSelector = $el("select", { //Inner container so it can maintain 'flex' display attribute
+			style: {
+				width: '100%',
+			}
+		});
+
+		this.subfolderSelector.addEventListener("change", async function() {
+			IncludeSubfoldersToggle.checked = self.bIncludeSubfolders = false;
+			const selectedValue = this.value;
+			await self.loadImagesInFolder(selectedValue);
+		});
+
+		container.insertBefore(this.subfolderSelector, container.firstChild);
+
+		return container;
 	}
 
 	async switchToContext() {
