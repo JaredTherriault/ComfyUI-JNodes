@@ -523,12 +523,12 @@ export async function createImageElementFromImgSrc(src) {
 					const exifData = ExifReader.load(webpArrayBuffer);
 					//console.log("exif: " + JSON.stringify(exifData));
 
-					const metadata = exifData['UserComment'];
+					const exif = exifData['UserComment'];
 
-					if (metadata) {
+					if (exif) {
 
 						// Convert the byte array to a Uint16Array
-						const uint16Array = new Uint16Array(metadata.value);
+						const uint16Array = new Uint16Array(exif.value);
 
 						// Create a TextDecoder for UTF-16 little-endian
 						const textDecoder = new TextDecoder('utf-16le');
