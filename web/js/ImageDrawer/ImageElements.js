@@ -225,7 +225,7 @@ export async function createImageElementFromImgSrc(src) {
 			}
 		});
 
-		const buttonToolbarContainerElement = createDarkContainer();
+		const buttonToolbarContainerElement = createDarkContainer('imageToolsButton');
 
 		buttonToolbarContainerElement.style.top = '2%';
 		buttonToolbarContainerElement.style.left = '2%';

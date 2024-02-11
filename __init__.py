@@ -17,6 +17,10 @@ async def get_comfyui_subfolder_items_wrapper(request):
 async def get_model_items_wrapper(request):
     return get_model_items(request)
 
+@server.PromptServer.instance.routes.get('/jnodes_save_model_config')
+async def save_model_config_wrapper(request):
+    return save_model_config(request)
+
 @server.PromptServer.instance.routes.get("/jnodes_view_image")
 async def view_image_wrapper(request):
     return view_image(request)
