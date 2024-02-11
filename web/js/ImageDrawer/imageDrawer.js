@@ -98,7 +98,7 @@ function createSearchBar() {
 		placeholder: "Type here to search",
 		autocomplete: "off",
 		style: {
-			width: '-webkit-fill-available',
+			width: '100%',
 		}
 	});
 
