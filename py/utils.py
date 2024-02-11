@@ -37,6 +37,46 @@ ACCEPTED_STILL_IMAGE_EXTENSIONS = ['gif', 'webp', 'png', 'jpg', 'jpeg']
 def return_random_int(min = 1, max = 100000):
     return random.randint(min, max)
 
+def convert_relative_comfyui_path_to_full_path(directory_name = "output"):
+    # Get the directory containing this file
+    directory = os.path.dirname(os.path.realpath(__file__))
+    
+    # Find the position of base ComfyUI path
+    index = directory.find("custom_nodes")
+    
+    # Chop off everything after "ComfyUI"
+    comfy_path = os.path.join(directory[:index])
+    
+    return os.path.join(comfy_path, directory_name)
+
+def resolve_file_path(in_file_path):
+    if os.path.isabs(in_file_path):
+        return in_file_path
+    else: # Relative path
+        return get_comfyui_subfolder(in_file_path)
+
+def highest_common_folder(path1, path2):
+    # Split the paths into their components
+    path1_parts = os.path.normpath(path1).split(os.path.sep)
+    path2_parts = os.path.normpath(path2).split(os.path.sep)
+
+    # Find the minimum length of the two paths
+    min_length = min(len(path1_parts), len(path2_parts))
+
+    # Initialize the highest common folder
+    common_folder = ""
+
+    # Iterate over the components of both paths
+    for i in range(min_length):
+        if path1_parts[i] == path2_parts[i]:
+            # If the components match, add them to the common folder
+            common_folder = os.path.join(common_folder, path1_parts[i])
+        else:
+            # If the components don't match, stop the iteration
+            break
+
+    return common_folder
+
 def make_exclusive_list(original_list, items_to_remove):
     return [item for item in original_list if item not in items_to_remove]
     

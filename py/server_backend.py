@@ -11,18 +11,6 @@ import server
 
 import json
 
-def get_comfyui_subfolder(directory_name = "output"):
-    # Get the directory containing this file
-    directory = os.path.dirname(os.path.realpath(__file__))
-    
-    # Find the position of base ComfyUI path
-    index = directory.find("custom_nodes")
-    
-    # Chop off everything after "ComfyUI"
-    comfy_path = os.path.join(directory[:index])
-    
-    return os.path.join(comfy_path, directory_name)
-
 async def read_we_request_content(reader):
     data = await reader.read()
     return data.decode('utf-8')
@@ -64,17 +52,17 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
             logger.warning(f"Unable to get path for {type} {item_name}")
             continue
 
-        file_path = file_path.replace("/", "\\")
+        file_path = file_path.replace("\\", "/")
+        #print(f'file_path: {file_path}')
         
         parent_directory = os.path.dirname(file_path)
         #logger.info(f"parent_directory: {parent_directory}") 
         
         containing_directory = None
-        if "\\" in file_name_no_ext:
-            split = file_name_no_ext.split("\\")
+        if "/" in file_name_no_ext:
+            split = file_name_no_ext.split("/")
             if len(split) > 1:
                 containing_directory, file_name_no_ext = split
-
         familiar_images = find_items_with_similar_names(parent_directory, containing_directory, file_name_no_ext, image_extension_filter)
         familiar_infos = find_items_with_similar_names(parent_directory, containing_directory, file_name_no_ext, info_extension_filter, True)
         #logger.info(f"similar_images: {similar_images}")
@@ -90,6 +78,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
     return familiar_dictionaries
     
 def find_items_with_similar_names(folder_path, containing_directory, base_name, extension_filter, load = False):
+    #print(f'folder_path: {folder_path}')
     familiars = []
     
     for file_name in os.listdir(folder_path):
@@ -99,13 +88,13 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
             #logger.info(f"file_name matches criteria: {file_name}")
             if load:
                 try: 
-                    with open(folder_path + "\\" + file_name, 'r', encoding='utf-8') as opened_file:
+                    with open(folder_path + "/" + file_name, 'r', encoding='utf-8') as opened_file:
                         loaded_text = opened_file.read()
                         familiars.append(loaded_text)
                         continue
                 except Exception as e:
                     print(f"Error loading text, will append familiar file name. Error: {e}")
-            familiars.append(containing_directory + "\\" + file_name if containing_directory is not None else file_name)
+            familiars.append(containing_directory + "/" + file_name if containing_directory is not None else file_name)
 
     return familiars
 
@@ -141,38 +130,40 @@ def list_files_and_folders(directory):
     return results
 
 def get_comfyui_subfolder_items(request):
-    return web.json_response(list_files_and_folders(get_comfyui_subfolder(request.rel_url.query["subfolder"])))
+    return web.json_response(list_files_and_folders(convert_relative_comfyui_path_to_full_path(request.rel_url.query["subfolder"])))
 
 def view_image(request):
     type = "loras"
     if "type" in request.rel_url.query:
         type = request.rel_url.query["type"]
         
-    output_dir = None
+    base_dir = None
     
-    try:
+    try: # Try to infer base_dir
         file_list = folder_paths.get_filename_list(type)
         if file_list:
-             for item_name in file_list:
-                if "\\" not in item_name.replace("/", "\\"):
-                    file_path = folder_paths.get_full_path(type, item_name)
-                    output_dir = os.path.dirname(file_path)
-                    if output_dir is not None:
-                        break
-    except:
+            sample_set = []
+            for item_name in file_list:
+                file_path = folder_paths.get_full_path(type, item_name.replace("\\", "/"))
+                sample_set.append(file_path)
+                if len(sample_set) == 2:
+                    break
+            if len(sample_set) == 2:
+                base_dir = highest_common_folder(sample_set[0], sample_set[1])
+    except: # If we can't, most likely because it's not a built-in type, assume type is a subfolder in the ComfyUI directory
         try:
-            output_dir = get_comfyui_subfolder(type)
+            base_dir = convert_relative_comfyui_path_to_full_path(type)
         except Exception as e:
             print(f"Error finding folder {type}. Error: {e}")
             
-    if output_dir is None:
+    if base_dir is None:
         logger.warning(f"Unable to get parent directory for {type}")
         return web.Response(status=400)
     
     subfolder = ''
     if "subfolder" in request.rel_url.query:
         subfolder = request.rel_url.query["subfolder"]
-        output_dir = os.path.join(output_dir, subfolder)
+        base_dir = os.path.join(base_dir, subfolder)
     
     if "filename" in request.rel_url.query:
         filename = request.rel_url.query["filename"]
@@ -182,14 +173,18 @@ def view_image(request):
             return web.Response(status=400)
 
         #filename = os.path.basename(filename)
-        file = os.path.join(output_dir, filename)
+        file = os.path.join(base_dir, filename)
 
+        # Hack for linux/mac/unix
+        if not os.path.isfile(file):
+            file = f"/{file}"
+        
         if os.path.isfile(file):
             if 'preview' in request.rel_url.query:
                 with Image.open(file) as img:
                     preview_info = request.rel_url.query['preview'].split(';')
                     image_format = preview_info[0]
-                    if image_format not in ['webp', 'jpeg'] or 'a' in request.rel_url.query.get('channel', ''):
+                    if image_format not in ['webp', 'jpeg', 'jpg'] or 'a' in request.rel_url.query.get('channel', ''):
                         image_format = 'webp'
 
                     quality = 90
@@ -197,7 +192,7 @@ def view_image(request):
                         quality = int(preview_info[-1])
 
                     buffer = BytesIO()
-                    if image_format in ['jpeg'] or request.rel_url.query.get('channel', '') == 'rgb':
+                    if image_format in ['jpeg', 'jpg'] or request.rel_url.query.get('channel', '') == 'rgb':
                         img = img.convert("RGB")
                     img.save(buffer, format=image_format, quality=quality)
                     buffer.seek(0)
@@ -282,13 +277,13 @@ def load_info(request):
         type = request.rel_url.query["type"]
     file_list = folder_paths.get_filename_list(type)
     
-    output_dir = None
+    base_dir = None
     for item_name in file_list:
-        if "\\" not in item_name.replace("/", "\\"):
+        if "/" not in item_name.replace("\\", "/"):
             file_path = folder_paths.get_full_path(type, item_name)
-            output_dir = os.path.dirname(file_path)
+            base_dir = os.path.dirname(file_path)
             
-    if output_dir is None:
+    if base_dir is None:
         logger.warning(f"Unable to get parent directory for {type}")
         return web.Response(status=400)
     
@@ -299,11 +294,11 @@ def load_info(request):
         if filename[0] == '/' or '..' in filename:
             return web.Response(status=400)
 
-        if output_dir is None:
+        if base_dir is None:
             return web.Response(status=400)
 
         #filename = os.path.basename(filename)
-        file = os.path.join(output_dir, filename)
+        file = os.path.join(base_dir, filename)
 
         if os.path.isfile(file):
             try:
