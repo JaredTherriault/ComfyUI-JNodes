@@ -17,7 +17,7 @@
  * Save Video (minor improvements over VHS Video Combine for adding meta data to gif/webp, file name control)
  * Yet another dynamic prompts implementation with randomization controls
  * Yet another Wildcards implementation
- * Commenting out prompts support (just add # before each line you want to be ignored or encapsulate specific text on a line with ## on either side "## Commented text ##") built into Wildcards node, will be separated next time
+ * Commenting out prompts support (just add # decorator before each line you want to be ignored or encapsulate specific text on a line with ## on either side "## Commented text ##"). Decorator is configurable.
 
    ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/05ae496f-94fa-4fb4-9686-b5f27a996d6b)
  * Prompt Editor (search and replace text in any text, intended for prompts to change certain trigger words, for example an embedding named '3mb3dd1n4' can be changed to 'embedding')
