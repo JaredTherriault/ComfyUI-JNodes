@@ -10,7 +10,7 @@
 # Python Nodes
  * Token count node
 
-![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/4fa9ca93-3891-434f-8cb1-5e0f0e8ed8ee)
+ ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/4fa9ca93-3891-434f-8cb1-5e0f0e8ed8ee)
  * png_info manipulation nodes (add positive prompt, add negative prompt, targeting a1111-style png_info)
  * Synced string literals with external text files
  * Parameter lists (set parameters by text to control variables and nodes in your prompt)
