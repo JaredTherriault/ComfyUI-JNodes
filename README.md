@@ -16,16 +16,19 @@
  * Save Video (minor improvements over VHS Video Combine for adding meta data to gif/webp, file name control)
  * Yet another dynamic prompts implementation with randomization controls
  * Yet another Wildcards implementation
- * Commenting out prompts support (just add # before each line you want to be ignored or encapsulate specific text on a line with ## on either side "## Commented text ##") built into Wildcards node, will be separated next time ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/05ae496f-94fa-4fb4-9686-b5f27a996d6b)
+ * Commenting out prompts support (just add # before each line you want to be ignored or encapsulate specific text on a line with ## on either side "## Commented text ##") built into Wildcards node, will be separated next time
+   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/05ae496f-94fa-4fb4-9686-b5f27a996d6b)
  * Prompt Editor (search and replace text in any text, intended for prompts to change certain trigger words, for example an embedding named '3mb3dd1n4' can be changed to 'embedding')
  * Selector nodes that can be randomized based on seed (e.g. to select a random checkpoint name)
  * Get Temp Directory, Get Output Directory
  
 # Web Features
  * ImageDrawer (image feed, lora picker, image history, etc) with search (crawling png_info) 
- * Lora Picker: a context option in ImageDrawer that displays your loras in a grid something like in a1111 and allows you to search for and copy the lora command in a1111 format (use [Coziness](https://github.com/skfoo/ComfyUI-Coziness) or something similar to support text loras) as well as the trained words. Works best with loras downloaded with [Civit Downloader](https://www.ayamaru.com/more). ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/ede152ac-57db-45ab-a1ab-908dba71d206)
+ * Lora Picker: a context option in ImageDrawer that displays your loras in a grid something like in a1111 and allows you to search for and copy the lora command in a1111 format (use [Coziness](https://github.com/skfoo/ComfyUI-Coziness) or something similar to support text loras) as well as the trained words. Works best with loras downloaded with [Civit Downloader](https://www.ayamaru.com/more).
+   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/ede152ac-57db-45ab-a1ab-908dba71d206)
  * EditAttention improvements (undo/redo support, remove spacing)
- * Status (progress) indicators (percentage in title, custom favicon, progress bar on floating menu) ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/5887a6e3-28e6-4a07-a1a4-5a20faa5f557)
+ * Status (progress) indicators (percentage in title, custom favicon, progress bar on floating menu)
+   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/5887a6e3-28e6-4a07-a1a4-5a20faa5f557)
  * Font control for textareas (see ComfyUI settings > JNodes)
  * Mouse over images in feed and history to see exif/png_info
  
