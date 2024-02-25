@@ -11,6 +11,7 @@ import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 import { createModal } from "../common/modal.js";
 
 let toolTip;
+let toolButtonContainer;
 
 const toolTipOffsetX = 10; // Adjust the offset from the mouse pointer
 const toolTipOffsetY = 10;
@@ -74,6 +75,181 @@ export function updateAndShowTooltip(newTooltipWidget, imageElement) {
 	toolTip.style.opacity = "1";
 }
 
+function getOrCreateToolButton() {
+
+	// Early out if it exists already
+	if (toolButtonContainer) {
+		return toolButtonContainer;
+	}
+
+	let contextMenu;
+
+	function createButtons() {
+		if (!buttonsRow) { return; }
+
+		function createButton(foregroundElement, tooltipText, onClickFunction) {
+			const buttonElement = $el("button", {
+				title: tooltipText,
+				style: {
+					background: 'none',
+					border: 'none',
+					padding: 0,
+				}
+			}, [
+				foregroundElement
+			]);
+
+			buttonElement.addEventListener('click', onClickFunction);
+
+			return buttonElement;
+		}
+
+		function removeOptionsMenu() {
+			if (contextMenu) {
+				const parentElement = contextMenu.parentNode;
+				parentElement.removeChild(contextMenu);
+				contextMenu = null;
+			}
+		}
+
+		function createOptionsMenu() {
+
+			let imageElementToUse = toolButtonContainer.parentElement;
+
+			if (!imageElementToUse) {
+				return;
+			}
+
+			contextMenu = $el("div", {
+				id: "context-menu-image-elements",
+				style: {
+					width: 'fit-content',
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'flex-start',
+					textAlign: 'left',
+					//						position: 'absolute',
+				}
+			});
+
+			if (imageElementToUse?.metadata?.positive_prompt) {
+				contextMenu.appendChild(
+					createButton(
+						$el("label", {
+							textContent: "📋 Copy Positive Prompt",
+							style: {
+								color: 'rgb(250,250,250)',
+							}
+						}),
+						'Copy positive prompt',
+						function (e) {
+							let positive_prompt = imageElementToUse?.metadata?.positive_prompt;
+							if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
+							if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
+							copyToClipboard(positive_prompt);
+							removeOptionsMenu();
+							e.preventDefault();
+						}
+					)
+				);
+			}
+
+			let metadataKeys = Object.keys(imageElementToUse.metadata);
+			metadataKeys.sort();
+			for (const key of metadataKeys) {
+				if (key == "positive_prompt") {
+					continue;
+				}
+
+				let data = imageElementToUse.metadata[key];
+
+				contextMenu.appendChild(
+					createButton(
+						$el("label", {
+							textContent: `📋 Copy ${key}`,
+							style: {
+								color: 'rgb(250,250,250)',
+							}
+						}),
+						`Copy ${key}`,
+						function (e) {
+							if (data.startsWith('"')) { data = data.slice(1); }
+							if (data.endsWith('"')) { data = data.slice(0, data.length - 1); }
+							copyToClipboard(data);
+							removeOptionsMenu();
+							e.preventDefault();
+						}
+					)
+				);
+			}
+
+			return contextMenu;
+		}
+
+		const optionsContainer = $el("div", [
+			createButton(
+				$el("label", {
+					textContent: "⋮",
+					style: {
+						fontSize: '200%',
+						color: 'rgb(250,250,250)',
+					}
+				}),
+				'Options',
+				function (e) {
+					if (contextMenu) {
+						removeOptionsMenu();
+					} else {
+						optionsContainer.appendChild(createOptionsMenu());
+					}
+					e.preventDefault();
+				}
+			)]
+		);
+
+		// Options button
+		buttonsRow.appendChild(optionsContainer);
+	}
+
+	const buttonsRow = $el("div", {
+		style: {
+			width: '100%',
+			display: 'flex',
+			flexDirection: 'row',
+		}
+	});
+
+	toolButtonContainer = createDarkContainer('imageToolsButton');
+
+	toolButtonContainer.style.top = '2%';
+	toolButtonContainer.style.left = '2%';
+	toolButtonContainer.style.visibility = "hidden";
+	toolButtonContainer.appendChild(buttonsRow);
+
+	createButtons();
+
+	return toolButtonContainer;
+}
+
+function addToolButtonToImageElement(imageElementToUse) {
+
+	if (!imageElementToUse) {
+		return;
+	}
+
+	const toolbar = getOrCreateToolButton();
+
+	imageElementToUse.appendChild(toolbar);
+	toolButtonContainer.style.visibility = "visible";
+}
+
+function removeAndHideToolButtonFromImageElement(imageElementToUse) {
+	if (toolButtonContainer.parentElement == imageElementToUse) {
+		document.body.appendChild(toolButtonContainer);
+		toolButtonContainer.style.visibility = "hidden";
+	}
+}
+
 export async function createImageElementFromImgSrc(src) {
 	if (!src) { return; }
 	const href = `/jnodes_view_image?filename=${encodeURIComponent(src.filename)}&type=${src.type}&subfolder=${encodeURIComponent(src.subfolder)}&t=${+new Date()}`;
@@ -92,149 +268,19 @@ export async function createImageElementFromImgSrc(src) {
 			}
 		});
 
-	function createButtonToolbar() {
+	imageElement.mouseOverEvent = function () {
 
-		function createButtons() {
-			if (!buttonsRow) { return; }
+		updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
+		addToolButtonToImageElement(imageElement)
+	}
 
-			let contextMenu;
+	imageElement.mouseOutEvent = function () {
 
-			function createButton(foregroundElement, tooltipText, onClickFunction) {
-				const buttonElement = $el("button", {
-					title: tooltipText,
-					style: {
-						background: 'none',
-						border: 'none',
-						padding: 0,
-					}
-				}, [
-					foregroundElement
-				]);
+		if (!toolTip) { return; }
+		toolTip.style.visibility = "hidden";
+		toolTip.style.opacity = "0";
 
-				buttonElement.addEventListener('click', onClickFunction);
-
-				return buttonElement;
-			}
-
-			function removeOptionsMenu() {
-				if (contextMenu) {
-					const parentElement = contextMenu.parentNode;
-					parentElement.removeChild(contextMenu);
-					contextMenu = null;
-				}
-			}
-
-			function createOptionsMenu() {
-
-				contextMenu = $el("div", {
-					id: "context-menu-image-elements",
-					style: {
-						width: 'fit-content',
-						display: 'flex',
-						flexDirection: 'column',
-						alignItems: 'flex-start',
-						textAlign: 'left',
-						//						position: 'absolute',
-					}
-				});
-
-				if (imageElement?.metadata?.positive_prompt) {
-					contextMenu.appendChild(
-						createButton(
-							$el("label", {
-								textContent: "📋 Copy Positive Prompt",
-								style: {
-									color: 'rgb(250,250,250)',
-								}
-							}),
-							'Copy positive prompt',
-							function(e) {
-								let positive_prompt = imageElement?.metadata?.positive_prompt;
-								if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
-								if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
-								copyToClipboard(positive_prompt);
-								removeOptionsMenu();
-								e.preventDefault();
-							}
-						)
-					);
-				}
-
-				let metadataKeys = Object.keys(imageElement.metadata);
-				metadataKeys.sort();
-				for (const key of metadataKeys) {
-					if (key == "positive_prompt") {
-						continue;
-					}
-
-					let data = imageElement.metadata[key];
-
-					contextMenu.appendChild(
-						createButton(
-							$el("label", {
-								textContent: `📋 Copy ${key}`,
-								style: {
-									color: 'rgb(250,250,250)',
-								}
-							}),
-							`Copy ${key}`,
-							function(e) {
-								if (data.startsWith('"')) { data = data.slice(1); }
-								if (data.endsWith('"')) { data = data.slice(0, data.length - 1); }
-								copyToClipboard(data);
-								removeOptionsMenu();
-								e.preventDefault();
-							}
-						)
-					);
-				}
-
-				return contextMenu;
-			}
-
-			const optionsContainer = $el("div", [
-				createButton(
-					$el("label", {
-						textContent: "⋮",
-						style: {
-							fontSize: '200%',
-							color: 'rgb(250,250,250)',
-						}
-					}),
-					'Options',
-					function(e) {
-						if (contextMenu) {
-							removeOptionsMenu();
-						} else {
-							optionsContainer.appendChild(createOptionsMenu());
-						}
-						e.preventDefault();
-					}
-				)]
-			);
-
-			// Options button
-			buttonsRow.appendChild(optionsContainer);
-		}
-
-		const buttonsRow = $el("div", {
-			style: {
-				width: '100%',
-				display: 'flex',
-				flexDirection: 'row',
-			}
-		});
-
-		const buttonToolbarContainerElement = createDarkContainer('imageToolsButton');
-
-		buttonToolbarContainerElement.style.top = '2%';
-		buttonToolbarContainerElement.style.left = '2%';
-		buttonToolbarContainerElement.style.visibility = "hidden";
-		buttonToolbarContainerElement.appendChild(buttonsRow);
-
-		createButtons();
-
-		return buttonToolbarContainerElement;
+		removeAndHideToolButtonFromImageElement(imageElement);		
 	}
 
 	const aElement = $el("a", {
@@ -289,7 +335,7 @@ export async function createImageElementFromImgSrc(src) {
 			maxHeight: 'calc(var(--max-size) * 1vh)',
 			borderRadius: '4px',
 		},
-		onload: async function() {
+		onload: async function () {
 			if (img.complete) {
 				//console.log('Image has been completely loaded.');
 
@@ -448,31 +494,16 @@ export async function createImageElementFromImgSrc(src) {
 
 						imageElement.tooltipWidget = widget;
 
-						function mouseOverEvent() {
-
-							updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
-							buttonToolbar.style.visibility = "visible";
-						}
-
-						function mouseOutEvent() {
-
-							if (!toolTip) { return; }
-							toolTip.style.visibility = "hidden";
-							toolTip.style.opacity = "0";
-
-							buttonToolbar.style.visibility = "hidden";
-						}
-
 						const lastMousePosition = getLastMousePosition();
 						const elementUnderMouse = document.elementFromPoint(lastMousePosition[0], lastMousePosition[1]);
 						if (elementUnderMouse && elementUnderMouse == img) {
-							mouseOverEvent();
+							imageElement.mouseOverEvent();
 						}
 
 						// Show/Hide tooltip
-						imageElement.addEventListener("mouseover", mouseOverEvent);
+						imageElement.addEventListener("mouseover", imageElement.mouseOverEvent);
 
-						imageElement.addEventListener("mouseout", mouseOutEvent);
+						imageElement.addEventListener("mouseout", imageElement.mouseOutEvent);
 
 						imageElement.onpointermove = e => {
 							if (toolTip?.style?.visibility === "visible") {
@@ -562,8 +593,6 @@ export async function createImageElementFromImgSrc(src) {
 	}
 
 	aElement.appendChild(img);
-	const buttonToolbar = createButtonToolbar(imageElement)
-	imageElement.appendChild(buttonToolbar);
 
 	// Sorting meta information
 	imageElement.filename = src.filename;

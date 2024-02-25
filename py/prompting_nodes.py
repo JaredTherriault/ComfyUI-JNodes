@@ -237,7 +237,7 @@ class ParseWildcards:
     CATEGORY = "wildcards"
     
     def find_match(self, input_text):
-        return re.search(r"__[a-zA-Z0-9-/\\]*__", input_text)
+        return re.search(r"__.*?__", input_text)
     
     def replace_first_occurrence(self, input_string, old_substring, new_substring):
         # Find the index of the first occurrence of old_substring
@@ -309,7 +309,7 @@ class ParseWildcards:
         while re_match is not None:
             group = re_match.group(0)
             wildcard_name = group[2:len(group) - 2]
-            wildcard_filename = wildcard_name.replace("/", "\\") + ".txt"
+            wildcard_filename = wildcard_name.replace("\\", "/") + ".txt"
             
             if wildcard_filename in files:
                 seed_to_use = seed
