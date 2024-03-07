@@ -132,6 +132,7 @@ $el("style", {
 		border-radius: 5px;
 		margin: 5px;
 		margin-top: 0px;
+		height: 90%;
 	}
 	.JNodes-image-drawer-list:empty {
 		display: none;

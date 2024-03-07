@@ -53,7 +53,7 @@ def resolve_file_path(in_file_path):
     if os.path.isabs(in_file_path):
         return in_file_path
     else: # Relative path
-        return get_comfyui_subfolder(in_file_path)
+        return convert_relative_comfyui_path_to_full_path(in_file_path)
 
 def highest_common_folder(path1, path2):
     # Split the paths into their components

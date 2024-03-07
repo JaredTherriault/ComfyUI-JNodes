@@ -118,7 +118,7 @@ function toggleTextAtTheBeginningOfEachSelectedLine(text, textarea) {
 				pasted = false;
 			}
 		} catch (e) {
-			console.error("Error caught during batch commenting:", e);
+			console.error("Error caught during execCommand:", e);
 			pasted = false;
 		}
 

@@ -315,13 +315,13 @@ async def save_text(request):
     try:
         request_data = await read_we_request_content(request.content)
         request_json = json.loads(request_data)
-        if "full_path" in request_json:
-            full_path = request_json["full_path"]
+        if "path" in request_json:
+            path = resolve_file_path(request_json["path"])
         if "text" in request_json:
             text_to_save = request_json["text"]
             
-        if full_path and text_to_save:
-            with open(full_path, 'w', encoding='utf-8') as file:
+        if path and text_to_save:
+            with open(path, 'w', encoding='utf-8') as file:
                 file.write(text_to_save)
     
             return web.json_response({"success": True})
@@ -333,9 +333,9 @@ async def load_text(request):
     try:
         request_data = await read_we_request_content(request.content)
         request_json = json.loads(request_data)
-        if "full_path" in request_json:
-            full_path = request_json["full_path"]
-            with open(full_path, 'r', encoding='utf-8') as file:
+        if "path" in request_json:
+            path = resolve_file_path(request_json["path"])
+            with open(path, 'r', encoding='utf-8') as file:
                 loaded_text = file.read()
     
             return web.json_response({"success": True, "text" : loaded_text})
