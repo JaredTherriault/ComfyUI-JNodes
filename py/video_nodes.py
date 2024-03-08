@@ -14,7 +14,7 @@ import numpy as np
 import comfy.sd
 from comfy.utils import common_upscale
 
-from PIL import Image, ImageSequence
+from PIL import Image, ImageSequence, ImageOps
 from typing import List
     
 
@@ -126,6 +126,7 @@ class LoadVideo:
                 "frame_load_cap": ("INT", {"default": 0, "min": 0, "step": 1}),
                 "skip_first_frames": ("INT", {"default": 0, "min": 0, "step": 1}),
                 "select_every_nth": ("INT", {"default": 1, "min": 1, "step": 1}),
+                "discard_transparency": ("BOOLEAN", {"default": True})
             },
         }
 
@@ -178,7 +179,7 @@ class LoadVideo:
         return images
     
     def load_video_pil(
-            video: str, desired_frame_rate: float, force_size: str, frame_load_cap: int, skip_first_frames: int, select_every_nth: int):
+            video: str, desired_frame_rate: float, force_size: str, frame_load_cap: int, skip_first_frames: int, select_every_nth: int, discard_transparency):
         """
         For any other animated type, such as webp, apng, or mjpeg.
         Can't really use the force_rate param since we're not sampling the video, 
@@ -203,6 +204,10 @@ class LoadVideo:
                 if 'duration' not in image.info:
                     image.load()
                 original_frame_time = image.info.get('duration', None)
+            # Ensure the image does not have an alpha channel
+            if discard_transparency and image.mode == 'RGBA':
+                image = image.convert('RGB')
+            image = ImageOps.exif_transpose(image)
             image = np.array(image, dtype=np.float32) / 255.0
             image = torch.from_numpy(image)[None,]
             images.append(image)
@@ -234,16 +239,16 @@ class LoadVideo:
         return (out_images, VideoInfo.build_video_info(original_fps, original_frame_count, original_fps, len(out_images)))
     
     def load_video_cv(
-            video: str, desired_frame_rate: float, force_size: str, frame_load_cap: int, skip_first_frames: int, select_every_nth: int):
+            video: str, desired_frame_rate: float, force_size: str, frame_load_cap: int, skip_first_frames: int, select_every_nth: int, discard_transparency):
         
-        def retry_with_pil(video, desired_frame_rate, force_size, frame_load_cap, skip_first_frames, select_every_nth):
+        def retry_with_pil(video, desired_frame_rate, force_size, frame_load_cap, skip_first_frames, select_every_nth, discard_transparency):
             logger.info(f"Retrying with pil due to opencv error")
-            return LoadVideo.load_video_pil(video, desired_frame_rate, force_size, frame_load_cap, skip_first_frames, select_every_nth)
+            return LoadVideo.load_video_pil(video, desired_frame_rate, force_size, frame_load_cap, skip_first_frames, select_every_nth, discard_transparency)
         
         try:
             video_cap = cv2.VideoCapture(video)
             if not video_cap.isOpened():
-                return retry_with_pil(video, desired_frame_rate, force_size, frame_load_cap, skip_first_frames, select_every_nth)
+                return retry_with_pil(video, desired_frame_rate, force_size, frame_load_cap, skip_first_frames, select_every_nth, discard_transparency)
             # set video_cap to look at start_index frame
             images = []
             original_frame_count = video_cap.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -299,7 +304,7 @@ class LoadVideo:
         if len(images) > 0:
            images = torch.cat(images, dim=0)
         else:
-            return retry_with_pil(video, desired_frame_rate, force_size, frame_load_cap, skip_first_frames, select_every_nth)
+            return retry_with_pil(video, desired_frame_rate, force_size, frame_load_cap, skip_first_frames, select_every_nth, discard_transparency)
         
         images = LoadVideo.force_size(force_size, width, height, images)
                 

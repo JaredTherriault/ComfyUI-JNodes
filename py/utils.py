@@ -116,3 +116,11 @@ def search_and_replace_from_dict(text, replacement_dict : Dict, consider_special
         return re.sub('|'.join(map(re.escape, replacement_dict.keys())), replace, text).strip()
     else:
         return re.sub('|'.join(r'\b%s\b' % re.escape(s) for s in replacement_dict.keys()), replace, text).strip()
+
+# Check if an object is a PIL Image
+def is_pil_image(obj):
+    return isinstance(obj, Image.Image)
+
+# Check if an object is a PyTorch tensor
+def is_torch_tensor(obj):
+    return isinstance(obj, torch.Tensor)
