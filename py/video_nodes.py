@@ -142,12 +142,6 @@ class LoadVideo:
             raise RuntimeError(f"Failed to load video: {kwargs['video']}\ndue to: {e.__str__()}")
 
     @classmethod
-    def IS_CHANGED(s, video, **kwargs):
-        if video is None: # If "video" is a pin
-            return ''
-        return calculate_file_hash(video.strip("\""))
-
-    @classmethod
     def VALIDATE_INPUTS(s, video, **kwargs):
         if video is not None and not os.path.isfile(video.strip("\"")):
             return "Invalid video file: {}".format(video)
@@ -358,13 +352,6 @@ class UploadVideo:
     
     def upload_video(self, video, upload_to_directory):
         return (UploadVideo.get_full_path(video, upload_to_directory),)
-
-    @classmethod
-    def IS_CHANGED(s, video, upload_to_directory, **kwargs):
-        if video is None: # If "video" is a pin
-            print(f'running IS_CHANGED, video is None')
-            return ''
-        return calculate_file_hash(UploadVideo.get_full_path(video, upload_to_directory))
 
     @classmethod
     def VALIDATE_INPUTS(s, video, upload_to_directory, **kwargs):

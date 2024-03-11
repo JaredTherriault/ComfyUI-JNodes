@@ -103,7 +103,7 @@ function videoUpload(node, inputName, inputData, app) {
 		if (e.dataTransfer && e.dataTransfer.items) {
 			// Check if any of the dragged files are images or videos
 			for (const file of e.dataTransfer.items) {
-				if (acceptableFileTypes.includes(file.type)) {
+				if (file.kind == "file") {
 					return true;
 				}
 			}
