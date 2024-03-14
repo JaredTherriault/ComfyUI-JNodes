@@ -10,16 +10,31 @@ app.registerExtension({
 		if (nodeData.name === "JNodes_SyncedStringLiteral") {
 
 			async function saveText(path, text) {
+				// Save backup
+				{
+					// Load the previous file (because I don't want to write a new api hook to copy)
+					const resp = await api.fetchApi(
+						'/jnodes_load_text', { method: "POST", body: JSON.stringify({ "path": path }) });
+					const asJson = await resp?.json();
+
+					// Try to save a backup as .txt.bak but don't worry about verifying it
+					if (asJson?.text) { 
+						const resp = await api.fetchApi(
+							'/jnodes_save_text', { method: "POST", body: JSON.stringify({ "path": path + ".bak", "text": asJson.text }) });
+					}
+				}
+
+				// Then save the new text
 				const resp = await api.fetchApi(
 					'/jnodes_save_text', { method: "POST", body: JSON.stringify({ "path": path, "text": text }) });
-				const asJson = await resp.json();
+				const asJson = await resp?.json();
 				return asJson?.success;
 			}
 
 			async function loadText(path, textWidget) {
 				const resp = await api.fetchApi(
 					'/jnodes_load_text', { method: "POST", body: JSON.stringify({ "path": path }) });
-				const asJson = await resp.json();
+				const asJson = await resp?.json();
 
 				if (asJson?.success && textWidget?.element) {
 
