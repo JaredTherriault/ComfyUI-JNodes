@@ -26,7 +26,7 @@
  
 # Web Features
  * ImageDrawer (image feed, lora picker, image history, etc) with search (crawling png_info) 
- * Lora Picker: a context option in ImageDrawer that displays your loras in a grid something like in a1111 and allows you to search for and copy the lora command in a1111 format (use [Coziness](https://github.com/skfoo/ComfyUI-Coziness) or something similar to support text loras) as well as the trained words. Works best with loras downloaded with [Civit Downloader](https://www.ayamaru.com/more).
+ * Lora Picker: a context option in ImageDrawer that displays your loras in a grid something like in a1111 and allows you to search for and copy the lora command in a1111 format (use [Coziness](https://github.com/skfoo/ComfyUI-Coziness) or something similar to support text loras) as well as the trained words. Click tag words to automatically search for similar local loras. Works best with loras downloaded with [Civit Downloader](https://www.ayamaru.com/more).
 
    ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/141ea856-e9b7-4ece-825d-be0aa1ceedf0)
  * EditAttention improvements (undo/redo support, remove spacing)
