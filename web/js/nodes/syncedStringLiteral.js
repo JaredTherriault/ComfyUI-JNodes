@@ -18,7 +18,7 @@ app.registerExtension({
 					const asJson = await resp?.json();
 
 					// Try to save a backup as .txt.bak but don't worry about verifying it
-					if (asJson?.text) { 
+					if (asJson?.text) {
 						const resp = await api.fetchApi(
 							'/jnodes_save_text', { method: "POST", body: JSON.stringify({ "path": path + ".bak", "text": asJson.text }) });
 					}
@@ -31,7 +31,7 @@ app.registerExtension({
 				return asJson?.success;
 			}
 
-			async function loadText(path, textWidget) {
+			async function loadText(path, textWidget, bUserRequested) {
 				const resp = await api.fetchApi(
 					'/jnodes_load_text', { method: "POST", body: JSON.stringify({ "path": path }) });
 				const asJson = await resp?.json();
@@ -41,27 +41,33 @@ app.registerExtension({
 					// Cache scroll position
 					const scrollPosition = textWidget.element.scrollTop;
 
-					// Set the selection range to cover the entire content of the textarea
-					textWidget.element.setSelectionRange(0, textWidget.element.textLength);
+					// Only support undo when the user clicks the button manually, not during auto-load
+					if (bUserRequested) {
 
-					// Focus the textarea to make sure execCommand is working with the right selection
-					textWidget.element.focus();
+						// Set the selection range to cover the entire content of the textarea
+						textWidget.element.setSelectionRange(0, textWidget.element.textLength);
 
-					// Using execCommand to support undo, but since it's officially 
-					// 'deprecated' we need a backup solution, but it won't support undo :(
-					let pasted = true;
-					try {
-						if (!document.execCommand("insertText", false, asJson.text)) {
+						// Focus the textarea to make sure execCommand is working with the right selection
+						textWidget.element.focus();
+
+						// Using execCommand to support undo, but since it's officially 
+						// 'deprecated' we need a backup solution, but it won't support undo :(
+						let pasted = true;
+						try {
+							if (!document.execCommand("insertText", false, asJson.text)) {
+								pasted = false;
+							}
+						} catch (e) {
+							console.error("Error caught during execCommand:", e);
 							pasted = false;
 						}
-					} catch (e) {
-						console.error("Error caught during execCommand:", e);
-						pasted = false;
-					}
 
-					if (!pasted) {
-						console.error(
-							"execCommand unsuccessful; not supported. Setting text manually, no undo support.");
+						if (!pasted) {
+							console.error(
+								"execCommand unsuccessful; not supported. Setting text manually, no undo support.");
+							textWidget.value = asJson.text;
+						}
+					} else {
 						textWidget.value = asJson.text;
 					}
 
@@ -88,7 +94,7 @@ app.registerExtension({
 				});
 
 				this.loadButton = this.addWidget("button", "load", null, () => {
-					if (loadText(this.pathWidget.value, this.textWidget)) {
+					if (loadText(this.pathWidget.value, this.textWidget, true)) {
 						this.loadButton.name = "loaded!";
 						this.justLoaded = true;
 					}
@@ -114,7 +120,7 @@ app.registerExtension({
 
 			// Called after initial deserialization
 			nodeType.prototype.onConfigure = function () {
-				loadText(this.pathWidget?.value, this.textWidget);
+				loadText(this.pathWidget?.value, this.textWidget, false);
 			};
 
 			nodeType.prototype.onSerialize = function (o) {
