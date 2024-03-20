@@ -96,6 +96,7 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
                     print(f"Error loading text, will append familiar file name. Error: {e}")
             familiars.append(containing_directory + "/" + file_name if containing_directory is not None else file_name)
 
+    familiars.sort()
     return familiars
 
 def list_files_and_folders(directory):
