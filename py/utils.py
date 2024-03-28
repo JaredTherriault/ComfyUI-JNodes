@@ -1,5 +1,6 @@
 import os
 
+import json
 import re
 
 import folder_paths
@@ -23,14 +24,26 @@ any = AnyType("*")
 
     
 VIDEO_FORMATS_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "video_formats")
-VIDEO_FORMATS = [x[:-5] for x in os.listdir(VIDEO_FORMATS_DIRECTORY)]
+VIDEO_FORMATS = []
 
-JNODES_IMAGE_FORMAT_TYPES = ["jpg", "png", "gif", "webp", "apng", "mjpeg"] + VIDEO_FORMATS
+# Iterate over each file in the directory
+for filename in os.listdir(VIDEO_FORMATS_DIRECTORY):
+    filepath = os.path.join(VIDEO_FORMATS_DIRECTORY, filename)
+    with open(filepath, 'r') as file:
+        # Parse the JSON content
+        data = json.load(file)
+        # Get the value of the "extension" key
+        extension = data.get("extension")
+        # Add the extension value to the set
+        if extension not in VIDEO_FORMATS:
+            VIDEO_FORMATS.append(extension)
+
+JNODES_IMAGE_FORMAT_TYPES = ["jpg", "jpeg", "jfif", "png", "gif", "webp", "apng", "mjpeg"] + VIDEO_FORMATS
 JNODES_VAE_LIST = ["Baked VAE"] + folder_paths.get_filename_list("vae")
 
 ACCEPTED_VIDEO_EXTENSIONS = ['webm', 'mp4', 'mkv']
 ACCEPTED_ANIMATED_IMAGE_EXTENSIONS = ['gif', 'webp', 'apng', 'mjpeg']
-ACCEPTED_STILL_IMAGE_EXTENSIONS = ['gif', 'webp', 'png', 'jpg', 'jpeg']
+ACCEPTED_STILL_IMAGE_EXTENSIONS = ['gif', 'webp', 'png', 'jpg', 'jpeg', 'jfif']
 
 
 @staticmethod
@@ -89,16 +102,16 @@ def get_file_extension_without_dot(filename):
     return extension[1:]
 
 def is_webp(filename):
-     return get_extension(filename) == "webp"
+     return get_file_extension_without_dot(filename).lower() == "webp"
 
 def is_gif(filename):
-    return get_extension(filename) == "gif"
+    return get_file_extension_without_dot(filename).lower() == "gif"
 
 def is_video(filename):
-    return get_extension(filename) in ACCEPTED_VIDEO_EXTENSIONS
+    return get_file_extension_without_dot(filename).lower() in ACCEPTED_VIDEO_EXTENSIONS
 
 def is_acceptable_image_or_video(filename):
-    return get_file_extension_without_dot(filename) in JNODES_IMAGE_FORMAT_TYPES
+    return get_file_extension_without_dot(filename).lower() in JNODES_IMAGE_FORMAT_TYPES
 
 
 def pil2tensor(image: Union[Image.Image, List[Image.Image]]) -> torch.Tensor:
