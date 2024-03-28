@@ -11,6 +11,7 @@ import server
 
 from PIL import Image
 
+import cv2
 import json
 
 async def read_we_request_content(reader):
@@ -122,23 +123,29 @@ def list_files_and_folders(directory):
                 fps = -1
                 is_video_item = is_video(item)
 
-                if is_video_item:
-                    # Open the video file without loading it
-                    cap = cv2.VideoCapture(video_path)
+                metadata_read = True
 
-                    # Check if the video opened successfully
-                    if cap.isOpened():
-                        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        size = [width, height]
+                try:
+                    if is_video_item:
+                        # Open the video file without loading it
+                        cap = cv2.VideoCapture(file_path)
 
-                        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                        fps = cap.get(cv2.CAP_PROP_FPS)
-                else:
-                    with Image.open(file_path) as img:
-                        # it's not possible to get frame_count and fps from an image wihout loading it, 
-                        # so just get size
-                        size = img.size
+                        # Check if the video opened successfully
+                        if cap.isOpened():
+                            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                            size = [width, height]
+
+                            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                            fps = cap.get(cv2.CAP_PROP_FPS)
+                    else:
+                        with Image.open(file_path) as img:
+                            # it's not possible to get frame_count and fps from an image wihout loading it, 
+                            # so just get size
+                            size = img.size
+                except Exception as e:
+                    metadata_read = False
+                    logger.warning(f"Unable to get meta for '{file_path}': {e}")
 
                 # Get time of creation since the last epoch, in seconds
                 file_age = os.path.getctime(file_path)
@@ -147,7 +154,7 @@ def list_files_and_folders(directory):
                 files.append(
                     {
                         'item': item, 'file_age': file_age, 'format': format, 'size': size,
-                        'is_video': is_video_item,
+                        'is_video': is_video_item, 'metadata_read': metadata_read,
                         'frame_count': frame_count, 'fps': fps, 
                         'duration_in_seconds': frame_count / fps if frame_count > 1 and fps > 1 else -1
                     }
