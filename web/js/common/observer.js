@@ -5,7 +5,7 @@
 export class ObserverOptions {
 	autoPlayVideos = true;
 	playMuted = true;
-	playbackThreshold = 0.25;
+	playbackThreshold = 0.15;
 }
 
 let observerOptions = new ObserverOptions();
@@ -63,7 +63,18 @@ const autoplayObserver = new IntersectionObserver((entries) => {
 		}
 		// Check if the video is intersecting with the viewport
 		if (entry.isIntersecting) {
+			if (!element.src) {
+				element.src = element.dataSrc;
 
+				// Reset explicit height and width to allow algorithmic dimensions
+				element.style.height = '';
+				element.style.width = '';
+
+				if (element.tagName !== 'VIDEO') {
+					unobserveForAutoplay(element);
+					return;
+				}
+			}
 			if (observerOptions.autoPlayVideos) {
 				await tryPlayVideo(element);
 			}
