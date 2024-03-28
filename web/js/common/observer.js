@@ -13,11 +13,7 @@ let observerOptions = new ObserverOptions();
 const observedElements = new Set();
 
 async function tryPlayVideo(element) {
-	// Adjust the method based on the type of animated image format
-	try {
-		// Start the GIF animation
-		element.start();
-	} catch {
+	if (element.paused) {
 		// Play the animation (e.g., for APNG, WebP, or video files)
 		try {
 			await element.play();
@@ -27,10 +23,7 @@ async function tryPlayVideo(element) {
 }
 
 function tryStopVideo(element) {
-	try {
-		// Stop the GIF animation
-		element.stop();
-	} catch {
+	if (!element.paused) {
 		// Pause the animation (e.g., for APNG, WebP, or video files)
 		try {
 			element.pause();
