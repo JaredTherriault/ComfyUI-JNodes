@@ -40,7 +40,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
     for item_name in names:
 
         #logger.info(f"item_name: {item_name}")
-        file_name_no_ext = os.path.splitext(item_name)[0]
+        file_name_no_ext, file_ext = os.path.splitext(item_name)
         #logger.info(f"file_name_no_ext: {file_name_no_ext}")
         file_path = folder_paths.get_full_path(type, item_name)
         #logger.info(f"file_path: {file_path}")
@@ -71,6 +71,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
             "containing_directory": containing_directory, 
             "full_name": item_name, 
             "file_age": file_age, 
+            "file_ext": file_ext,
             "familiar_images": familiar_images, 
             "familiar_infos": familiar_infos
         }
@@ -115,8 +116,9 @@ def list_files_and_folders(directory):
             if os.path.isfile(file_path) and is_acceptable_image_or_video(item):
                  # Get time of creation since the last epoch, in seconds
                  file_age = os.path.getctime(file_path)
+                 format = f"{'video' if is_video(item) else 'image'}/{get_file_extension_without_dot(item)}"
                  
-                 files.append({'item': item, 'file_age': file_age})
+                 files.append({'item': item, 'file_age': file_age, 'format': format})
                  
             elif os.path.isdir(os.path.join(full_directory, item)):
                 recurse(os.path.join(folder, item))
@@ -170,7 +172,8 @@ def view_image(request):
         filename = request.rel_url.query["filename"]
 
         # validation for security: prevent accessing arbitrary path
-        if filename[0] == '/' or '..' in filename:
+        if filename[0] == '/' or filename.startswith('..') or filename.startswith('./'):
+            logger.warning(f"Attempting to access an arbitrary path, aborting. filename: {filename}")
             return web.Response(status=400)
 
         #filename = os.path.basename(filename)
