@@ -149,11 +149,11 @@ def list_files_and_folders(directory):
 
                 # Get time of creation since the last epoch, in seconds
                 file_age = os.path.getctime(file_path)
-                format = f"{'video' if is_video_item else 'image'}/{get_file_extension_without_dot(item)}"
+                file_format = f"{'video' if is_video_item else 'image'}/{get_file_extension_without_dot(item)}"
                 
                 files.append(
                     {
-                        'item': item, 'file_age': file_age, 'format': format, 'size': size,
+                        'item': item, 'file_age': file_age, 'format': file_format, 'size': size,
                         'is_video': is_video_item, 'metadata_read': metadata_read,
                         'frame_count': frame_count, 'fps': fps, 
                         'duration_in_seconds': frame_count / fps if frame_count > 1 and fps > 1 else -1
