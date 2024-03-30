@@ -566,7 +566,7 @@ export async function createImageElementFromFileInfo(fileInfo, videoOptions = ne
 		img.style.height = fileInfo.file.dimensions[0];
 		img.style.width = fileInfo.file.dimensions[1];
 	} else {
-		//If we can't properly placehold, load it now instead of later
+		//If we can't properly placehold, load the whole image now instead of later
 		img.src = img.dataSrc;
 	}
 
