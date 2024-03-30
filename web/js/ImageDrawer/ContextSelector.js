@@ -5,7 +5,7 @@ import * as Sorting from "./Sorting.js";
 import {
 	getImageListChildren, getImageListScrollLevel, getSearchText,
 	focusAndSelectSearchText, getColumnCount, getDrawerSize
-} from "./imageDrawer.js"
+} from "./ImageDrawer.js"
 
 let ContextSelector;
 

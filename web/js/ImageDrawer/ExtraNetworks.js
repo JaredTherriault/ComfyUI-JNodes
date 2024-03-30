@@ -3,7 +3,7 @@ import { app } from "/scripts/app.js";
 import { $el } from "/scripts/ui.js";
 import { copyToClipboard, createDarkContainer, getDarkColor } from "../common/Utilities.js"
 
-import { setSearchTextAndExecute } from "./imageDrawer.js";
+import { setSearchTextAndExecute } from "./ImageDrawer.js";
 
 const NoImagePlaceholder = new URL(`../assets/NoImage.png`, import.meta.url);
 

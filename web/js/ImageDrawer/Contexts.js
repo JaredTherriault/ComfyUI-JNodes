@@ -9,7 +9,7 @@ import {
 	getImageListChildren, replaceImageListChildren, clearImageListChildren,
 	addElementToImageList, setImageListScrollLevel, setSearchTextAndExecute,
 	clearAndHandleSearch, setColumnCount, setDrawerSize, setContextToolbarWidget
-} from "./imageDrawer.js"
+} from "./ImageDrawer.js"
 
 import { VideoOptions } from "../common/VideoOptions.js"
 import { decodeReadableStream } from "../common/Utilities.js"
