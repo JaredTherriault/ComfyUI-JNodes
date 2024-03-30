@@ -62,7 +62,6 @@ export class ConfigSetting {
 }
 
 
-
 function createExpandableSettingsArea() {
 
     const nameWidget = $el("label", {

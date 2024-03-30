@@ -563,8 +563,8 @@ export async function createImageElementFromFileInfo(fileInfo, videoOptions = ne
 	});
 
 	if (fileInfo.file?.metadata_read) {
-		img.style.height = fileInfo.file.size[0];
-		img.style.width = fileInfo.file.size[1];
+		img.style.height = fileInfo.file.dimensions[0];
+		img.style.width = fileInfo.file.dimensions[1];
 	} else {
 		//If we can't properly placehold, load it now instead of later
 		img.src = img.dataSrc;
@@ -646,6 +646,7 @@ export async function createImageElementFromFileInfo(fileInfo, videoOptions = ne
 	// Sorting meta information
 	imageElement.filename = fileInfo.filename;
 	imageElement.file_age = fileInfo.file?.file_age || getCurrentSecondsFromEpoch(); // todo: fix for feed images
+	imageElement.file_size = fileInfo.file?.file_size || -1;
 	imageElement.searchTerms = href; // Search terms to start with, onload will add more
 
 	imageElement.draggable = true;

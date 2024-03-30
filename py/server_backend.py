@@ -117,8 +117,9 @@ def list_files_and_folders(directory):
         for item in items:
             file_path = os.path.join(full_directory, item)
             if os.path.isfile(file_path) and is_acceptable_image_or_video(item):
+                file_size = os.path.getsize(file_path)
                 # Image / Video Size
-                size = [0,0]
+                dimensions = [0,0]
                 frame_count = -1
                 fps = -1
                 is_video_item = is_video(item)
@@ -134,15 +135,15 @@ def list_files_and_folders(directory):
                         if cap.isOpened():
                             width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                            size = [width, height]
+                            dimensions = [width, height]
 
                             frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                             fps = cap.get(cv2.CAP_PROP_FPS)
                     else:
                         with Image.open(file_path) as img:
                             # it's not possible to get frame_count and fps from an image wihout loading it, 
-                            # so just get size
-                            size = img.size
+                            # so just get dimensions
+                            dimensions = img.size
                 except Exception as e:
                     metadata_read = False
                     logger.warning(f"Unable to get meta for '{file_path}': {e}")
@@ -153,7 +154,7 @@ def list_files_and_folders(directory):
                 
                 files.append(
                     {
-                        'item': item, 'file_age': file_age, 'format': file_format, 'size': size,
+                        'item': item, 'file_age': file_age, 'format': file_format, 'file_size': file_size, 'dimensions': dimensions,
                         'is_video': is_video_item, 'metadata_read': metadata_read,
                         'frame_count': frame_count, 'fps': fps, 
                         'duration_in_seconds': frame_count / fps if frame_count > 1 and fps > 1 else -1
