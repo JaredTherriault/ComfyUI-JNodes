@@ -1,7 +1,7 @@
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
-import { getValue, setValue, addJNodesSetting } from "./common/utils.js"
+import { ConfigSetting, addJNodesSetting } from "./common/SettingsManager.js"
 
 // Simple script that adds a custom favicon bason on whether the queue is running
 
@@ -35,14 +35,13 @@ app.registerExtension({
 
 		const featureName = "StatusIndicators.CustomFavicon.";
 
-		// localStorage accessors
-		const getVal = (n, d) => {
-			return getValue(featureName + n, d);
-		};
-
-		const saveVal = (n, v) => {
-			setValue(featureName + n, v);
-		};
+		class CustomConfigSetting extends ConfigSetting {
+			constructor(settingName, defaultValue) {
+				super(featureName + settingName, defaultValue);
+			}
+		}
+		
+		let setting_bEnabled = new CustomConfigSetting("bEnabled", false);
 
 		const labelWidget = $el("label", {
 			textContent: "Use Custom Favicon (requires page reload):",
@@ -50,9 +49,9 @@ app.registerExtension({
 
 		const settingWidget = $el("input", {
 			type: "checkbox",
-			checked: getVal("Enabled", false),
+			checked: setting_bEnabled.value,
 			onchange: (e) => {
-				saveVal("Enabled", e.target.checked);
+				setting_bEnabled.value = e.target.checked;
 			},
 		});
 
@@ -63,7 +62,7 @@ app.registerExtension({
 			"'favicon-active.ico' when it is runnning";
 		addJNodesSetting(labelWidget, settingWidget, tooltip);
 
-		if (getVal("Enabled", false)) {
+		if (setting_bEnabled.value) {
 			api.addEventListener("status", ({ detail }) => {
 				// Set favicon on status change
 				setCustomFavicon(detail);

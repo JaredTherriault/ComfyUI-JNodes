@@ -1,9 +1,5 @@
 import { app } from "../../../scripts/app.js";
 
-import {
-    getLastMousePosition,
-} from "./common/events.js";
-
 app.registerExtension({
     name: "JNodes.ShiftToDragFaster",
     init() {

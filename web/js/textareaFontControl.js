@@ -1,15 +1,15 @@
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
-import { getValue, setValue, addJNodesSetting } from "./common/utils.js"
+import { ConfigSetting, addJNodesSetting } from "./common/SettingsManager.js"
 
-// localStorage accessors
-const getVal = (n, d) => {
-	return getValue("Customization." + n, d);
-};
+class CustomizationConfigSetting extends ConfigSetting {
+	constructor(settingName, defaultValue) {
+        super("Customization." + settingName, defaultValue);
+    }
+}
 
-const saveVal = (n, v) => {
-	setValue("Customization." + n, v);
-};
+export let setting_FontSize = new CustomizationConfigSetting("MultilineText.Font.Size", 80);
+export let setting_FontFamily = new CustomizationConfigSetting("MultilineText.Font.Family", 'monospace');
 
 function setTextAreaFontSize(textarea, size) {
 	textarea.style.fontSize = size.toString() + "%";
@@ -20,8 +20,8 @@ function setTextAreaFontFamily(textarea, fontFamily) {
 }
 
 function setFontOnGivenTextArea(textarea) {
-	setTextAreaFontSize(textarea, getVal("MultilineText.Font.Size", 12));
-	setTextAreaFontFamily(textarea, getVal("MultilineText.Font.Family", 'monospace'));
+	setTextAreaFontSize(textarea,setting_FontSize.value);
+	setTextAreaFontFamily(textarea, setting_FontFamily.value);
 }
 
 function setFontOnAllTextAreas() {
@@ -59,7 +59,7 @@ app.registerExtension({
 				"select",
 				{
 					oninput: (e) => {
-						saveVal("MultilineText.Font.Family", e.target.value);
+						setting_FontFamily.value = e.target.value;
 						setFontOnAllTextAreas();
 					},
 				},
@@ -67,7 +67,7 @@ app.registerExtension({
 					$el("option", {
 						value: m,
 						textContent: m,
-						selected: getVal("MultilineText.Font.Family", 'monospace') === m,
+						selected: setting_FontFamily.value === m,
 					})
 				)
 			);
@@ -86,11 +86,11 @@ app.registerExtension({
 			const settingWidget = $el("input", {
 				type: "number",
 				min: "1",
-				value: getVal("MultilineText.Font.Size", 80),
+				value: setting_FontSize.value,
 				oninput: (e) => {
 					let value = parseFloat(e.target.value);
 					if (value <= 1.0) { value = 1.0; }
-					saveVal("MultilineText.Font.Size", value);
+					setting_FontSize.value = value;
 					setFontOnAllTextAreas();
 				},
 			});

@@ -1,6 +1,6 @@
 import { $el } from "/scripts/ui.js";
 
-import { saveVal, getVal, getImageListChildren, replaceImageListChildren } from "./imageDrawer.js";
+import { getImageListChildren, replaceImageListChildren } from "./imageDrawer.js";
 
 let SortingWidget;
 let SortTypes;

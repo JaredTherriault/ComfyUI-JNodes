@@ -1,15 +1,7 @@
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
-import { getValue, setValue, addJNodesSetting, clamp, getKeyList } from "./common/utils.js"
-
-// localStorage accessors
-const getVal = (n, d) => {
-	return getValue("MultilineText.BatchComment." + n, d);
-}
-
-const saveVal = (n, v) => {
-	setValue("MultilineText.BatchComment." + n, v);
-}
+import { ConfigSetting, addJNodesSetting } from "./common/SettingsManager.js"
+import { clamp, getKeyList } from "./common/Utilities.js"
 
 function getModifierKeyCombos() {
 	return [
@@ -17,6 +9,16 @@ function getModifierKeyCombos() {
 		'ctrl/meta + alt +',
 	];
 }
+
+class CustomConfigSetting extends ConfigSetting {
+	constructor(settingName, defaultValue) {
+		super("MultilineText.BatchComment." + settingName, defaultValue);
+	}
+}
+
+let setting_ModifierKeyCombo = new CustomConfigSetting("ModifierKeyCombo", getModifierKeyCombos()[0]);
+let setting_KeyCode = new CustomConfigSetting("KeyCode", 'Slash');
+let setting_Token = new CustomConfigSetting("Token", '#');
 
 function getLineStartIndex(textarea, cursorPosition) {
 	const text = textarea.value;
@@ -150,7 +152,7 @@ app.registerExtension({
 				"select",
 				{
 					oninput: (e) => {
-						saveVal("ModifierKeyCombo", e.target.value);
+						setting_ModifierKeyCombo.value = e.target.value;
 						setFontOnAllTextAreas();
 					},
 				},
@@ -158,7 +160,7 @@ app.registerExtension({
 					$el("option", {
 						value: m,
 						textContent: m,
-						selected: getVal("ModifierKeyCombo", getModifierKeyCombos()[0]) === m,
+						selected: setting_ModifierKeyCombo.value === m,
 					})
 				)
 			);
@@ -167,7 +169,7 @@ app.registerExtension({
 				"select",
 				{
 					oninput: (e) => {
-						saveVal("KeyCode", e.target.value);
+						setting_KeyCode.value = e.target.value;
 						setFontOnAllTextAreas();
 					},
 				},
@@ -175,7 +177,7 @@ app.registerExtension({
 					$el("option", {
 						value: m,
 						textContent: m,
-						selected: getVal("KeyCode", 'Slash') === m,
+						selected: setting_KeyCode.value === m,
 					})
 				)
 			);
@@ -197,8 +199,8 @@ app.registerExtension({
 			});
 			
 			const settingWidget = $el("input", {
-				value:  getVal("Token", '#'),
-				onchange: function () { saveVal("Token", settingWidget.value ); }
+				value: setting_Token.value,
+				onchange: function () { setting_Token.value = settingWidget.value; }
 			});
 			
 			const tooltip = 
@@ -208,17 +210,17 @@ app.registerExtension({
 
 		window.addEventListener("keydown", function(event) {
 			const { ctrlKey, metaKey, shiftKey, altKey, code } = event;
-			const bUseShiftInCombo = getVal("ModifierKeyCombo", getModifierKeyCombos()[0]) === getModifierKeyCombos()[0];
+			const bUseShiftInCombo = setting_ModifierKeyCombo.value === getModifierKeyCombos()[0];
 			const bModifiersPressed =
 				(metaKey || ctrlKey) &&
 				((bUseShiftInCombo && shiftKey) || (!bUseShiftInCombo && altKey));
 
 			if (bModifiersPressed &&
-				event.code == getVal("KeyCode", 'Slash')) {
+				event.code == setting_KeyCode.value) {
 				const textarea = document.activeElement;
 
 				if (textarea.tagName === 'TEXTAREA') {
-					toggleTextAtTheBeginningOfEachSelectedLine(getVal("Token", '#'), textarea);
+					toggleTextAtTheBeginningOfEachSelectedLine(setting_Token.value, textarea);
 				}
 			}
 		}, true);

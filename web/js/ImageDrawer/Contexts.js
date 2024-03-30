@@ -11,7 +11,7 @@ import {
 	clearAndHandleSearch, setColumnCount, setDrawerSize, setContextToolbarWidget
 } from "./imageDrawer.js"
 
-import { decodeReadableStream, waitForImageCompletion } from "../common/utils.js"
+import { decodeReadableStream, VideoOptions } from "../common/Utilities.js"
 
 let Contexts;
 
@@ -24,7 +24,7 @@ export function initializeContexts() {
 			output: new ContextOutput(),
 			lora: new ContextLora(),
 			embeddings: new ContextEmbeddings(),
-			savedPrompts: new ContextSavedPrompts(),
+			//savedPrompts: new ContextSavedPrompts(),
 			//			metadata: new ContextMetadataReader(),
 			//			compare: new ContextCompare(),
 		};
@@ -56,12 +56,12 @@ export function getContextObjectFromName(contextName) {
 }
 
 export class ImageDrawerContextCache {
-	constructor(scrollLevel, searchBarText, columnCount, drawerSize, childElements, sortType) {
+	constructor(scrollLevel, searchBarText, columnCount, drawerSize, imageListElements, sortType) {
 		this.scrollLevel = scrollLevel;
 		this.searchBarText = searchBarText;
 		this.columnCount = columnCount;
 		this.drawerSize = drawerSize;
-		this.childElements = childElements;
+		this.imageListElements = imageListElements;
 		this.sortType = sortType;
 	}
 };
@@ -86,8 +86,8 @@ class ImageDrawerContext {
 	}
 
 	reverseItemsInCache() {
-		if (this.cache && this.cache.childElements.length > 1) {
-			this.cache.childElements.reverse();
+		if (this.cache && this.cache.imageListElements.length > 1) {
+			this.cache.imageListElements.reverse();
 		}
 	}
 
@@ -116,9 +116,9 @@ class ImageDrawerContext {
 
 	async checkAndRestoreContextCache() {
 		if (this.hasCache()) {
-			if (this.cache.childElements.length > 0) {
+			if (this.cache.imageListElements.length > 0) {
 				// Replace children
-				replaceImageListChildren(this.cache.childElements);
+				replaceImageListChildren(this.cache.imageListElements);
 				// Execute Search
 				setSearchTextAndExecute(this.cache.searchBarText);
 				// Drawer column count and size
@@ -257,12 +257,14 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		super(name, description);
 		this.folderName = folderName;
 		this.rootFolderDisplayName = '/root';
+		this.bAutoplayVideos = false;
 		this.bIncludeSubfolders = false;
 		this.fileMap = null;
 		this.subfolderSelector = null;
 	}
 
-	async loadFolder() {
+	// Get the image paths in the folder or directory specified at this.folderName as well as all subfolders then load the images in a given subfolder
+	async fetchFolderItems(path_to_load_images_from = '') {
 		clearImageListChildren();
 		await addElementToImageList($el("label", { textContent: `Loading ${this.folderName} folder...` }));
 		const allItems = await api.fetchApi(`/jnodes_comfyui_subfolder_items?subfolder=${this.folderName}`);
@@ -273,6 +275,8 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		this.fileMap = JSON.parse(decodedString);
 
 		// Fill out combo box options based on folder paths
+		const lastSelectedValue = this.subfolderSelector.value; // Cache last selection
+		this.subfolderSelector.innerHTML = ''; // Clear combo box
 		for (let folderIndex = 0; folderIndex < this.fileMap.length; folderIndex++) {
 			const bIsRoot = folderIndex == 0;
 			const result = this.fileMap[folderIndex];
@@ -285,8 +289,18 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 			this.subfolderSelector.appendChild(option);
 		}
 
-		// Load root folder (even if there are no images within)
-		await this.loadImagesInFolder('');
+		// Restore last selected value if it exists in the new combo options
+		for (let option of this.subfolderSelector.options) {
+			// Check if the option's value is equal to the specific value
+			if (option.value === lastSelectedValue) {
+				// If found, set the flag to true and break out of the loop
+				this.subfolderSelector.value = lastSelectedValue;
+				break;
+			}
+		}
+
+		// Load root folder if no path is specified (even if there are no images within)
+		await this.loadImagesInFolder(path_to_load_images_from);
 	}
 
 	findFileMapByFolderPath(folder_path) {
@@ -315,48 +329,117 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 	}
 
 	async loadImagesInFolder(folder_path) {
-
 		if (!this.fileMap) { return; }
 
-		const bIsRoot = folder_path == '';
-
-		clearImageListChildren(); 
-
+		const bIsRoot = folder_path === '';
+		clearImageListChildren();
 		const values = Object.values(this.fileMap);
-		for (let valueIndex = 0; valueIndex < values.length; valueIndex++) {
 
-			const value = values[valueIndex];
+		const bUseBatching = false;
 
+		let videoOptions = new VideoOptions();
+		videoOptions.autoplay = false;
+		videoOptions.loop = true;
+		videoOptions.controls = true;
+
+		const evaluateGuardClauses = (value) => {
 			if (this.bIncludeSubfolders) {
 				if (!bIsRoot && !value.folder_path.startsWith(folder_path)) {
 					// If we want to include subfolders and we're not starting from root, require that value.folder_path starts with folder_path
-					continue;
+					return true;
 				}
 			} else {
 				if (!bIsRoot && value.folder_path != folder_path) {
 					// Require an exact match when not including subfolders
+					return true;
+				}
+			}
+		}
+
+		const createElementFromFile = async (file, value) => {
+			let element = await ImageElements.createImageElementFromFileInfo({
+				filename: file.item,
+				file: file,
+				type: this.folderName,
+				subfolder: value.folder_path,
+			}, videoOptions);
+			if (element !== undefined) {
+				await addElementToImageList(element);
+			} else {
+				console.log(`Attempted to add undefined image element in ${this.name}`);
+			}
+		};
+
+		if (bUseBatching) {
+			const promises = [];
+			for (let valueIndex = 0; valueIndex < values.length; valueIndex++) {
+				const value = values[valueIndex];
+
+				if (evaluateGuardClauses(value)) {
 					continue;
+				}
+
+				const processBatch = async (fileBatch) => {
+					let processedElements = [];
+					const promises = fileBatch.map(async (file) => {
+						const element = await createElementFromFile(file, value);
+						if (element) {
+							processedElements.push(element);
+						}
+					});
+					await Promise.all(promises);
+					await Promise.all(processedElements.map(img => new Promise(resolve => {
+						if (img.complete) {
+							resolve();
+						} else {
+							img.onload = resolve;
+						}
+					})));
+				}
+
+				async function processFilesInBatches(files, batchSize, delayBetweenBatches) {
+					const batchPromises = [];
+					for (let i = 0; i < files.length; i += batchSize) {
+						const fileBatch = files.slice(i, i + batchSize);
+						batchPromises.push(processBatch(fileBatch));
+						await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+					}
+					return Promise.all(batchPromises);
+				}
+
+				const batchSize = 4;
+				const delayBetweenBatches = 0.1;
+				promises.push(processFilesInBatches(value.files, batchSize, delayBetweenBatches));
+
+				if (!this.bIncludeSubfolders) {
+					break;
 				}
 			}
 
-			for (const file of value.files) {
-				let element = await ImageElements.createImageElementFromImgSrc(
-					{
-						filename: file.item,
-						type: this.folderName,
-						subfolder: value.folder_path,
-						file_age: file.file_age
-					});
-				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
-				await addElementToImageList(element);
-			}
+			await Promise.all(promises);
+		} else {
+			for (let valueIndex = 0; valueIndex < values.length; valueIndex++) {
 
-			// We only need one match if we're not including subfolders
-			if (!this.bIncludeSubfolders) {
-				break;
+				const value = values[valueIndex];
+
+				if (evaluateGuardClauses(value)) {
+					continue;
+				}
+
+				for (const file of value.files) {
+					await createElementFromFile(file, value);
+				}
+
+				// We only need one match if we're not including subfolders
+				if (!this.bIncludeSubfolders) {
+					break;
+				}
 			}
 		}
+
+		Sorting.sortWithCurrentType();
 	}
+
 
 	async makeToolbar() {
 
@@ -380,18 +463,42 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 			}
 		}, [
 			$el("label", {
-				textContent: 'Include subfolders?',
+				textContent: 'Include Subfolders',
 				toolTip: 'Include items found in subfolders? Be careful, this can be very memory-intensive if there are too many items. Browsers can crash.',
 			}), IncludeSubfoldersToggle]),
 			container.firstChild);
 
-		this.subfolderSelector = $el("select", { //Inner container so it can maintain 'flex' display attribute
-			style: {
-				width: '100%',
+		const AutoplayVideosToggle = $el("input", {
+			id: 'AutoplayVideosToggle',
+			type: 'checkbox',
+			checked: self.bAutoplayVideos,
+			onchange: (e) => {
+				self.bAutoplayVideos = e.target.checked;
+
 			}
 		});
 
-		this.subfolderSelector.addEventListener("change", async function() {
+		container.insertBefore($el("div", {
+			style: {
+				display: 'flex',
+				flexDirection: 'row'
+			}
+		}, [
+			$el("label", {
+				textContent: 'Autoplay Videos',
+				toolTip: 'Autoplay muted videos. Applies only to video files like mp4, m4v, and others and not animated image types like webp or gif.',
+			}), AutoplayVideosToggle]),
+			container.firstChild);
+
+		if (!this.subfolderSelector) {
+			this.subfolderSelector = $el("select", { //Inner container so it can maintain 'flex' display attribute
+				style: {
+					width: '100%',
+				}
+			});
+		}
+
+		this.subfolderSelector.addEventListener("change", async function () {
 			IncludeSubfoldersToggle.checked = self.bIncludeSubfolders = false;
 			const selectedValue = this.value;
 			await self.loadImagesInFolder(selectedValue);
@@ -404,13 +511,13 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 
 	async switchToContext() {
 		if (!await super.switchToContext()) {
-			await this.loadFolder();
+			await this.fetchFolderItems();
 		}
 	}
 
 	async onRefreshClicked() {
-		await this.loadFolder();
-		super.onRefreshClicked();
+		await this.fetchFolderItems(this.subfolderSelector.value);
+		await super.onRefreshClicked();
 	}
 }
 
@@ -443,7 +550,9 @@ export class ContextFeed extends ContextClearable {
 		if (imageListLength < this.feedImages.length) {
 			for (let imageIndex = imageListLength; imageIndex < this.feedImages.length; imageIndex++) {
 				let src = this.feedImages[imageIndex];
-				let element = await ImageElements.createImageElementFromImgSrc(src);
+				let videoOptions = new VideoOptions();
+				videoOptions.autoplay = true; videoOptions.loop = true;
+				let element = await ImageElements.createImageElementFromFileInfo(src, videoOptions);
 				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
 				await addElementToImageList(element);
 			}

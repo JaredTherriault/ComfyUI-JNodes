@@ -1,14 +1,18 @@
 import { $el } from "/scripts/ui.js";
 import { getPngMetadata } from "/scripts/pnginfo.js";
 
-import { defaultKeyList, getVal } from "./imageDrawer.js";
-// getValue only prepends 'JNodes.', getVal also prepends 'ImageDrawer.'.
 import {
-	getValue, getMaxZIndex, getLastMousePosition,
-	createDarkContainer, copyToClipboard, isEmptyObject
-} from "../common/utils.js";
+	getMaxZIndex, createDarkContainer, copyToClipboard, 
+	isValid, VideoOptions, getCurrentSecondsFromEpoch
+} from "../common/Utilities.js";
+
+import { getLastMousePosition } from "../common/EventManager.js";
+
 import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
-import { createModal } from "../common/modal.js";
+import { createModal } from "../common/ModalManager.js";
+
+import { setting_FontSize, setting_FontFamily } from "../textareaFontControl.js"
+import { setting_bKeyListAllowDenyToggle, setting_KeyList } from "./UiSettings.js";
 
 let toolTip;
 let toolButtonContainer;
@@ -21,13 +25,13 @@ const bUseWideTooltip = true;
 function createToolTip(imageElement) {
 
 	const zIndex = imageElement ? getMaxZIndex(imageElement) : 1001;
-	const fontSize = getValue("Customization.MultilineText.Font.Size", 80);
+	const fontSize = setting_FontSize.value;
 
 	toolTip = $el("div", {
 		style: {
 			position: "fixed",
 			fontSize: fontSize.toString() + '%',
-			fontFamily: getValue("Customization.MultilineText.Font.Family", 'monospace'),
+			fontFamily: setting_FontFamily.value,
 			lineHeight: "20px",
 			padding: "5px",
 			background: "#444",
@@ -237,10 +241,10 @@ function addToolButtonToImageElement(imageElementToUse) {
 		return;
 	}
 
-	const toolbar = getOrCreateToolButton();
+	const toolButton = getOrCreateToolButton();
 
-	imageElementToUse.appendChild(toolbar);
-	toolButtonContainer.style.visibility = "visible";
+	imageElementToUse.appendChild(toolButton);
+	toolButton.style.visibility = "visible";
 }
 
 function removeAndHideToolButtonFromImageElement(imageElementToUse) {
@@ -250,10 +254,10 @@ function removeAndHideToolButtonFromImageElement(imageElementToUse) {
 	}
 }
 
-export async function createImageElementFromImgSrc(src) {
-	if (!src) { return; }
-	const href = `/jnodes_view_image?filename=${encodeURIComponent(src.filename)}&type=${src.type}&subfolder=${encodeURIComponent(src.subfolder)}&t=${+new Date()}`;
-	const bIsVideoFormat = src.format?.startsWith("video");
+export async function createImageElementFromFileInfo(fileInfo, videoOptions = new VideoOptions()) {
+	if (!fileInfo) { return; }
+	const href = `/jnodes_view_image?filename=${encodeURIComponent(fileInfo.filename)}&type=${fileInfo.type}&subfolder=${encodeURIComponent(fileInfo.subfolder)}&t=${+new Date()}`;
+	const bIsVideoFormat = fileInfo.file?.is_video || fileInfo.filename.endsWith(".mp4"); // todo: fetch acceptable video types from python
 
 	const imageElement =
 		$el("div.imageElement", {
@@ -268,67 +272,30 @@ export async function createImageElementFromImgSrc(src) {
 			}
 		});
 
-	imageElement.mouseOverEvent = function () {
+	imageElement.mouseOverEvent = function (event) {
 
 		updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
 		addToolButtonToImageElement(imageElement)
 	}
 
-	imageElement.mouseOutEvent = function () {
+	imageElement.mouseOutEvent = function (event) {
 
-		if (!toolTip) { return; }
-		toolTip.style.visibility = "hidden";
-		toolTip.style.opacity = "0";
+		if (toolTip) {
+			toolTip.style.visibility = "hidden";
+			toolTip.style.opacity = "0";
+		}
 
-		removeAndHideToolButtonFromImageElement(imageElement);		
+		// If the new actively moused over element is not a child of imageElement, then hide the button
+		if (!imageElement.contains(event.toElement)) {
+			removeAndHideToolButtonFromImageElement(imageElement);
+		}
 	}
 
-	const aElement = $el("a", {
-		target: "_blank",
-		href,
-		onclick: async (e) => {
-
-			function createModalContent() {
-				const modalImg = $el(bIsVideoFormat ? "video" : "img", {
-					src: href,
-					// Store the image source as a data attribute for easy access
-					'data-src': href,
-					style: {
-						position: 'relative',
-						width: '99vw',
-						height: '99vh',
-						objectFit: 'contain',
-						display: 'block',
-						margin: 'auto',
-					},
-				});
-
-				// Create modal content
-				const modalContent = document.createElement("div");
-				modalContent.style.position = 'absolute';
-				modalContent.style.display = "inline-block";
-				modalContent.style.left = "50%";
-				modalContent.style.top = "50%";
-				modalContent.style.transform = "translate(-50%, -50%)";
-				modalContent.style.maxWidth = "99%";
-				modalContent.style.maxHeight = "99%";
-				modalContent.style.overflow = "hidden";
-
-				modalContent.appendChild(modalImg);
-
-				return modalContent;
-			}
-			e.preventDefault();
-			createModal(createModalContent());
-		}
-	});
-
-	imageElement.appendChild(aElement);
-
 	const img = $el(bIsVideoFormat ? "video" : "img", {
-		src: href,
+		//src: href,
 		// Store the image source as a data attribute for easy access
-		'data-src': href,
+		dataSrc: href,
+		preload: "none",
 		style: {
 			objectFit: 'var(--div-fit, contain)',
 			maxWidth: '100%',
@@ -346,9 +313,8 @@ export async function createImageElementFromImgSrc(src) {
 					const positivePromptKey = 'positive_prompt';
 					const negativePromptKey = 'negative_prompt';
 
-					const allowDenyList = getVal("ImageVideo.KeyList",
-						defaultKeyList)?.split(",")?.map(item => item.trim());
-					const bIsAllowList = getVal("ImageVideo.KeyListAllowDenyToggle", false);
+					const allowDenyList = setting_KeyList.value.split(",")?.map(item => item.trim());
+					const bIsAllowList = setting_bKeyListAllowDenyToggle.value;
 
 					let outputString = '';
 
@@ -385,16 +351,15 @@ export async function createImageElementFromImgSrc(src) {
 				}
 
 				function makeTooltipWidgetFromMetadata(metadata) {
-					if (isEmptyObject(metadata)) {
+					if (isValid(metadata)) {
 						return null;
 					}
 
 					const positivePromptKey = 'positive_prompt';
 					const negativePromptKey = 'negative_prompt';
 
-					const allowDenyList = getVal("ImageVideo.KeyList",
-						defaultKeyList)?.split(",")?.map(item => item.trim());
-					const bIsAllowList = getVal("ImageVideo.KeyListAllowDenyToggle", false);
+					const allowDenyList = setting_KeyList.value.split(",")?.map(item => item.trim());
+					const bIsAllowList = setting_bKeyListAllowDenyToggle.value;
 
 					let outputWidget = $el("div", {
 						style: {
@@ -537,41 +502,52 @@ export async function createImageElementFromImgSrc(src) {
 					imageElement.searchTerms += " " + getDisplayTextFromMetadata(metadata);
 				}
 
+				const response = await fetch(href);
+				const blob = await response.blob();
+
 				// Hover mouse over image to show meta
 				//console.log(href);
 				let metadata = null;
 				if (href.includes(".png")) {
-					const response = await fetch(href);
-					const blob = await response.blob();
-					metadata = await getPngMetadata(blob);
+					try {
+						metadata = await getPngMetadata(blob);
+					} catch (error) {
+						console.log(error);
+					}
 
 				} else if (href.includes(".webp")) {
-					const response = await fetch(href);
-					const blob = await response.blob();
 					const webpArrayBuffer = await blob.arrayBuffer();
 
-					// Use the exif library to extract Exif data
-					const exifData = ExifReader.load(webpArrayBuffer);
-					//console.log("exif: " + JSON.stringify(exifData));
+					try {
+						// Use the exif library to extract Exif data
+						const exifData = ExifReader.load(webpArrayBuffer);
+						//console.log("exif: " + JSON.stringify(exifData));
 
-					const exif = exifData['UserComment'];
+						const exif = exifData['UserComment'];
 
-					if (exif) {
+						if (exif) {
 
-						// Convert the byte array to a Uint16Array
-						const uint16Array = new Uint16Array(exif.value);
+							// Convert the byte array to a Uint16Array
+							const uint16Array = new Uint16Array(exif.value);
 
-						// Create a TextDecoder for UTF-16 little-endian
-						const textDecoder = new TextDecoder('utf-16le');
+							// Create a TextDecoder for UTF-16 little-endian
+							const textDecoder = new TextDecoder('utf-16le');
 
-						// Decode the Uint16Array to a string
-						const decodedString = textDecoder.decode(uint16Array);
+							// Decode the Uint16Array to a string
+							const decodedString = textDecoder.decode(uint16Array);
 
-						// Remove null characters
-						const cleanedString = decodedString.replace(/\u0000/g, '');
-						const jsonReadyString = cleanedString.replace("UNICODE", "")
+							// Remove null characters
+							const cleanedString = decodedString.replace(/\u0000/g, '');
+							const jsonReadyString = cleanedString.replace("UNICODE", "")
 
-						metadata = JSON.parse(jsonReadyString);
+							try {
+								metadata = JSON.parse(jsonReadyString);
+							} catch (error) {
+								console.log(error);
+							}
+						}
+					} catch (error) {
+						console.log(error);
 					}
 				}
 
@@ -585,19 +561,96 @@ export async function createImageElementFromImgSrc(src) {
 		}
 	});
 
+	if (fileInfo.file?.metadata_read) {
+		img.style.height = fileInfo.file.size[0];
+		img.style.width = fileInfo.file.size[1];
+	} else {
+		//If we can't properly placehold, load it now instead of later
+		img.src = img.dataSrc;
+	}
+
+	const aElement = $el("a", {
+		target: "_blank",
+		href: href,
+		draggable: false,
+		download: fileInfo.filename,
+		onclick: async (e) => {
+
+			e.preventDefault();
+
+			if (bIsVideoFormat) {
+				function requestFullscreen(element) {
+					if (element.requestFullscreen) {
+						element.requestFullscreen();
+					} else if (element.mozRequestFullScreen) { /* Firefox */
+						element.mozRequestFullScreen();
+					} else if (element.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
+						element.webkitRequestFullscreen();
+					} else if (element.msRequestFullscreen) { /* IE/Edge */
+						element.msRequestFullscreen();
+					}
+				}
+				requestFullscreen(img);
+			} else {
+				function createModalContent() {
+					const modalImg = $el("img", {
+						src: href,
+						// Store the image source as a data attribute for easy access
+						'data-src': href,
+						style: {
+							position: 'relative',
+							width: '99vw',
+							height: '99vh',
+							objectFit: 'contain',
+							display: 'block',
+							margin: 'auto',
+						},
+					});
+
+					// Create modal content
+					const modalContent = document.createElement("div");
+					modalContent.style.position = 'absolute';
+					modalContent.style.display = "inline-block";
+					modalContent.style.left = "50%";
+					modalContent.style.top = "50%";
+					modalContent.style.transform = "translate(-50%, -50%)";
+					modalContent.style.maxWidth = "99%";
+					modalContent.style.maxHeight = "99%";
+					modalContent.style.overflow = "hidden";
+
+					modalContent.appendChild(modalImg);
+
+					return modalContent;
+				}
+				createModal(createModalContent());
+			}
+		}
+	});
+
+	imageElement.appendChild(aElement);
+
 	if (bIsVideoFormat) {
 
-		img.type = src.format;
-		img.autoplay = true;
-		img.loop = true;
+		img.type = fileInfo.file?.format || undefined;
+		img.autoplay = videoOptions.autoplay;
+		img.loop = videoOptions.loop;
+		img.controls = videoOptions.controls;
+		img.muted = videoOptions.muted || videoOptions.autoplay; // Autoplay is only allowed if muted is true
+		
+		imageElement.bIsVideoFormat = bIsVideoFormat;
 	}
 
 	aElement.appendChild(img);
 
 	// Sorting meta information
-	imageElement.filename = src.filename;
-	imageElement.file_age = src.file_age;
+	imageElement.filename = fileInfo.filename;
+	imageElement.file_age = fileInfo.file?.file_age || getCurrentSecondsFromEpoch(); // todo: fix for feed images
 	imageElement.searchTerms = href; // Search terms to start with, onload will add more
+
+	imageElement.draggable = true;
+	imageElement.addEventListener('dragstart', function (event) {
+		removeAndHideToolButtonFromImageElement(imageElement);
+	});
 
 	return imageElement;
 }

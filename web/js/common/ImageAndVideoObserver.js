@@ -2,13 +2,13 @@
 // then plays it. If the image is scrolled out of view, the playback stops. This applies to video
 // and image types including mp4, m4v, wepb, gif, apng, etc.
 
-export class ObserverOptions {
+export class ImageAndVideoObserverOptions {
 	autoPlayVideos = true;
 	playMuted = true;
 	playbackThreshold = 0.15;
 }
 
-let observerOptions = new ObserverOptions();
+let observerOptions = new ImageAndVideoObserverOptions();
 
 const observedElements = new Set();
 
@@ -31,7 +31,7 @@ function tryStopVideo(element) {
 	}
 }
 
-export function observeForAutoplay(element) {
+export function observeVisualElement(element) {
 	if (!element) {
 		return;
 	}
@@ -40,25 +40,25 @@ export function observeForAutoplay(element) {
 		// If not observed, add it to the set of observed elements
 		observedElements.add(element);
 		// Start observing the element
-		autoplayObserver.observe(element);
+		imageAndVideoObserver.observe(element);
 	}
 }
 
-export function unobserveForAutoplay(element) {
+export function unobserveVisualElement(element) {
 	if (!element) {
 		return;
 	}
 	observedElements.delete(element);
-	autoplayObserver.unobserve(element);
+	imageAndVideoObserver.unobserve(element);
 }
 
-const autoplayObserver = new IntersectionObserver((entries) => {
+const imageAndVideoObserver = new IntersectionObserver((entries) => {
 	entries.forEach(async entry => {
 
 		const element = entry.target;
 
 		if (!element) {
-			unobserveForAutoplay(element);
+			unobserveVisualElement(element);
 			return;
 		}
 		// Check if the video is intersecting with the viewport
@@ -71,7 +71,7 @@ const autoplayObserver = new IntersectionObserver((entries) => {
 				element.style.width = '';
 
 				if (element.tagName !== 'VIDEO') {
-					unobserveForAutoplay(element);
+					unobserveVisualElement(element);
 					return;
 				}
 			}

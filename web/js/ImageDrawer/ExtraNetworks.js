@@ -1,6 +1,7 @@
 import { api } from "/scripts/api.js";
+import { app } from "/scripts/app.js";
 import { $el } from "/scripts/ui.js";
-import { copyToClipboard, createDarkContainer, getDarkColor } from "../common/utils.js"
+import { copyToClipboard, createDarkContainer, getDarkColor } from "../common/Utilities.js"
 
 import { setSearchTextAndExecute } from "./imageDrawer.js";
 
@@ -119,7 +120,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			}
 			trainedWords = trainedWords.replace("\\(", "(").replace("\\)", ")").replace('\\"', '"');
 		}
-		
+
 		if (infoMap.lastViewedImageIndex) {
 			lastViewedImageIndex = infoMap.lastViewedImageIndex;
 		}
@@ -176,6 +177,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 	const backgroundImage =
 		$el("img", {
 			lastViewedImageIndex: lastViewedImageIndex,
+			draggable: false,
 			style: {
 				objectFit: "cover",
 				width: "100%",
@@ -248,7 +250,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 							textContent: "📋",
 						}),
 						`Copy lora as a1111-style text + trained words (${copyAllText})`,
-						function(e) {
+						function (e) {
 							copyToClipboard(copyAllText)
 							e.preventDefault();
 						}
@@ -262,7 +264,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 							textContent: "📝",
 						}),
 						`Copy trained words (${trainedWords})`,
-						function(e) {
+						function (e) {
 							copyToClipboard(trainedWords)
 							e.preventDefault();
 						}
@@ -277,7 +279,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 						textContent: "📜",
 					}),
 					bIsLora ? `Copy lora as a1111-style text (${copyModelText})` : `Copy embedding as comfy-style text (${copyModelText})`,
-					function(e) {
+					function (e) {
 						copyToClipboard(copyModelText)
 						e.preventDefault();
 					}
@@ -295,7 +297,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 							textContent: "🔗",
 						}),
 						`View model on civit.ai (${href})`,
-						function(e) { } // Empty function, link handled by href
+						function (e) { } // Empty function, link handled by href
 					)
 				);
 			}
@@ -424,6 +426,17 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 	modelElement.file_age = familiars.file_age;
 
 	modelElement.searchTerms = `${nameToUse}, ${trainedWords}, ${tags.join(', ')}`;
+
+	modelElement.draggable = true;
+	modelElement.addEventListener("dragstart", function (event) {
+		const bTakeAlternatePath = event.ctrlKey;
+		// Set data to be transferred during drag
+		if (bTakeAlternatePath) {
+			console.log ('bTakeAlternatePath');
+		} else {
+			event.dataTransfer.setData('text/plain', `${type}=${familiars.full_name}`);
+		}
+	});
 
 	return modelElement;
 }

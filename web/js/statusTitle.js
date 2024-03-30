@@ -1,7 +1,7 @@
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
-import { getValue, setValue, addJNodesSetting } from "./common/utils.js"
+import { ConfigSetting, addJNodesSetting } from "./common/SettingsManager.js"
 
 // Simple script that adds the current queue size and a percentage complete of the current job to the window title
 
@@ -15,14 +15,13 @@ app.registerExtension({
 
 		const featureName = "StatusIndicators.Title.";
 
-		// localStorage accessors
-		const getVal = (n, d) => {
-			return getValue(featureName + n, d);
-		};
-
-		const saveVal = (n, v) => {
-			setValue(featureName + n, v);
-		};
+		class CustomConfigSetting extends ConfigSetting {
+			constructor(settingName, defaultValue) {
+				super(featureName + settingName, defaultValue);
+			}
+		}
+		
+		let setting_bEnabled = new CustomConfigSetting("bEnabled", true);
 
 		const labelWidget = $el("label", {
 			textContent: "Show Progress in Title:",
@@ -30,9 +29,9 @@ app.registerExtension({
 
 		const settingWidget = $el("input", {
 			type: "checkbox",
-			checked: getVal("Enabled", true),
+			checked: setting_bEnabled.value,
 			onchange: (e) => {
-				saveVal("Enabled", e.target.checked);
+				setting_bEnabled.value = e.target.checked;
 
 				if (e.target.checked) {
 					addListeners();
@@ -49,7 +48,7 @@ app.registerExtension({
 
 		function addListeners() {
 			api.addEventListener("status", (e) => {
-				const bIsEnabled = getVal("Enabled", true);
+				const bIsEnabled = setting_bEnabled.value;
 				if (bIsEnabled) {
 					let title = originalTitle;
 					let queueRemaining = e?.detail && e?.detail.exec_info.queue_remaining;
@@ -63,7 +62,7 @@ app.registerExtension({
 			});
 
 			api.addEventListener("progress", (e) => {
-				const bIsEnabled = getVal("Enabled", true);
+				const bIsEnabled = setting_bEnabled.value;
 				if (bIsEnabled) {
 					if (!e.detail) { return; }
 					const { value, max } = e?.detail;
@@ -83,7 +82,7 @@ app.registerExtension({
 			document.title = originalTitle;
 		}
 
-		if (getVal("Enabled", true)) {
+		if (setting_bEnabled.value) {
 			addListeners();
 		}
 	},

@@ -1,7 +1,7 @@
 import { api } from "../../../scripts/api.js";
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
-import { getValue, setValue,addJNodesSetting } from "./common/utils.js"
+import { ConfigSetting, addJNodesSetting } from "./common/SettingsManager.js"
 
 // Simple script that adds the current queue size to the window title
 // Adds a favicon that changes color while active and a percentage complete of the current job
@@ -18,14 +18,13 @@ app.registerExtension({
 
 		const featureName = "StatusIndicators.ProgressBar.";
 
-		// localStorage accessors
-		const getVal = (n, d) => {
-			return getValue(featureName + n, d);
-		};
-
-		const saveVal = (n, v) => {
-			setValue(featureName + n, v);
-		};
+		class CustomConfigSetting extends ConfigSetting {
+			constructor(settingName, defaultValue) {
+				super(featureName + settingName, defaultValue);
+			}
+		}
+		
+		let setting_bEnabled = new CustomConfigSetting("bEnabled", false);
 
 		const labelWidget = $el("label", {
 			textContent: "Show Progress Bar Above menu:",
@@ -33,9 +32,9 @@ app.registerExtension({
 
 		const settingWidget = $el("input", {
 			type: "checkbox",
-			checked: getVal("Enabled", true),
+			checked: setting_bEnabled.value,
 			onchange: (e) => {
-				saveVal("Enabled", e.target.checked);
+				setting_bEnabled.value = e.target.checked;
 
 				if (e.target.checked) {
 					setup();
@@ -93,14 +92,14 @@ app.registerExtension({
 		}
 
 		function updateProgressBar(progress) {
-			if (getVal("Enabled", true) && progressBar) {
+			if (setting_bEnabled.value && progressBar) {
 				progressBar.style.width = `${progress}%`;
 			}
 		}
 
 		function addListeners() {
 			api.addEventListener("progress", ({ detail }) => {
-				if (getVal("Enabled", true)) {
+				if (setting_bEnabled.value) {
 					const { value, max } = detail;
 					const progress = Math.floor((value / max) * 100);
 
@@ -124,8 +123,7 @@ app.registerExtension({
 			removeProgressBar();
 		}
 
-		const bShouldSetup = getVal("Enabled", true);
-		if (bShouldSetup) {
+		if (setting_bEnabled.value) {
 			setup();
 		}
 	},

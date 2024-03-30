@@ -5,7 +5,9 @@ import * as ExtraNetworks from "./ExtraNetworks.js";
 import * as ContextSelector from "./ContextSelector.js";
 import * as Sorting from "./Sorting.js";
 
-import { getValue, setValue, addJNodesSetting, setElementVisibility } from "../common/utils.js"
+import { setElementVisibility, getVisualElements, getVideoElements } from "../common/Utilities.js"
+import { observeVisualElement, unobserveVisualElement } from "../common/ImageAndVideoObserver.js";
+import { ImageDrawerConfigSetting, setupUiSettings, setting_bEnabled, setting_bMasterVisibility, setting_DrawerLocation } from "./UiSettings.js";
 
 // Attribution: pythongsssss's Image Feed. So much brilliance in that original script.
 
@@ -22,17 +24,8 @@ let columnInput;
 const _minimumDrawerSize = 4;
 const _maximumDrawerSize = 100;
 
-// UI Settings
-export const defaultKeyList = "prompt, workflow";
-
-// localStorage accessors
-export const getVal = (n, d) => {
-	return getValue("ImageDrawer." + n, d);
-};
-
-export const saveVal = (n, v) => {
-	setValue("ImageDrawer." + n, v);
-};
+let setting_ImageSize = new ImageDrawerConfigSetting("ImageSize", 4);
+let setting_DrawerSize = new ImageDrawerConfigSetting("DrawerSize", 25);
 
 // Helpers
 
@@ -42,49 +35,69 @@ export function getImageListChildren() {
 }
 
 export function replaceImageListChildren(newChildren) {
-	imageList.replaceChildren(...newChildren); // Spread the array because replaceChildren expects individual entries, not a single array
+	clearImageListChildren();
+	for (let child of newChildren) {
+		addElementToImageList(child, false);
+	}
+
+	handleSearch();
 }
 
-// Specifically returns nodes with an image
-export function getImagesInList() {
-	const imgs =
-		[...imageList?.querySelectorAll("img")].map((img) => img.getAttribute("src"));
-	return imgs;
-};
-
 export function clearImageListChildren() {
-	imageList.replaceChildren();
+	const childNodeCount = getImageListChildren().length;
+	for (let childIndex = childNodeCount; childIndex >= 0; childIndex--) {
+		removeElementFromImageList(getImageListChildren()[childIndex], false);
+	}
 };
 
-export async function addElementToImageList(element) {
+export function removeElementFromImageList(element, bHandleSearch = true) {
+	if (element != undefined) {
+		//console.log("removing element: " + element);
+		for (let videoElement of getVideoElements(element)) {
+			unobserveVisualElement(videoElement);
+		}
+		imageList.removeChild(element);
+		if (bHandleSearch) {
+			handleSearch();
+		}
+	} else {
+		console.log("Attempted to remove undefined element");
+	}
+};
+
+export async function addElementToImageList(element, bHandleSearch = true) {
 	//console.log("adding element: " + element);
 	if (element != undefined) {
 		imageList.appendChild(element);
-		handleSearch();
-	}
-	else {
+		for (let visualElement of getVisualElements(element)) {
+			observeVisualElement(visualElement);
+		}
+		if (bHandleSearch) {
+			handleSearch();
+		}
+	} else {
 		console.log("Attempted to add undefined element");
 	}
 };
 
 export function getColumnCount() {
-	return getVal("ImageSize", 4);
+	return setting_ImageSize.value;
 }
 
 export function setColumnCount(value) {
 	columnInput.parentElement.title = `Controls the number of columns in the drawer (${value} columns).\nClick label to set custom value.`;
 	imageDrawer.style.setProperty("--img-sz", value);
-	saveVal("ImageSize", value);
+	setting_ImageSize.value = value;
 	columnInput.max = Math.max(10, value, columnInput.max);
 	columnInput.value = value;
 }
 
 export function getDrawerSize() {
-	return getVal("DrawerSize", 25);
+	return setting_DrawerSize.value;
 }
 
 export function setDrawerSize(value, setDrawerSizeSliderValue = false) {
-	saveVal("DrawerSize", value);
+	setting_DrawerSize.value = value;
 	imageDrawer?.style.setProperty("--max-size", value);
 	if (setDrawerSizeSliderValue && drawerSizeSlider) {
 		drawerSizeSlider.value = value;
@@ -184,100 +197,6 @@ export function setSortingOptions(options) {
 	ImageDrawerContextToolbar.replaceChildren(widget);
 }
 
-const setupUiSettings = () => {
-	// Enable/disable
-	{
-		const labelWidget = $el("label", {
-			textContent: "Image Drawer Enabled:",
-		});
-
-		const settingWidget = $el(
-			"input",
-			{
-				type: "checkbox",
-				checked: getVal("Enabled", true),
-				oninput: (e) => {
-					saveVal("Enabled", e.target.value);
-				},
-			},
-		);
-
-		const tooltip = "Whether or not the image drawer is initialized (requires page reload)";
-		addJNodesSetting(labelWidget, settingWidget, tooltip);
-	}
-	// Drawer location
-	{
-		const labelWidget = $el("label", {
-			textContent: "Image Drawer Location:",
-		});
-
-		const settingWidget = $el(
-			"select",
-			{
-				oninput: (e) => {
-					saveVal("DrawerLocation", e.target.value);
-					imageDrawer.className =
-						`JNodes-image-drawer JNodes-image-drawer--${e.target.value}`;
-				},
-			},
-			["left", "top", "right", "bottom"].map((m) =>
-				$el("option", {
-					value: m,
-					textContent: m,
-					selected: getVal("DrawerLocation", "left") === m,
-				})
-			)
-		);
-
-		const tooltip = "To which part of the screen the drawer should be docked";
-		addJNodesSetting(labelWidget, settingWidget, tooltip);
-	}
-
-	// Mouse over image/video key allow/deny list
-	{
-		const labelWidget = $el("label", {
-			textContent: "Image Drawer Image & Video Key List:",
-		});
-
-		const settingWidget = $el(
-			"input",
-			{
-				defaultValue: getVal("ImageVideo.KeyList", defaultKeyList),
-				oninput: (e) => {
-					saveVal("ImageVideo.KeyList", e.target.value);
-				},
-			},
-		);
-
-		const tooltip = "A set of comma-separated names to include or exclude " +
-			"from the tooltips applied to images in the drawer";
-		addJNodesSetting(labelWidget, settingWidget, tooltip);
-	}
-
-	// Mouse over image/video key allow/deny list toggle
-	{
-		const labelWidget = $el("label", {
-			textContent: "Image Drawer Image & Video Key List Allow/Deny Toggle:",
-		});
-
-		const settingWidget = $el(
-			"input",
-			{
-				type: "checkbox",
-				checked: getVal("ImageVideo.KeyListAllowDenyToggle", false),
-				oninput: (e) => {
-					saveVal("ImageVideo.KeyListAllowDenyToggle", e.target.value);
-				},
-			},
-		);
-
-		const tooltip = `Whether the terms listed in the Key List should be 
-		denied or allowed, excluding everything else.
-		True = Allow list, False = Deny list.`
-		addJNodesSetting(labelWidget, settingWidget, tooltip);
-	}
-};
-
 const createDrawerOptionsFlyout = () => {
 
 	drawerSizeSlider = $el("input", {
@@ -345,7 +264,7 @@ const createDrawerOptionsFlyout = () => {
 						"select",
 						{
 							oninput: (e) => {
-								saveVal("DrawerLocation", e.target.value);
+								setting_DrawerLocation.value = e.target.value;
 								imageDrawer.className =
 									`JNodes-image-drawer JNodes-image-drawer--${e.target.value}`;
 							},
@@ -354,7 +273,7 @@ const createDrawerOptionsFlyout = () => {
 							$el("option", {
 								value: m,
 								textContent: m,
-								selected: getVal("DrawerLocation", "left") === m,
+								selected: setting_DrawerLocation.value === m,
 							})
 						)
 					)
@@ -369,9 +288,23 @@ app.registerExtension({
 
 		setupUiSettings();
 
-		if (!getVal("Enabled", true)) {
+		if (!setting_bEnabled.value) {
 			return;
 		}
+
+		// Remove the drawer widget from view, can be re-opened with showButton
+		const hideButton = $el("button.JNodes-image-drawer-btn.hide-btn", {
+			textContent: "❌",
+			onclick: () => {
+				imageDrawer.style.display = "none";
+				showButton.style.display = "unset";
+				setting_bMasterVisibility.value = false;
+			},
+			style: {
+				width: "fit-content",
+				padding: '3px',
+			},
+		});
 
 		// Get loras right at the start so we ensure we have to wait less when switching to loras context
 		ExtraNetworks.getLoras();
@@ -392,7 +325,7 @@ app.registerExtension({
 		});
 
 		// Initialize location
-		const drawerStartingLocation = getVal("DrawerLocation", "left");
+		const drawerStartingLocation = setting_DrawerLocation.value;
 		imageDrawer.className =
 			`JNodes-image-drawer JNodes-image-drawer--${drawerStartingLocation}`;
 
@@ -402,40 +335,6 @@ app.registerExtension({
 				visibility: 'visible',
 			}
 		});
-
-		// Button setup
-
-		// A button shown in the comfy modal to show the drawer after it's been hidden
-		const showButton = $el("button.comfy-settings-btn", {
-			textContent: "🖼️",
-			style: {
-				right: "16px",
-				cursor: "pointer",
-				display: "none",
-			},
-		});
-		showButton.onclick = () => {
-			imageDrawer.style.display = "block";
-			showButton.style.display = "none";
-			saveVal("bMasterVisibility", true);
-		};
-		document.querySelector(".comfy-settings-btn").after(showButton);
-
-		// Remove the drawer widget from view, can be re-opened with showButton
-		const hideButton = $el("button.JNodes-image-drawer-btn.hide-btn", {
-			textContent: "❌",
-			onclick: () => {
-				imageDrawer.style.display = "none";
-				showButton.style.display = "unset";
-				saveVal("bMasterVisibility", false);
-			},
-			style: {
-				width: "fit-content",
-				padding: '3px',
-			},
-		});
-
-
 
 		// Resizing / View options
 		createDrawerOptionsFlyout();
@@ -492,14 +391,14 @@ app.registerExtension({
 			sorting.style.width = '50%';
 			const context = ContextSelector.createContextSelector();
 			context.style.width = '50%';
-			
+
 			const DropDownComboContainer = $el("div", {
 				style: {
 					display: "flex",
 					flexDirection: "row"
 				}
-			}, [ context, sorting ]);
-			
+			}, [context, sorting]);
+
 			return DropDownComboContainer;
 		}
 
@@ -524,7 +423,7 @@ app.registerExtension({
 		imageDrawer.append(ImageDrawerMenu, imageList);
 
 		// If not supposed to be visible on startup, close it
-		if (!getVal("bMasterVisibility", true)) {
+		if (!setting_bMasterVisibility.value) {
 			hideButton.onclick();
 		}
 
