@@ -1,5 +1,5 @@
-import { app } from "../../../../scripts/app.js";
 import { $el } from "../../../../scripts/ui.js";
+
 
 export function isElementVisible(element) {
 	var rect = element.getBoundingClientRect();
@@ -35,8 +35,6 @@ export const setElementVisibility = (element, bNewVisible) => {
 	if (!element) { return; }
 	element.style.display = bNewVisible ? "unset" : "none";
 }
-
-export class VideoOptions { autoplay = false; loop = true; controls = false; muted = true; };
 
 export function getVideoElements(parentElement) {
 	return parentElement ? parentElement.querySelectorAll("video") : [];

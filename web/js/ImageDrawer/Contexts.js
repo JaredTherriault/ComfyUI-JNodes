@@ -11,7 +11,8 @@ import {
 	clearAndHandleSearch, setColumnCount, setDrawerSize, setContextToolbarWidget
 } from "./imageDrawer.js"
 
-import { decodeReadableStream, VideoOptions } from "../common/Utilities.js"
+import { VideoOptions } from "../common/VideoOptions.js"
+import { decodeReadableStream } from "../common/Utilities.js"
 
 let Contexts;
 

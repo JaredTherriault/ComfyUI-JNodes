@@ -1,9 +1,10 @@
 import { $el } from "/scripts/ui.js";
 import { getPngMetadata } from "/scripts/pnginfo.js";
 
+import { VideoOptions } from "../common/VideoOptions.js"
 import {
 	getMaxZIndex, createDarkContainer, copyToClipboard, 
-	isValid, VideoOptions, getCurrentSecondsFromEpoch
+	isValid, getCurrentSecondsFromEpoch
 } from "../common/Utilities.js";
 
 import { getLastMousePosition } from "../common/EventManager.js";
