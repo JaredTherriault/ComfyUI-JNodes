@@ -103,20 +103,24 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
     familiars.sort()
     return familiars
 
-def list_files_and_folders(directory):
+def list_files_and_folders(root_folder, start_getting_files_from_folder, include_subfolder_files):
     
     results = [];
     
-    def recurse(folder):
-        # Get the list of files and folders in the specified directory
-        full_directory = os.path.join(directory, folder)
-        items = os.listdir(full_directory)
+    def recurse(in_folder):
+        # Get the list of files and folders in the specified folder
+        full_folder = os.path.join(root_folder, in_folder)
+        items = os.listdir(full_folder)
+
+        include_files = (
+            in_folder == start_getting_files_from_folder or (
+                include_subfolder_files and f"/{start_getting_files_from_folder}" in in_folder))
     
         # Separate files and folders
         files = []
         for item in items:
-            file_path = os.path.join(full_directory, item)
-            if os.path.isfile(file_path) and is_acceptable_image_or_video(item):
+            file_path = os.path.join(full_folder, item)
+            if include_files and os.path.isfile(file_path) and is_acceptable_image_or_video(item):
                 file_size = os.path.getsize(file_path)
                 # Image / Video Size
                 dimensions = [0,0]
@@ -161,11 +165,11 @@ def list_files_and_folders(directory):
                     }
                 )
                  
-            elif os.path.isdir(os.path.join(full_directory, item)):
-                recurse(os.path.join(folder, item))
+            elif os.path.isdir(os.path.join(full_folder, item)):
+                recurse(os.path.join(in_folder, item))
     
-        # Create a list of dictionaries starting with the files in the root directory
-        results.append({'folder_path': f'{folder}', 'files': files})
+        # Create a list of dictionaries starting with the files in the root folder
+        results.append({'folder_path': f'{in_folder}', 'files': files})
         
     recurse("")
     
@@ -174,7 +178,12 @@ def list_files_and_folders(directory):
     return results
 
 def get_comfyui_subfolder_items(request):
-    return web.json_response(list_files_and_folders(convert_relative_comfyui_path_to_full_path(request.rel_url.query["subfolder"])))
+    root_folder = request.rel_url.query["root_folder"] or ""
+    start_getting_files_from_folder = request.rel_url.query["start_getting_files_from_folder"] or ""
+    include_subfolder_files = request.rel_url.query["include_subfolder_files"] == "true"
+    return web.json_response(
+        list_files_and_folders(
+            convert_relative_comfyui_path_to_full_path(root_folder), start_getting_files_from_folder, include_subfolder_files))
 
 def view_image(request):
     type = "loras"

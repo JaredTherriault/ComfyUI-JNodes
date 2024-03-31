@@ -256,7 +256,7 @@ class ContextModel extends ContextRefreshable {
 class ContextSubFolderExplorer extends ContextRefreshable {
 	constructor(name, description, folderName) {
 		super(name, description);
-		this.folderName = folderName;
+		this.rootFolderName = folderName;
 		this.rootFolderDisplayName = '/root';
 		this.bAutoplayVideos = false;
 		this.bIncludeSubfolders = false;
@@ -264,11 +264,20 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		this.subfolderSelector = null;
 	}
 
-	// Get the image paths in the folder or directory specified at this.folderName as well as all subfolders then load the images in a given subfolder
+	// Get the image paths in the folder or directory specified at this.folderName 
+	// as well as all subfolders then load the images in a given subfolder
 	async fetchFolderItems(path_to_load_images_from = '') {
 		clearImageListChildren();
-		await addElementToImageList($el("label", { textContent: `Loading ${this.folderName} folder...` }));
-		const allItems = await api.fetchApi(`/jnodes_comfyui_subfolder_items?subfolder=${this.folderName}`);
+		const withOrWithout = this.bIncludeSubfolders ? "with" : "without";
+		await addElementToImageList(
+			$el("label", { 
+				textContent: 
+					`Loading ${path_to_load_images_from || this.rootFolderName} folder ${withOrWithout} subfolders...` }));
+		const allItems = await api.fetchApi(
+			'/jnodes_comfyui_subfolder_items' + 
+			`?root_folder=${this.rootFolderName}` +
+			`&start_getting_files_from_folder=${path_to_load_images_from}` +
+			`&include_subfolder_files=${this.bIncludeSubfolders}`);
 
 		// Decode into a string
 		const decodedString = await decodeReadableStream(allItems.body);
@@ -361,7 +370,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 			let element = await ImageElements.createImageElementFromFileInfo({
 				filename: file.item,
 				file: file,
-				type: this.folderName,
+				type: this.rootFolderName,
 				subfolder: value.folder_path,
 			}, videoOptions);
 			if (element !== undefined) {
@@ -441,7 +450,6 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		Sorting.sortWithCurrentType();
 	}
 
-
 	async makeToolbar() {
 
 		const container = await super.makeToolbar();
@@ -451,9 +459,9 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 			id: 'IncludeSubfoldersToggle',
 			type: 'checkbox',
 			checked: self.bIncludeSubfolders,
-			onchange: (e) => {
+			onchange: async (e) => {
 				self.bIncludeSubfolders = e.target.checked;
-				self.loadImagesInFolder(self.subfolderSelector.value);
+				await self.fetchFolderItems(self.subfolderSelector.value);
 			}
 		});
 
@@ -502,7 +510,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		this.subfolderSelector.addEventListener("change", async function () {
 			IncludeSubfoldersToggle.checked = self.bIncludeSubfolders = false;
 			const selectedValue = this.value;
-			await self.loadImagesInFolder(selectedValue);
+			await self.fetchFolderItems(selectedValue);
 		});
 
 		container.insertBefore(this.subfolderSelector, container.firstChild);
