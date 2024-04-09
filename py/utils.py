@@ -14,6 +14,8 @@ import numpy as np
 from PIL import Image
 from typing import Dict, List, Optional, Union
 
+import mimetypes
+
 class AnyType(str):
   """A special class that is always equal in not equal comparisons. Credit to pythongosssss and rgthree"""
 
@@ -41,7 +43,7 @@ for filename in os.listdir(VIDEO_FORMATS_DIRECTORY):
 JNODES_IMAGE_FORMAT_TYPES = ["jpg", "jpeg", "jfif", "png", "gif", "webp", "apng", "mjpeg"] + VIDEO_FORMATS
 JNODES_VAE_LIST = ["Baked VAE"] + folder_paths.get_filename_list("vae")
 
-ACCEPTED_VIDEO_EXTENSIONS = ['webm', 'mp4', 'mkv']
+ACCEPTED_VIDEO_EXTENSIONS = ['webm', 'mp4', 'mkv'] + VIDEO_FORMATS
 ACCEPTED_ANIMATED_IMAGE_EXTENSIONS = ['gif', 'webp', 'apng', 'mjpeg']
 ACCEPTED_STILL_IMAGE_EXTENSIONS = ['gif', 'webp', 'png', 'jpg', 'jpeg', 'jfif']
 
@@ -108,11 +110,15 @@ def is_gif(filename):
     return get_file_extension_without_dot(filename).lower() == "gif"
 
 def is_video(filename):
-    return get_file_extension_without_dot(filename).lower() in ACCEPTED_VIDEO_EXTENSIONS
+    mime_type, _ = mimetypes.guess_type(filename)
+    return mime_type and mime_type.startswith('video')
+
+def is_image(filename):
+    mime_type, _ = mimetypes.guess_type(filename)
+    return mime_type and mime_type.startswith('image')
 
 def is_acceptable_image_or_video(filename):
-    return get_file_extension_without_dot(filename).lower() in JNODES_IMAGE_FORMAT_TYPES
-
+    return is_image(filename) or is_video(filename)
 
 def pil2tensor(image: Union[Image.Image, List[Image.Image]]) -> torch.Tensor:
     if isinstance(image, list):

@@ -105,10 +105,29 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
 
 def list_files_and_folders(root_folder, start_getting_files_from_folder, include_subfolder_files):
     
-    results = [];
-    
+    """
+    List files and folders in the specified root folder, optionally including files from subfolders.
+
+    Args:
+        root_folder (str): The root folder from which to start listing files and folders.
+        start_getting_files_from_folder (str): The folder from which to start including files.
+        include_subfolder_files (bool): Whether to include files from subfolders.
+
+    Returns:
+        list: A list of dictionaries containing information about files and folders.
+    """
+
+    from concurrent.futures import ThreadPoolExecutor
+
+    results = []
+
     def recurse(in_folder):
-        # Get the list of files and folders in the specified folder
+        """
+        Recursively list files and folders within the specified folder.
+
+        Args:
+            in_folder (str): The folder to process.
+        """
         full_folder = os.path.join(root_folder, in_folder)
         items = os.listdir(full_folder)
 
@@ -118,12 +137,17 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
     
         # Separate files and folders
         files = []
-        for item in items:
+        def process_item(item):
+            """
+            Process a single file or folder item.
+
+            Args:
+                item (str): The name of the file or folder.
+            """
             file_path = os.path.join(full_folder, item)
             if include_files and os.path.isfile(file_path) and is_acceptable_image_or_video(item):
                 file_size = os.path.getsize(file_path)
-                # Image / Video Size
-                dimensions = [0,0]
+                dimensions = [0, 0]
                 frame_count = -1
                 fps = -1
                 is_video_item = is_video(item)
@@ -132,10 +156,7 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
 
                 try:
                     if is_video_item:
-                        # Open the video file without loading it
                         cap = cv2.VideoCapture(file_path)
-
-                        # Check if the video opened successfully
                         if cap.isOpened():
                             width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -145,14 +166,11 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
                             fps = cap.get(cv2.CAP_PROP_FPS)
                     else:
                         with Image.open(file_path) as img:
-                            # it's not possible to get frame_count and fps from an image wihout loading it, 
-                            # so just get dimensions
                             dimensions = img.size
                 except Exception as e:
                     metadata_read = False
                     logger.warning(f"Unable to get meta for '{file_path}': {e}")
 
-                # Get time of creation since the last epoch, in seconds
                 file_age = os.path.getctime(file_path)
                 file_format = f"{'video' if is_video_item else 'image'}/{get_file_extension_without_dot(item)}"
                 
@@ -167,8 +185,10 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
                  
             elif os.path.isdir(os.path.join(full_folder, item)):
                 recurse(os.path.join(in_folder, item))
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            executor.map(process_item, items)
     
-        # Create a list of dictionaries starting with the files in the root folder
         results.append({'folder_path': f'{in_folder}', 'files': files})
         
     recurse("")
