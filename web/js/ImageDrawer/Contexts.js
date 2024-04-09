@@ -540,6 +540,10 @@ export class ContextFeed extends ContextClearable {
 		api.addEventListener("executed", async ({ detail }) => {
 			const outImages = detail?.output?.images;
 			if (outImages) {
+				
+				const node = app.graph.getNodeById(detail.node);
+				if (node.type == "PreviewImage") { return; } // todo: Make this configurable
+
 				for (const src of outImages) {
 					// Always add feed images to the record, but only add thumbs to the imageList if
 					// we're currently in feed mode. Otherwise they'll be added when switching to feed.
