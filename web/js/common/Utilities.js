@@ -48,6 +48,28 @@ export function getVisualElements(parentElement) {
 	return parentElement ? parentElement.querySelectorAll("video, img") : [];
 }
 
+export function pasteToTextArea(newText, textarea, selectionStart, selectionEnd) {
+
+	// Focus the textarea to make sure execCommand is working with the right selection
+	textarea.focus();
+	
+	let pasted = true;
+	try {
+		if (!document.execCommand("insertText", false, newText)) {
+			pasted = false;
+		}
+	} catch (e) {
+		console.error("Error caught during execCommand:", e);
+		pasted = false;
+	}
+
+	if (!pasted) {
+		console.error(
+			"execCommand unsuccessful; not supported. Adding text manually, no undo support.");
+		textarea.setRangeText(newText, selectionStart, selectionEnd, 'end');
+	}
+}
+
 export function getMaxZIndex(element) {
 	let maxZIndex = element.style.zIndex;
 	let parent = element.parentElement;

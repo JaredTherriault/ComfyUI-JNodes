@@ -1,6 +1,6 @@
-import { api } from "../../../../scripts/api.js";
 import { app } from "../../../../scripts/app.js";
-import { $el } from "../../../../scripts/ui.js";
+
+import { pasteToTextArea } from "./Utilities.js";
 
 // Mouse tracking
 
@@ -18,13 +18,13 @@ export function getLastMousePosition() {
 
 document.addEventListener("drop", (event) => {
 
-	if (event.target.data == app.canvas) {
+	if (event.target.data == app.canvas) { // Drop in lora node onto canvas
 		for (const item of event.dataTransfer.items) {
 
 			if (item.type != 'text/plain') { continue; }
 
 			item.getAsString(function (itemString) {
-				if (itemString && itemString.includes("loras=")) {
+				if (itemString && itemString.includes("loraNodeName=")) {
 					function addNode(name, coordinates, options) {
 						options = { select: true, shiftY: 0, ...(options || {}) };
 						const node = LiteGraph.createNode(name);
@@ -49,6 +49,17 @@ document.addEventListener("drop", (event) => {
 					}
 				}
 			});
+		}
+	} else if (event.target.tagName.toLowerCase() === 'textarea') { // Drop a1111 lora text or embedding text onto textarea
+		for (const item of event.dataTransfer.items) {
+			item.getAsString(function (itemString) {
+				if (itemString && itemString.includes("modelInsertText=")) {
+					event.preventDefault();
+					event.stopPropagation();
+
+					pasteToTextArea(itemString.split("=")[1], event.target, event.target.selectionStart, event.target.selectionEnd);
+				}
+			})
 		}
 	}
 });

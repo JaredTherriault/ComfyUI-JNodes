@@ -1,4 +1,5 @@
 import { app } from "../../../scripts/app.js";
+import { pasteToTextArea } from "./common/Utilities.js";
 
 // Allows you to edit the attention weight by holding ctrl (or cmd) and using the up/down arrow keys
 
@@ -139,25 +140,10 @@ app.registerExtension({
 				}
 			});
 
-			// Using execCommand to support undo, but since it's officially 
-			// 'deprecated' we need a backup solution
-			let pasted = true;
-			try {
-				inputField.selectionStart = start;
-				inputField.selectionEnd = end;
-				if (!document.execCommand("insertText", false, updatedText)) {
-					pasted = false;
-				}
-			} catch (e) {
-				console.error("Error caught during batch commenting:", e);
-				pasted = false;
-			}
-
-			if (!pasted) {
-				console.error(
-					"execCommand unsuccessful; not supported. Batch commenting manually, no undo support.");
-				inputField.setRangeText(updatedText, start, end, "select");
-			}
+			inputField.selectionStart = start;
+			inputField.selectionEnd = end;
+			
+			pasteToTextArea(updatedText, inputField, start, end);
 
 			inputField.selectionStart = start;
 			inputField.selectionEnd = start + updatedText.length;

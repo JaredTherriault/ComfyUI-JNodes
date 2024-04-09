@@ -1,7 +1,7 @@
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
 import { ConfigSetting, addJNodesSetting } from "./common/SettingsManager.js"
-import { clamp, getKeyList } from "./common/Utilities.js"
+import { clamp, getKeyList, pasteToTextArea } from "./common/Utilities.js"
 
 function getModifierKeyCombos() {
 	return [
@@ -112,23 +112,7 @@ function toggleTextAtTheBeginningOfEachSelectedLine(text, textarea) {
 		}
 		const modifiedText = lines.join('\n');
 
-		// Using execCommand to support undo, but since it's officially 
-		// 'deprecated' we need a backup solution, but it won't support undo :(
-		let pasted = true;
-		try {
-			if (!document.execCommand("insertText", false, modifiedText)) {
-				pasted = false;
-			}
-		} catch (e) {
-			console.error("Error caught during execCommand:", e);
-			pasted = false;
-		}
-
-		if (!pasted) {
-			console.error(
-				"execCommand unsuccessful; not supported. Batch commenting manually, no undo support.");
-			textarea.setRangeText(modifiedText, selectionStart, selectionEnd, 'end');
-		}
+		pasteToTextArea(modifiedText, textarea, selectionStart, selectionEnd);
 
 		// Restore original selection + offsets from adding/removing comment text
 		textarea.selectionStart = clamp(originalSelectionStart + selectionStartOffset, 0, textarea.value.length);

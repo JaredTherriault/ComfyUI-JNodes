@@ -56,6 +56,20 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 
 	const bIsLora = type == "loras";
 
+	const modelElement =
+		$el("div", {
+			id: "extra-networks-card",
+			"data-name": nameToUse,
+			style: {
+				textAlign: 'center',
+				objectFit: 'var(--div-fit, contain)',
+				height: 'calc(var(--max-size) * 1vh)',
+				borderRadius: '4px',
+				position: "relative",
+				aspectRatio: '0.67',
+			},
+		});
+
 	// Load the first image as the object cover image. 
 	// If one does not exist, fall back to placeholder image.
 	function getHrefForFamiliarImage(index) {
@@ -177,7 +191,6 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 	const backgroundImage =
 		$el("img", {
 			lastViewedImageIndex: lastViewedImageIndex,
-			draggable: false,
 			style: {
 				objectFit: "cover",
 				width: "100%",
@@ -222,7 +235,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 		function createButtons() {
 			if (!buttonsRow) { return; }
 
-			function createButton(foregroundElement, tooltipText, onClickFunction) {
+			function createButton(foregroundElement, tooltipText, onClickFunction, dragText) {
 				const buttonElement = $el("button", {
 					title: tooltipText,
 					style: {
@@ -234,7 +247,17 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 					foregroundElement
 				]);
 
-				buttonElement.addEventListener('click', onClickFunction);
+				if (onClickFunction) {
+					buttonElement.addEventListener('click', onClickFunction);
+				}
+
+				if (dragText) {
+					buttonElement.draggable = true;
+					buttonElement.addEventListener("dragstart", function (event) {
+						// Set data to be transferred during drag
+						event.dataTransfer.setData('text/plain', dragText);
+					});
+				}
 
 				return buttonElement;
 			}
@@ -253,7 +276,8 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 						function (e) {
 							copyToClipboard(copyAllText)
 							e.preventDefault();
-						}
+						},
+						`modelInsertText=${copyAllText}`
 					)
 				);
 
@@ -267,7 +291,8 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 						function (e) {
 							copyToClipboard(trainedWords)
 							e.preventDefault();
-						}
+						},
+						`modelInsertText=${trainedWords}`
 					)
 				);
 			}
@@ -282,9 +307,23 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 					function (e) {
 						copyToClipboard(copyModelText)
 						e.preventDefault();
-					}
+					},
+					`modelInsertText=${copyModelText}`
 				)
 			);
+
+
+			if (bIsLora) {
+				// Drag node button
+				buttonsRow.appendChild(createButton(
+					$el("label", {
+						textContent: "📓",
+					}),
+					`Drag the current model into the graph to create a node with the name ${familiars.full_name}`,
+					undefined,
+					`loraNodeName=${familiars.full_name}`
+				));
+			}
 
 			// Go to civit.ai link
 			if (modelId) {
@@ -296,8 +335,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 							href,
 							textContent: "🔗",
 						}),
-						`View model on civit.ai (${href})`,
-						function (e) { } // Empty function, link handled by href
+						`View model on civit.ai (${href})`
 					)
 				);
 			}
@@ -395,20 +433,6 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 
 	//console.log("nameToUse: " + nameToUse);
 
-	const modelElement =
-		$el("div", {
-			id: "extra-networks-card",
-			"data-name": nameToUse,
-			style: {
-				textAlign: 'center',
-				objectFit: 'var(--div-fit, contain)',
-				height: 'calc(var(--max-size) * 1vh)',
-				borderRadius: '4px',
-				position: "relative",
-				aspectRatio: '0.67',
-			},
-		});
-
 	modelElement.appendChild(backgroundImage);
 	const leftImageSwitchButton = createImageSwitchButton(true);
 	if (leftImageSwitchButton) { modelElement.appendChild(leftImageSwitchButton); }
@@ -427,16 +451,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 
 	modelElement.searchTerms = `${nameToUse}, ${trainedWords}, ${tags.join(', ')}`;
 
-	modelElement.draggable = true;
-	modelElement.addEventListener("dragstart", function (event) {
-		const bTakeAlternatePath = event.ctrlKey;
-		// Set data to be transferred during drag
-		if (bTakeAlternatePath) {
-			console.log ('bTakeAlternatePath');
-		} else {
-			event.dataTransfer.setData('text/plain', `${type}=${familiars.full_name}`);
-		}
-	});
+	modelElement.draggable = true; // Made draggable to allow image drag and drop onto canvas / nodes / file explorer
 
 	return modelElement;
 }

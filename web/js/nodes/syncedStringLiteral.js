@@ -47,26 +47,8 @@ app.registerExtension({
 						// Set the selection range to cover the entire content of the textarea
 						textWidget.element.setSelectionRange(0, textWidget.element.textLength);
 
-						// Focus the textarea to make sure execCommand is working with the right selection
-						textWidget.element.focus();
+						pasteToTextArea(asJson.text, textWidget.element, textWidget.element.selectionStart, textWidget.element.selectionEnd);
 
-						// Using execCommand to support undo, but since it's officially 
-						// 'deprecated' we need a backup solution, but it won't support undo :(
-						let pasted = true;
-						try {
-							if (!document.execCommand("insertText", false, asJson.text)) {
-								pasted = false;
-							}
-						} catch (e) {
-							console.error("Error caught during execCommand:", e);
-							pasted = false;
-						}
-
-						if (!pasted) {
-							console.error(
-								"execCommand unsuccessful; not supported. Setting text manually, no undo support.");
-							textWidget.value = asJson.text;
-						}
 					} else {
 						textWidget.value = asJson.text;
 					}
