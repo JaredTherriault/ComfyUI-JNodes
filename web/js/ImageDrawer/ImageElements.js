@@ -3,17 +3,18 @@ import { getPngMetadata } from "/scripts/pnginfo.js";
 
 import { VideoOptions } from "../common/VideoOptions.js"
 import {
-	getMaxZIndex, createDarkContainer, copyToClipboard, 
+	getMaxZIndex, createDarkContainer, copyToClipboard,
 	isValid, getCurrentSecondsFromEpoch
 } from "../common/Utilities.js";
 
-import { getLastMousePosition } from "../common/EventManager.js";
+import { getLastMousePosition, isPointerDown } from "../common/EventManager.js";
 
 import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 import { createModal } from "../common/ModalManager.js";
 
 import { setting_FontSize, setting_FontFamily } from "../textareaFontControl.js"
 import { setting_bKeyListAllowDenyToggle, setting_KeyList } from "./UiSettings.js";
+import { getDesiredImageListChildWidth } from "./ImageDrawer.js";
 
 let toolTip;
 let toolButtonContainer;
@@ -249,7 +250,7 @@ function addToolButtonToImageElement(imageElementToUse) {
 }
 
 function removeAndHideToolButtonFromImageElement(imageElementToUse) {
-	if (toolButtonContainer.parentElement == imageElementToUse) {
+	if (toolButtonContainer?.parentElement == imageElementToUse) {
 		document.body.appendChild(toolButtonContainer);
 		toolButtonContainer.style.visibility = "hidden";
 	}
@@ -274,9 +275,11 @@ export async function createImageElementFromFileInfo(fileInfo, videoOptions = ne
 		});
 
 	imageElement.mouseOverEvent = function (event) {
-
-		updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
-		addToolButtonToImageElement(imageElement)
+		// Only show tooltip if a mouse button is not being held
+		if (!isPointerDown()) {
+			updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
+			addToolButtonToImageElement(imageElement);
+		}
 	}
 
 	imageElement.mouseOutEvent = function (event) {
@@ -637,7 +640,7 @@ export async function createImageElementFromFileInfo(fileInfo, videoOptions = ne
 		img.loop = videoOptions.loop;
 		img.controls = videoOptions.controls;
 		img.muted = videoOptions.muted || videoOptions.autoplay; // Autoplay is only allowed if muted is true
-		
+
 		imageElement.bIsVideoFormat = bIsVideoFormat;
 	}
 

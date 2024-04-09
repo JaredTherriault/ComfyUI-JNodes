@@ -16,6 +16,10 @@ export function getLastMousePosition() {
 	return [lastMouseX, lastMouseY];
 }
 
+export function isPointerDown() {
+	return app?.canvas?.pointer_is_down;
+}
+
 document.addEventListener("drop", (event) => {
 
 	if (event.target.data == app.canvas) { // Drop in lora node onto canvas
