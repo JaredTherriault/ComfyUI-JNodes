@@ -43,6 +43,12 @@ export async function getEmbeddings(bForceRefresh = false) {
 	return cachedLorasObject;
 }
 
+function getLoraTextFontSize(emMultiplier) {
+	const out = `${emMultiplier}em`;
+	console.log(out);
+	return out;
+}
+
 export async function createExtraNetworkCard(nameText, familiars, type) {
 
 	if (!nameText) {
@@ -179,7 +185,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				top: '50%',
 				left: bIsLeft ? '5%' : '85%',
 				transformOrigin: 'center',
-				fontSize: 'calc((var(--drawer-width) / var(--column-count)) * 4.5%)',
+				fontSize: getLoraTextFontSize(1),
 			},
 			onclick: bIsLeft ? onClickLeft : onClickRight,
 		}, [
@@ -198,7 +204,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				height: "100%",
 			}
 		});
-	backgroundImage.src = getHrefForFamiliarImage(lastViewedImageIndex);
+	backgroundImage.dataSrc = getHrefForFamiliarImage(lastViewedImageIndex);
 
 	let imageCounterLabel;
 
@@ -375,7 +381,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				$el("label", {
 					textContent: tagName,
 					style: {
-						fontSize: 'calc((var(--drawer-width) / var(--column-count)) * 4.5%)',
+						fontSize: getLoraTextFontSize(1),
 						color: 'rgb(250,250,250)',
 						wordBreak: 'keep-all',
 					}
@@ -418,7 +424,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			$el("label", {
 				textContent: nameToUse,
 				style: {
-					fontSize: 'calc((var(--drawer-width) / var(--column-count)) * 6.5%)',
+					fontSize: getLoraTextFontSize(1.3),
 					top: '5%',
 					wordBreak: 'break-all',
 				}
