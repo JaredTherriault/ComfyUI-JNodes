@@ -2,10 +2,20 @@ import { $el } from "/scripts/ui.js";
 
 $el("style", {
 	textContent: `
+	.JNodes-image-drawer {
+		position: absolute;
+		background: var(--comfy-menu-bg);
+		color: var(--fg-color);
+		z-index: 99;
+		font-family: sans-serif;
+		font-size: 12px;
+		display: flex;
+		flex-direction: column;
+	}
 	.JNodes-image-drawer--top, .JNodes-image-drawer--bottom {
 		width: 100vw;
-		min-height: 0px;
-		max-height: calc(var(--max-size, 20) * 1vh);
+		min-height: min-content;
+		height: calc(var(--max-size, 20) * 1vh);
 	}
 	.JNodes-image-drawer--top {
 		top: 0;
@@ -18,8 +28,8 @@ $el("style", {
 	.JNodes-image-drawer--left, .JNodes-image-drawer--right {
 		top: 0;
 		height: 100vh;
-		min-width: 100px;
-		max-width: calc(var(--max-size, 10) * 1vw);
+		min-width: min-content;
+		width: calc(var(--max-size, 10) * 1vw);
 	}
 	.JNodes-image-drawer--left {
 		left: 0;
@@ -78,6 +88,10 @@ $el("style", {
 		position: relative;
 	}
 
+	.sizing-menu .size-control-handle {
+		width: max-content;
+	}
+
 	.size-controls-flyout {
 		position: absolute;
 		transform: scaleX(0%);
@@ -124,7 +138,7 @@ $el("style", {
 		justify-content: center;
 		gap: 4px;
 		grid-auto-rows: min-content;
-		grid-template-columns: repeat(var(--img-sz, 3), 1fr);
+		grid-template-columns: repeat(var(--column-count, 3), 1fr);
 		transition: 100ms linear;
 		scrollbar-gutter: stable both-edges;
 		padding: 5px;
@@ -132,7 +146,6 @@ $el("style", {
 		border-radius: 5px;
 		margin: 5px;
 		margin-top: 0px;
-		height: 90%;
 	}
 	.JNodes-image-drawer-list:empty {
 		display: none;
@@ -154,6 +167,10 @@ $el("style", {
 	}
 	.JNodes-image-drawer-list div:hover {
 		filter: brightness(1.05);
-    }`,
+    }
+	.JNodes-image-drawer-list .imageElement img,
+	.JNodes-image-drawer-list .imageElement video {
+		width: 100%;
+	}`,
 	parent: document.body,
 });

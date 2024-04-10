@@ -4,6 +4,7 @@ import { $el } from "/scripts/ui.js";
 import { copyToClipboard, createDarkContainer, getDarkColor } from "../common/Utilities.js"
 
 import { setSearchTextAndExecute } from "./ImageDrawer.js";
+import { setting_ModelCardAspectRatio } from "./UiSettings.js";
 
 const NoImagePlaceholder = new URL(`../assets/NoImage.png`, import.meta.url);
 
@@ -57,16 +58,16 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 	const bIsLora = type == "loras";
 
 	const modelElement =
-		$el("div", {
+		$el("div.extraNetworksCard", {
 			id: "extra-networks-card",
 			"data-name": nameToUse,
 			style: {
 				textAlign: 'center',
 				objectFit: 'var(--div-fit, contain)',
-				height: 'calc(var(--max-size) * 1vh)',
+				width: 'calc(var(--max-size) / var(--column-count))',
 				borderRadius: '4px',
 				position: "relative",
-				aspectRatio: '0.67',
+				aspectRatio: setting_ModelCardAspectRatio.value,
 			},
 		});
 
@@ -374,7 +375,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				$el("label", {
 					textContent: tagName,
 					style: {
-						fontSize: 'calc(var(--max-size) * 0.01vw)',
+						fontSize: 'calc((var(--max-size) / var(--column-count)) * 4.5%)',
 						color: 'rgb(250,250,250)',
 						wordBreak: 'keep-all',
 					}
@@ -394,8 +395,8 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				display: 'flex',
 				flexWrap: 'wrap',
 				justifyContent: 'center',
-				gap: '10px',
-				width: '90%'
+				gap: '3.5%',
+				width: '90%',
 			}
 		});
 
@@ -403,11 +404,12 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			id: 'darkened-text-bg',
 			style: {
 				position: "absolute",
-				top: '85%',
+				bottom: 0,
 				left: 0,
 				width: "100%",
 				backgroundColor: getDarkColor(),
-				height: '15%',
+				minHeight: '15%',
+				maxHeight: 'fit-content',
 				display: 'flex',
 				flexDirection: 'column',
 				alignItems: 'center',
@@ -416,7 +418,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			$el("label", {
 				textContent: nameToUse,
 				style: {
-					fontSize: 'calc(var(--max-size) * 0.02vw)',
+					fontSize: 'calc((var(--max-size) / var(--column-count)) * 6.5%)',
 					top: '5%',
 					wordBreak: 'break-all',
 				}

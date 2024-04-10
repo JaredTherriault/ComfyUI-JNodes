@@ -1,7 +1,7 @@
 import { $el } from "/scripts/ui.js";
 import { getPngMetadata } from "/scripts/pnginfo.js";
 
-import { VideoOptions } from "../common/VideoOptions.js"
+import { options_VideoPlayback } from "../common/VideoOptions.js"
 import {
 	getMaxZIndex, createDarkContainer, copyToClipboard,
 	isValid, getCurrentSecondsFromEpoch
@@ -14,7 +14,6 @@ import { createModal } from "../common/ModalManager.js";
 
 import { setting_FontSize, setting_FontFamily } from "../textareaFontControl.js"
 import { setting_bKeyListAllowDenyToggle, setting_KeyList } from "./UiSettings.js";
-import { getDesiredImageListChildWidth } from "./ImageDrawer.js";
 
 let toolTip;
 let toolButtonContainer;
@@ -256,7 +255,7 @@ function removeAndHideToolButtonFromImageElement(imageElementToUse) {
 	}
 }
 
-export async function createImageElementFromFileInfo(fileInfo, videoOptions = new VideoOptions()) {
+export async function createImageElementFromFileInfo(fileInfo, videoOptions = new options_VideoPlayback()) {
 	if (!fileInfo) { return; }
 	const href = `/jnodes_view_image?filename=${encodeURIComponent(fileInfo.filename)}&type=${fileInfo.type}&subfolder=${encodeURIComponent(fileInfo.subfolder)}&t=${+new Date()}`;
 	const bIsVideoFormat = fileInfo.file?.is_video || fileInfo.filename.endsWith(".mp4"); // todo: fetch acceptable video types from python
@@ -265,12 +264,8 @@ export async function createImageElementFromFileInfo(fileInfo, videoOptions = ne
 		$el("div.imageElement", {
 			complete: false,
 			style: {
-				//				textAlign: 'center',
-				//				objectFit: 'var(--div-fit, contain)',
-				//				height: 'calc(var(--max-size) * 1vh)',
-				//				borderRadius: '4px',
-				//				position: "relative",
-				maxWidth: 'fit-content',
+				width: 'calc(var(--max-size) / var(--column-count))',
+				borderRadius: '4px',
 			}
 		});
 
@@ -300,12 +295,6 @@ export async function createImageElementFromFileInfo(fileInfo, videoOptions = ne
 		// Store the image source as a data attribute for easy access
 		dataSrc: href,
 		preload: "none",
-		style: {
-			objectFit: 'var(--div-fit, contain)',
-			maxWidth: '100%',
-			maxHeight: 'calc(var(--max-size) * 1vh)',
-			borderRadius: '4px',
-		},
 		onload: async function () {
 			if (img.complete) {
 				//console.log('Image has been completely loaded.');
@@ -565,9 +554,12 @@ export async function createImageElementFromFileInfo(fileInfo, videoOptions = ne
 		}
 	});
 
+	// Placeholder dimensions
 	if (fileInfo.file?.metadata_read) {
-		img.style.height = fileInfo.file.dimensions[0];
-		img.style.width = fileInfo.file.dimensions[1];
+		imageElement.fileWidth = fileInfo.file.dimensions[0];
+		imageElement.fileHeight = fileInfo.file.dimensions[1];
+
+		imageElement.style.aspectRatio = imageElement.fileWidth / imageElement.fileHeight;
 	} else {
 		//If we can't properly placehold, load the whole image now instead of later
 		img.src = img.dataSrc;

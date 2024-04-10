@@ -1,7 +1,7 @@
 import { $el } from "/scripts/ui.js";
 
 import { ConfigSetting, addJNodesSetting } from "../common/SettingsManager.js";
-import { VideoOptions } from "../common/VideoOptions.js";
+import { options_VideoPlayback } from "../common/VideoOptions.js";
 
 export const defaultKeyList = "prompt, workflow";
 
@@ -18,7 +18,9 @@ export let setting_DrawerLocation = new ImageDrawerConfigSetting("DrawerLocation
 export let setting_KeyList = new ImageDrawerConfigSetting("ImageVideo.KeyList", defaultKeyList);
 export let setting_bKeyListAllowDenyToggle = new ImageDrawerConfigSetting("ImageVideo.bKeyListAllowDenyToggle", false);
 
-export let setting_VideoSettings = new ImageDrawerConfigSetting("Video.VideoOptions", new VideoOptions);
+export let setting_ModelCardAspectRatio = new ImageDrawerConfigSetting("Models.AspectRatio", 0.67);
+
+export let setting_VideoSettings = new ImageDrawerConfigSetting("Video.VideoOptions", new options_VideoPlayback);
 
 // Button setup
 

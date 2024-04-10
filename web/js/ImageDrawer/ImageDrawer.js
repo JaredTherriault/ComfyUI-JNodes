@@ -86,7 +86,7 @@ export function getColumnCount() {
 
 export function setColumnCount(value) {
 	columnInput.parentElement.title = `Controls the number of columns in the drawer (${value} columns).\nClick label to set custom value.`;
-	imageDrawer.style.setProperty("--img-sz", value);
+	imageDrawer?.style.setProperty("--column-count", value);
 	setting_ImageSize.value = value;
 	columnInput.max = Math.max(10, value, columnInput.max);
 	columnInput.value = value;
@@ -311,17 +311,7 @@ app.registerExtension({
 
 		// The main drawer widget
 		imageDrawer = $el("div.JNodes-image-drawer", {
-			parent: document.body,
-			style: {
-				position: 'absolute',
-				background: 'var(--comfy-menu-bg)',
-				color: 'var(--fg-color)',
-				zIndex: '99',
-				fontFamily: 'sans-serif',
-				fontSize: '12px',
-				display: 'flex',
-				flexDirection: 'column',
-			}
+			parent: document.body
 		});
 
 		// Initialize location

@@ -167,3 +167,68 @@ export function addJNodesSetting(nameWidget, settingWidget, tooltip) {
 
     sortTable();
 }
+export class options_LabeledSliderRange {
+    labelTextContent = undefined;
+    bIncludeValueLabel = true;
+    id = undefined;
+    value = 0;
+    min = 0;
+    max = 1;
+    step = 0.1;
+    oninput = undefined;
+}
+
+export function createLabeledSliderRange(options = new options_LabeledSliderRange()) {
+
+    let labelElement;
+
+    if (options.bIncludeValueLabel) {
+        labelElement = $el('label', {
+            textContent: options.value.toFixed(2)
+        });
+
+        // Save the original oninput callback from options
+        const originalOnInput = options.oninput;
+
+        // Update the options.oninput callback
+        options.oninput = (e) => {
+            // Call the original oninput callback if available
+            if (originalOnInput && typeof originalOnInput === 'function') {
+                originalOnInput(e);
+            }
+
+            // Get the input value and round it to 2 decimal places
+            const inputValue = parseFloat(e.target.value); // Convert input value to number
+            const roundedValue = isNaN(inputValue) ? 0.00 : inputValue.toFixed(2); // Round to 2 decimal places
+
+            // Update the labelElement text content with the rounded value
+            labelElement.textContent = roundedValue;
+        };
+    }
+
+    let MainElement = $el('input', {
+        id: options.id,
+        type: 'range',
+        value: options.value,
+        min: options.min,
+        max: options.max,
+        step: options.step,
+        oninput: options.oninput
+    });
+
+    let SliderRange = $el('div', {
+        style: {
+            display: 'flex',
+            alignItems: 'center'
+        }
+    }, [
+        $el('label', { textContent: options.labelTextContent }),
+        MainElement
+    ]);
+
+    if (labelElement) {
+        SliderRange.appendChild(labelElement);
+    }
+
+    return SliderRange;
+}

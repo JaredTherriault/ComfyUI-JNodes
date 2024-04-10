@@ -2,6 +2,9 @@
 // then plays it. If the image is scrolled out of view, the playback stops. This applies to video
 // and image types including mp4, m4v, wepb, gif, apng, etc.
 
+// Note: On some browsers the user may have to explicitly allow autoplay in order for playback to work correctly
+// Otherwise, you end up with a bunch of errors while scrolling informing us that the user didn't 'interact' with the page first (even if they are clearly scrolling)
+
 export class ImageAndVideoObserverOptions {
 	autoPlayVideos = true;
 	playMuted = true;
@@ -18,7 +21,9 @@ async function tryPlayVideo(element) {
 		try {
 			await element.play();
 			element.muted = observerOptions.playMuted;
-		} catch { }
+		} catch (error) {
+			console.error(error);
+		 }
 	}
 }
 
@@ -65,10 +70,6 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 		if (entry.isIntersecting) {
 			if (!element.src) {
 				element.src = element.dataSrc;
-
-				// Reset explicit height and width to allow algorithmic dimensions
-				element.style.height = '';
-				element.style.width = '';
 
 				if (element.tagName !== 'VIDEO') {
 					unobserveVisualElement(element);

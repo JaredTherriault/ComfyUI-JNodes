@@ -11,8 +11,10 @@ import {
 	clearAndHandleSearch, setColumnCount, setDrawerSize, setContextToolbarWidget
 } from "./ImageDrawer.js"
 
-import { VideoOptions } from "../common/VideoOptions.js"
+import { options_VideoPlayback } from "../common/VideoOptions.js"
 import { decodeReadableStream } from "../common/Utilities.js"
+import { setting_ModelCardAspectRatio } from "./UiSettings.js";
+import { createLabeledSliderRange, options_LabeledSliderRange } from "../common/SettingsManager.js";
 
 let Contexts;
 
@@ -239,6 +241,32 @@ class ContextModel extends ContextRefreshable {
 		}
 	}
 
+	async makeToolbar() {
+
+		const container = await super.makeToolbar();
+
+		let options = new options_LabeledSliderRange();
+		options.labelTextContent = 'Card Aspect Ratio:'
+		options.id = 'ModelCardAspectRatioSlider';
+		options.value = setting_ModelCardAspectRatio.value;
+		options.min = 0.1;
+		options.max = 2;
+		options.step = 0.01;
+		options.bIncludeValueLabel = true;
+		options.oninput = (e) => {
+			setting_ModelCardAspectRatio.value = e.target.value;
+			for (let element of getImageListChildren()) {
+				if (element.classList.contains('extraNetworksCard')) {
+					element.style.aspectRatio = setting_ModelCardAspectRatio.value;
+				}
+			}
+		};
+
+		container.insertBefore(createLabeledSliderRange(options), container.firstChild);
+
+		return container;
+	}
+
 	async onRefreshClicked() {
 		await this.loadModels(true);
 		super.onRefreshClicked();
@@ -270,11 +298,12 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		clearImageListChildren();
 		const withOrWithout = this.bIncludeSubfolders ? "with" : "without";
 		await addElementToImageList(
-			$el("label", { 
-				textContent: 
-					`Loading ${path_to_load_images_from || this.rootFolderName} folder ${withOrWithout} subfolders...` }));
+			$el("label", {
+				textContent:
+					`Loading ${path_to_load_images_from || this.rootFolderName} folder ${withOrWithout} subfolders...`
+			}));
 		const allItems = await api.fetchApi(
-			'/jnodes_comfyui_subfolder_items' + 
+			'/jnodes_comfyui_subfolder_items' +
 			`?root_folder=${this.rootFolderName}` +
 			`&start_getting_files_from_folder=${path_to_load_images_from}` +
 			`&include_subfolder_files=${this.bIncludeSubfolders}`);
@@ -347,7 +376,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 
 		const bUseBatching = false;
 
-		let videoOptions = new VideoOptions();
+		let videoOptions = new options_VideoPlayback();
 		videoOptions.autoplay = false;
 		videoOptions.loop = true;
 		videoOptions.controls = true;
@@ -540,7 +569,7 @@ export class ContextFeed extends ContextClearable {
 		api.addEventListener("executed", async ({ detail }) => {
 			const outImages = detail?.output?.images;
 			if (outImages) {
-				
+
 				const node = app.graph.getNodeById(detail.node);
 				if (node.type == "PreviewImage") { return; } // todo: Make this configurable
 
@@ -563,7 +592,7 @@ export class ContextFeed extends ContextClearable {
 		if (imageListLength < this.feedImages.length) {
 			for (let imageIndex = imageListLength; imageIndex < this.feedImages.length; imageIndex++) {
 				let src = this.feedImages[imageIndex];
-				let videoOptions = new VideoOptions();
+				let videoOptions = new options_VideoPlayback();
 				videoOptions.autoplay = true; videoOptions.loop = true;
 				let element = await ImageElements.createImageElementFromFileInfo(src, videoOptions);
 				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
