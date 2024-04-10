@@ -11,34 +11,48 @@ $el("style", {
 		font-size: 12px;
 		display: flex;
 		flex-direction: column;
-	}
-	.JNodes-image-drawer--top, .JNodes-image-drawer--bottom {
-		width: 100vw;
+		min-width: min-content;
+		width: calc(var(--drawer-width, 20) * 1vw);
 		min-height: min-content;
-		height: calc(var(--max-size, 20) * 1vh);
+		height: calc(var(--drawer-height, 20) * 1vh);		
 	}
-	.JNodes-image-drawer--top {
-		top: 0;
-	}
-	.JNodes-image-drawer--bottom {
+	.JNodes-image-drawer--bottom-left,
+	.JNodes-image-drawer--bottom-right {
 		bottom: 0;
 		flex-direction: column-reverse;
 		padding-top: 1px;
 	}
-	.JNodes-image-drawer--left, .JNodes-image-drawer--right {
+	.JNodes-image-drawer--top-left, 
+	.JNodes-image-drawer--top-right {
 		top: 0;
-		height: 100vh;
-		min-width: min-content;
-		width: calc(var(--max-size, 10) * 1vw);
 	}
-	.JNodes-image-drawer--left {
+	.JNodes-image-drawer--top-left,
+	.JNodes-image-drawer--bottom-left {
 		left: 0;
 	}
-	.JNodes-image-drawer--right {
+	.JNodes-image-drawer--top-right,
+	.JNodes-image-drawer--bottom-right {
 		right: 0;
 	}
 
-	.JNodes-image-drawer--left .JNodes-image-drawer-menu, .JNodes-image-drawer--right .JNodes-image-drawer-menu {
+	.JNodes-image-drawer-basic-controls-group {
+		display: flex;
+		gap: .5rem;
+		flex: 0 1 fit-content;
+	}
+
+	.JNodes-image-drawer--top-left .JNodes-image-drawer-basic-controls-group,
+	.JNodes-image-drawer--bottom-left .JNodes-image-drawer-basic-controls-group {
+		align-items: left;
+		justify-content: flex-start;
+	}
+	.JNodes-image-drawer--top-right .JNodes-image-drawer-basic-controls-group,
+	.JNodes-image-drawer--bottom-right .JNodes-image-drawer-basic-controls-group {
+		align-items: right;
+		justify-content: flex-end;
+	}
+
+	.JNodes-image-drawer-menu {
 		flex-direction: column;
 	}
 	
@@ -63,22 +77,29 @@ $el("style", {
 		top:1px;
 	}
 	
-	.JNodes-image-drawer-menu section {
-		border-radius: 5px;
-		background: rgba(0,0,0,0.6);
+	.JNodes-image-drawer-menu section,
+	.JNodes-image-drawer-menu tr {
+		background: rgba(0,0,0,0.9);
 		padding: 0 5px;
 		display: flex;
 		gap: 5px;
 		align-items: center;
 		position: relative;
 	}
+	.JNodes-image-drawer-menu section {
+		border-radius: 15px;
+	}
+	.JNodes-image-drawer-menu tr {
+		border-radius: 2px;
+	}
+	.JNodes-image-drawer-menu td {
+		width: 50%
+	}
 	.JNodes-image-drawer-menu section span {
 		white-space: nowrap;
-		width: 100px;
 	}
 	.JNodes-image-drawer-menu section input {
 		flex: 1 1 100%;
-		background: rgba(0,0,0,0.6);
 		border-radius: 5px;
 		overflow: hidden;
 		z-index: 100;
@@ -106,28 +127,28 @@ $el("style", {
 		transition: 200ms linear;
 		transition-delay: 0;
 	}
-	.JNodes-image-drawer--bottom .size-controls-flyout  {
-		transform: scale(1,0);
-		transform-origin: bottom;
-		bottom: 0;
-		left: 0;
-	}
-	.JNodes-image-drawer--top .size-controls-flyout  {
+	.JNodes-image-drawer--top-left .size-controls-flyout,
+	.JNodes-image-drawer--top-right .size-controls-flyout  {
 		transform: scale(1,0);
 		transform-origin: top;
 		top: 0;
+	}
+	.JNodes-image-drawer--top-left .size-controls-flyout  {
 		left: 0;
 	}
-	.JNodes-image-drawer--left .size-controls-flyout  {
-		transform: scale(0, 1);
-		transform-origin: left;
-		top: 0;
+	.JNodes-image-drawer--top-right .size-controls-flyout  {
+		right: 0;
+	}
+	.JNodes-image-drawer--bottom-left .size-controls-flyout,
+	.JNodes-image-drawer--bottom-right .size-controls-flyout  {
+		transform: scale(1,0);
+		transform-origin: bottom;
+		bottom: 0;
+	}
+	.JNodes-image-drawer--bottom-left .size-controls-flyout  {
 		left: 0;
 	}
-	.JNodes-image-drawer--right .size-controls-flyout  {
-		transform: scale(0, 1);
-		transform-origin: right;
-		top: 0;
+	.JNodes-image-drawer--bottom-right .size-controls-flyout  {
 		right: 0;
 	}
 	.JNodes-image-drawer-list {

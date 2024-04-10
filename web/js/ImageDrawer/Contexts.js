@@ -8,7 +8,7 @@ import { getCurrentContextName } from "./ContextSelector.js";
 import {
 	getImageListChildren, replaceImageListChildren, clearImageListChildren,
 	addElementToImageList, setImageListScrollLevel, setSearchTextAndExecute,
-	clearAndHandleSearch, setColumnCount, setDrawerSize, setContextToolbarWidget
+	clearAndHandleSearch, setColumnCount, setDrawerHeight, setDrawerWidth, setContextToolbarWidget
 } from "./ImageDrawer.js"
 
 import { options_VideoPlayback } from "../common/VideoOptions.js"
@@ -59,11 +59,12 @@ export function getContextObjectFromName(contextName) {
 }
 
 export class ImageDrawerContextCache {
-	constructor(scrollLevel, searchBarText, columnCount, drawerSize, imageListElements, sortType) {
+	constructor(scrollLevel, searchBarText, columnCount, drawerWidth, drawerHeight, imageListElements, sortType) {
 		this.scrollLevel = scrollLevel;
 		this.searchBarText = searchBarText;
 		this.columnCount = columnCount;
-		this.drawerSize = drawerSize;
+		this.drawerWidth = drawerWidth;
+		this.drawerHeight = drawerHeight;
 		this.imageListElements = imageListElements;
 		this.sortType = sortType;
 	}
@@ -126,7 +127,8 @@ class ImageDrawerContext {
 				setSearchTextAndExecute(this.cache.searchBarText);
 				// Drawer column count and size
 				setColumnCount(this.cache.columnCount);
-				setDrawerSize(this.cache.drawerSize);
+				setDrawerWidth(this.cache.drawerWidth);
+				setDrawerHeight(this.cache.drawerHeight);
 				// Restore sort type
 				Sorting.setOptionSelectedFromOptionName(this.cache.sortType);
 				// Restore scroll level

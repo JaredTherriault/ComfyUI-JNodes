@@ -264,7 +264,7 @@ export async function createImageElementFromFileInfo(fileInfo, videoOptions = ne
 		$el("div.imageElement", {
 			complete: false,
 			style: {
-				width: 'calc(var(--max-size) / var(--column-count))',
+				width: 'calc(var(--drawer-width) / var(--column-count))',
 				borderRadius: '4px',
 			}
 		});

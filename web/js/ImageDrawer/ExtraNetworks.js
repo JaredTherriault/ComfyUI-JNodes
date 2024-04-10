@@ -64,7 +64,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			style: {
 				textAlign: 'center',
 				objectFit: 'var(--div-fit, contain)',
-				width: 'calc(var(--max-size) / var(--column-count))',
+				width: 'calc(var(--drawer-width) / var(--column-count))',
 				borderRadius: '4px',
 				position: "relative",
 				aspectRatio: setting_ModelCardAspectRatio.value,
@@ -179,7 +179,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				top: '50%',
 				left: bIsLeft ? '5%' : '85%',
 				transformOrigin: 'center',
-				fontSize: 'calc(var(--max-size) * 0.02vw)',
+				fontSize: 'calc((var(--drawer-width) / var(--column-count)) * 4.5%)',
 			},
 			onclick: bIsLeft ? onClickLeft : onClickRight,
 		}, [
@@ -375,7 +375,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				$el("label", {
 					textContent: tagName,
 					style: {
-						fontSize: 'calc((var(--max-size) / var(--column-count)) * 4.5%)',
+						fontSize: 'calc((var(--drawer-width) / var(--column-count)) * 4.5%)',
 						color: 'rgb(250,250,250)',
 						wordBreak: 'keep-all',
 					}
@@ -409,7 +409,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				width: "100%",
 				backgroundColor: getDarkColor(),
 				minHeight: '15%',
-				maxHeight: 'fit-content',
+				maxHeight: '90%',
 				display: 'flex',
 				flexDirection: 'column',
 				alignItems: 'center',
@@ -418,7 +418,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			$el("label", {
 				textContent: nameToUse,
 				style: {
-					fontSize: 'calc((var(--max-size) / var(--column-count)) * 6.5%)',
+					fontSize: 'calc((var(--drawer-width) / var(--column-count)) * 6.5%)',
 					top: '5%',
 					wordBreak: 'break-all',
 				}

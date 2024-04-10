@@ -4,7 +4,7 @@ import * as Contexts from "./Contexts.js";
 import * as Sorting from "./Sorting.js";
 import {
 	getImageListChildren, getImageListScrollLevel, getSearchText,
-	focusAndSelectSearchText, getColumnCount, getDrawerSize
+	focusAndSelectSearchText, getColumnCount, getDrawerHeight, getDrawerWidth
 } from "./ImageDrawer.js"
 
 let ContextSelector;
@@ -45,8 +45,9 @@ export async function onOptionSelected(selectedValue) {
 		const childNodesArray = Array.from(getImageListChildren());
 		const newCache =
 			new Contexts.ImageDrawerContextCache(
-				getImageListScrollLevel(), getSearchText(), getColumnCount(),
-				getDrawerSize(), childNodesArray, Sorting.getCurrentSortTypeName());
+				getImageListScrollLevel(), getSearchText(), 
+				getColumnCount(), getDrawerWidth(), getDrawerHeight(), 
+				childNodesArray, Sorting.getCurrentSortTypeName());
 		Contexts.getContextObjectFromName(lastSelectedContextOption)?.setCache(newCache);
 	}
 

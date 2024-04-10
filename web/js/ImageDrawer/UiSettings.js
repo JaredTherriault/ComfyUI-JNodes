@@ -13,7 +13,7 @@ export class ImageDrawerConfigSetting extends ConfigSetting {
 
 export let setting_bEnabled = new ImageDrawerConfigSetting("bEnabled", true);
 export let setting_bMasterVisibility = new ImageDrawerConfigSetting("bMasterVisibility", true);
-export let setting_DrawerLocation = new ImageDrawerConfigSetting("DrawerLocation", "left");
+export let setting_DrawerAnchor = new ImageDrawerConfigSetting("DrawerAnchor", "top-left");
 
 export let setting_KeyList = new ImageDrawerConfigSetting("ImageVideo.KeyList", defaultKeyList);
 export let setting_bKeyListAllowDenyToggle = new ImageDrawerConfigSetting("ImageVideo.bKeyListAllowDenyToggle", false);
@@ -40,7 +40,7 @@ showButton.onclick = () => {
 };
 document.querySelector(".comfy-settings-btn").after(showButton);
 
-export const setupUiSettings = () => {
+export const setupUiSettings = (onDrawerAnchorInput) => {
     // Enable/disable
     {
         const labelWidget = $el("label", {
@@ -64,26 +64,10 @@ export const setupUiSettings = () => {
     // Drawer location
     {
         const labelWidget = $el("label", {
-            textContent: "Image Drawer Location:",
+            textContent: "Image Drawer Anchor:",
         });
 
-        const settingWidget = $el(
-            "select",
-            {
-                oninput: (e) => {
-                    setting_DrawerLocation.value = e.target.value;
-                    imageDrawer.className =
-                        `JNodes-image-drawer JNodes-image-drawer--${e.target.value}`;
-                },
-            },
-            ["left", "top", "right", "bottom"].map((m) =>
-                $el("option", {
-                    value: m,
-                    textContent: m,
-                    selected: setting_DrawerLocation.value === m,
-                })
-            )
-        );
+        const settingWidget = createDrawerSelectionWidget(onDrawerAnchorInput);            
 
         const tooltip = "To which part of the screen the drawer should be docked";
         addJNodesSetting(labelWidget, settingWidget, tooltip);
@@ -133,3 +117,17 @@ export const setupUiSettings = () => {
         addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
 };
+
+export function createDrawerSelectionWidget(onInput) {
+    return $el("select", {
+        oninput: onInput,
+    },
+        ["top-left", "top-right", "bottom-left", "bottom-right"].map((m) =>
+            $el("option", {
+                value: m,
+                textContent: m,
+                selected: setting_DrawerAnchor.value === m,
+            })
+        )
+    );
+}

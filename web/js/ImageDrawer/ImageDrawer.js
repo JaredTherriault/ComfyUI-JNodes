@@ -7,7 +7,11 @@ import * as Sorting from "./Sorting.js";
 
 import { setElementVisibility, getVisualElements, getVideoElements } from "../common/Utilities.js"
 import { observeVisualElement, unobserveVisualElement } from "../common/ImageAndVideoObserver.js";
-import { ImageDrawerConfigSetting, setupUiSettings, setting_bEnabled, setting_bMasterVisibility, setting_DrawerLocation } from "./UiSettings.js";
+import { 
+	ImageDrawerConfigSetting, setupUiSettings, createDrawerSelectionWidget, 
+	setting_bEnabled, setting_bMasterVisibility, setting_DrawerAnchor
+} from "./UiSettings.js";
+import { createLabeledSliderRange, options_LabeledSliderRange } from "../common/SettingsManager.js";
 
 // Attribution: pythongsssss's Image Feed. So much brilliance in that original script.
 
@@ -16,16 +20,18 @@ import { ImageDrawerConfigSetting, setupUiSettings, setting_bEnabled, setting_bM
 let imageDrawer;
 let imageList;
 let DrawerOptionsFlyout;
-let drawerSizeSlider;
 let SearchBar;
 let ImageDrawerContextToolbar;
-let columnInput;
+let drawerWidthSlider;
+let drawerHeightSlider;
+let columnSlider;
 
-const _minimumDrawerSize = 4;
+const _minimumDrawerSize = 10;
 const _maximumDrawerSize = 100;
 
-let setting_ImageSize = new ImageDrawerConfigSetting("ImageSize", 4);
-let setting_DrawerSize = new ImageDrawerConfigSetting("DrawerSize", 25);
+let setting_ColumnCount = new ImageDrawerConfigSetting("ImageSize", 4);
+let setting_DrawerHeight = new ImageDrawerConfigSetting("DrawerHeight", 25);
+let setting_DrawerWidth = new ImageDrawerConfigSetting("DrawerWidth", 25);
 
 // Helpers
 
@@ -81,27 +87,49 @@ export async function addElementToImageList(element, bHandleSearch = true) {
 };
 
 export function getColumnCount() {
-	return setting_ImageSize.value;
+	return setting_ColumnCount.value;
 }
 
-export function setColumnCount(value) {
-	columnInput.parentElement.title = `Controls the number of columns in the drawer (${value} columns).\nClick label to set custom value.`;
+export function setColumnCount(value, setColumnCountSliderValue = true) {
+	setting_ColumnCount.value = value;
 	imageDrawer?.style.setProperty("--column-count", value);
-	setting_ImageSize.value = value;
-	columnInput.max = Math.max(10, value, columnInput.max);
-	columnInput.value = value;
-}
-
-export function getDrawerSize() {
-	return setting_DrawerSize.value;
-}
-
-export function setDrawerSize(value, setDrawerSizeSliderValue = false) {
-	setting_DrawerSize.value = value;
-	imageDrawer?.style.setProperty("--max-size", value);
-	if (setDrawerSizeSliderValue && drawerSizeSlider) {
-		drawerSizeSlider.value = value;
+	if (setColumnCountSliderValue && columnSlider) {
+		columnSlider.max = Math.max(10, value, columnSlider.max);
+		columnSlider.value = value;
+		columnSlider.title = `Controls the number of columns in the drawer (${value} columns).\nClick label to set custom value.`;
 	}
+}
+
+export function getDrawerWidth() {
+	return setting_DrawerWidth.value;
+}
+
+export function setDrawerWidth(value, setDrawerWidthSliderValue = true) {
+	setting_DrawerWidth.value = value;
+	imageDrawer?.style.setProperty("--drawer-width", value);
+	if (setDrawerWidthSliderValue && drawerWidthSlider) {
+		drawerWidthSlider.value = value;
+		drawerWidthSlider.title = `Controls the maximum width of the drawer panel (${value}vw)`;
+	}
+}
+
+export function getDrawerHeight() {
+	return setting_DrawerHeight.value;
+}
+
+export function setDrawerHeight(value, setDrawerHeightSliderValue = true) {
+	setting_DrawerHeight.value = value;
+	imageDrawer?.style.setProperty("--drawer-height", value);
+	if (setDrawerHeightSliderValue && drawerHeightSlider) {
+		drawerHeightSlider.value = value;
+		drawerHeightSlider.title = `Controls the maximum height of the drawer panel (${value}vh)`;
+	}
+}
+
+function setDrawerAnchor(value) {
+	setting_DrawerAnchor.value = value;
+	imageDrawer.className =
+		`JNodes-image-drawer JNodes-image-drawer--${value}`;
 }
 
 function createSearchBar() {
@@ -199,34 +227,55 @@ export function setSortingOptions(options) {
 
 const createDrawerOptionsFlyout = () => {
 
-	drawerSizeSlider = $el("input", {
-		type: "range",
-		min: _minimumDrawerSize,
-		max: _maximumDrawerSize,
-		oninput: (e) => {
-			e.target.parentElement.title = `Controls the maximum size of the drawer panel (${e.target.value}vh)`;
-			setDrawerSize(e.target.value);
-		},
-		$: (el) => {
-			requestAnimationFrame(() => {
-				el.value = getDrawerSize();
-				el.oninput({ target: el });
-			});
-		},
-	});
+	let widthSliderOptions = new options_LabeledSliderRange();
+	widthSliderOptions.min = _minimumDrawerSize;
+	widthSliderOptions.max = _maximumDrawerSize;
+	widthSliderOptions.value = getDrawerWidth();
+	widthSliderOptions.oninput = (e) => {
+		setDrawerWidth(e.target.value, false);
+	};
+	drawerWidthSlider = createLabeledSliderRange(widthSliderOptions);
+	setDrawerWidth(getDrawerWidth());
+
+	let heightSliderOptions = new options_LabeledSliderRange();
+	heightSliderOptions.min = _minimumDrawerSize;
+	heightSliderOptions.max = _maximumDrawerSize;
+	heightSliderOptions.value = getDrawerHeight();
+	heightSliderOptions.oninput = (e) => {
+		setDrawerHeight(e.target.value, false);
+	};
+	drawerHeightSlider = createLabeledSliderRange(heightSliderOptions);
+	setDrawerHeight(getDrawerHeight());
+
+	let columnSliderOptions = new options_LabeledSliderRange();
+	columnSliderOptions.min = 1;
+	columnSliderOptions.max = 10;
+	columnSliderOptions.step = 1;
+	columnSliderOptions.value = getColumnCount();
+	columnSliderOptions.oninput = (e) => {
+		setColumnCount(e.target.value, false);
+	};
+	columnSlider = createLabeledSliderRange(columnSliderOptions);
+	setColumnCount(getColumnCount());
 
 	DrawerOptionsFlyout =
 		$el("section.sizing-menu", [
-			$el("label.size-control-handle", { textContent: "↹ Drawer Options" }),
+			$el("label.size-control-handle", { textContent: "👁️" }),
 			$el("div.size-controls-flyout", [
-				$el("section.size-control.drawer-size-control", [
-					$el("span", {
-						textContent: "Drawer Size",
-					}),
-					drawerSizeSlider,
+				$el("tr.section.size-control.drawer-width-control", [
+					$el('td', [$el("span", {
+						textContent: 'Drawer Width',
+					})]),
+					$el('td', [drawerWidthSlider])
 				]),
-				$el("section.size-control.column-count-control", [
-					$el("a", {
+				$el("tr.section.size-control.drawer-height-control", [
+					$el('td', [$el("span", {
+						textContent: 'Drawer Height',
+					})]),
+					$el('td', [drawerHeightSlider])
+				]),
+				$el("tr.section.size-control.column-count-control", [
+					$el('td', [$el("a", {
 						textContent: "Column count",
 						style: {
 							cursor: "pointer",
@@ -238,45 +287,15 @@ const createDrawerOptionsFlyout = () => {
 								setColumnCount(value);
 							}
 						},
-					}),
-					$el("input", {
-						type: "range",
-						min: 1,
-						max: 10,
-						step: 1,
-						oninput: (e) => {
-							setColumnCount(e.target.value);
-						},
-						$: (el) => {
-							columnInput = el;
-							requestAnimationFrame(() => {
-								setColumnCount(getColumnCount());
-							});
-						},
-					}),
+					})]),
+					$el('td', [columnSlider])
 				]),
-				// Location Select
-				$el("section.drawer-location-control", [
-					$el("label", {
-						textContent: "Image Drawer Location:",
-					}),
-					$el(
-						"select",
-						{
-							oninput: (e) => {
-								setting_DrawerLocation.value = e.target.value;
-								imageDrawer.className =
-									`JNodes-image-drawer JNodes-image-drawer--${e.target.value}`;
-							},
-						},
-						["left", "top", "right", "bottom"].map((m) =>
-							$el("option", {
-								value: m,
-								textContent: m,
-								selected: setting_DrawerLocation.value === m,
-							})
-						)
-					)
+				// Anchor Select
+				$el("tr.section.drawer-anchor-control", [
+					$el('td', [$el("span", {
+						textContent: "Image Drawer Anchor:",
+					})]),
+					$el('td', [createDrawerSelectionWidget((e) => { setDrawerAnchor(e.target.value); })])
 				]),
 			])
 		]);
@@ -286,7 +305,7 @@ app.registerExtension({
 	name: "JNodes.ImageDrawer",
 	async setup() {
 
-		setupUiSettings();
+		setupUiSettings((e) => { setDrawerAnchor(e.target.value); });
 
 		if (!setting_bEnabled.value) {
 			return;
@@ -314,10 +333,10 @@ app.registerExtension({
 			parent: document.body
 		});
 
-		// Initialize location
-		const drawerStartingLocation = setting_DrawerLocation.value;
+		// Initialize Anchor
+		const drawerStartingAnchor = setting_DrawerAnchor.value;
 		imageDrawer.className =
-			`JNodes-image-drawer JNodes-image-drawer--${drawerStartingLocation}`;
+			`JNodes-image-drawer JNodes-image-drawer--${drawerStartingAnchor}`;
 
 		// Where images are shown
 		imageList = $el("div.JNodes-image-drawer-list", {
@@ -362,15 +381,7 @@ app.registerExtension({
 			]);
 
 		const BasicControlsGroup =
-			$el("div.JNodes-image-drawer-basic-controls-group", {
-				style: {
-					alignItems: 'left',
-					display: 'flex',
-					gap: '.5rem',
-					flex: '0 1 fit-content',
-					justifyContent: 'flex-start',
-				}
-			}, [hideButton, DrawerOptionsFlyout]);
+			$el("div.JNodes-image-drawer-basic-controls-group", [hideButton, DrawerOptionsFlyout]);
 
 		ImageDrawerContextToolbar =
 			$el("div.JNodes-image-drawer-context-toolbar");
