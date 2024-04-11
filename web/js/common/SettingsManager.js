@@ -173,6 +173,7 @@ export function addJNodesSetting(nameWidget, settingWidget, tooltip) {
 export class options_LabeledSliderRange {
     labelTextContent = undefined;
     bIncludeValueLabel = true;
+    bPrependValueLabel = false;
     id = undefined;
     value = 0;
     min = 0;
@@ -222,14 +223,19 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
     let OuterElement = $el('div', {
         style: {
             display: 'flex',
-            alignItems: 'center'
+            alignItems: 'center',
+            gap: '5%'
         }
-    }, [
-        $el('label', { textContent: options.labelTextContent }),
-        MainElement
-    ]);
+    });
 
-    if (valueLabelElement) {
+    if (options.bPrependValueLabel && valueLabelElement) {
+        OuterElement.appendChild(valueLabelElement);
+    }
+        
+    OuterElement.appendChild($el('label', { textContent: options.labelTextContent }));
+    OuterElement.appendChild(MainElement);
+
+    if (!options.bPrependValueLabel && valueLabelElement) { //append otherwise
         OuterElement.appendChild(valueLabelElement);
     }
 

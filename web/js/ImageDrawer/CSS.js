@@ -13,7 +13,7 @@ $el("style", {
 		flex-direction: column;
 		min-width: min-content;
 		width: calc(var(--drawer-width, 20) * 1vw);
-		min-height: min-content;
+		min-height: max-content;
 		height: calc(var(--drawer-height, 20) * 1vh);		
 	}
 	.JNodes-image-drawer--bottom-left,
@@ -66,9 +66,6 @@ $el("style", {
 		flex: 0 1 fit-content;
 		text-decoration:none;
 	}
-	.JNodes-image-drawer-btn.sizing-btn:checked {
-		filter: invert();
-	}
 	.JNodes-image-drawer-btn:hover {
 		filter: brightness(1.2);
 	}
@@ -77,80 +74,83 @@ $el("style", {
 		top:1px;
 	}
 	
-	.JNodes-image-drawer-menu section,
-	.JNodes-image-drawer-menu tr {
+	.flyout-handle,
+	.flyout-handle .flyout-menu {
 		background: rgba(0,0,0,0.9);
-		padding: 0 5px;
 		display: flex;
 		gap: 5px;
+		border-radius: 4px;
+	}
+	.flyout-handle {
 		align-items: center;
-		position: relative;
+		padding: 0 5px;
 	}
-	.JNodes-image-drawer-menu section {
-		border-radius: 15px;
+	.flyout-handle .flyout-menu tr {
+		width: 100%
 	}
-	.JNodes-image-drawer-menu tr {
-		border-radius: 2px;
+	.flyout-handle .flyout-menu td {
+		width: 100%
 	}
-	.JNodes-image-drawer-menu td {
-		width: 50%
-	}
-	.JNodes-image-drawer-menu section span {
+	.flyout-handle tr span,
+	.flyout-handle tr a {
 		white-space: nowrap;
 	}
-	.JNodes-image-drawer-menu section input {
+	.flyout-handle tr input {
 		flex: 1 1 100%;
+		flex-direction: flex-start;
 		border-radius: 5px;
 		overflow: hidden;
 		z-index: 100;
 	}
 
-	.sizing-menu {
+	.flyout-handle {
 		position: relative;
 	}
 
-	.sizing-menu .size-control-handle {
+	.flyout-handle .flyout-handle-label {
 		width: max-content;
 	}
 
-	.size-controls-flyout {
+	.flyout-menu {
 		position: absolute;
-		transform: scaleX(0%);
-		transition: 200ms ease-out;
-		transition-delay: 500ms;
+		flex-direction: column;
+		align-items: flex-start;
 		z-index: 102;
 		width: 300px;
+		flex: 1 1 100%;
+		padding: 50%;
 	}
 
-	.sizing-menu:hover .size-controls-flyout {
+	.flyout-handle:hover .flyout-menu {
 		transform: scale(1, 1);
 		transition: 200ms linear;
 		transition-delay: 0;
 	}
-	.JNodes-image-drawer--top-left .size-controls-flyout,
-	.JNodes-image-drawer--top-right .size-controls-flyout  {
+	.JNodes-image-drawer--top-left .flyout-menu,
+	.JNodes-image-drawer--top-right .flyout-menu  {
 		transform: scale(1,0);
 		transform-origin: top;
 		top: 0;
 	}
-	.JNodes-image-drawer--top-left .size-controls-flyout  {
+	.JNodes-image-drawer--top-left .flyout-menu  {
 		left: 0;
 	}
-	.JNodes-image-drawer--top-right .size-controls-flyout  {
+	.JNodes-image-drawer--top-right .flyout-menu  {
 		right: 0;
 	}
-	.JNodes-image-drawer--bottom-left .size-controls-flyout,
-	.JNodes-image-drawer--bottom-right .size-controls-flyout  {
+	.JNodes-image-drawer--bottom-left .flyout-menu,
+	.JNodes-image-drawer--bottom-right .flyout-menu  {
 		transform: scale(1,0);
 		transform-origin: bottom;
 		bottom: 0;
 	}
-	.JNodes-image-drawer--bottom-left .size-controls-flyout  {
+	.JNodes-image-drawer--bottom-left .flyout-menu  {
 		left: 0;
 	}
-	.JNodes-image-drawer--bottom-right .size-controls-flyout  {
+	.JNodes-image-drawer--bottom-right .flyout-menu  {
 		right: 0;
 	}
+
 	.JNodes-image-drawer-list {
 		flex: 1 1 auto;
 		overflow-y: scroll;

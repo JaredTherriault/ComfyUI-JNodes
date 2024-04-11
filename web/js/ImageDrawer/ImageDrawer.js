@@ -26,7 +26,7 @@ let drawerWidthSlider;
 let drawerHeightSlider;
 let columnSlider;
 
-const _minimumDrawerSize = 10;
+const _minimumDrawerSize = 15;
 const _maximumDrawerSize = 100;
 
 let setting_ColumnCount = new ImageDrawerConfigSetting("ImageSize", 4);
@@ -228,6 +228,7 @@ export function setSortingOptions(options) {
 const createDrawerOptionsFlyout = () => {
 
 	let widthSliderOptions = new options_LabeledSliderRange();
+	widthSliderOptions.bPrependValueLabel = true;
 	widthSliderOptions.min = _minimumDrawerSize;
 	widthSliderOptions.max = _maximumDrawerSize;
 	widthSliderOptions.value = getDrawerWidth();
@@ -238,6 +239,7 @@ const createDrawerOptionsFlyout = () => {
 	setDrawerWidth(getDrawerWidth());
 
 	let heightSliderOptions = new options_LabeledSliderRange();
+	heightSliderOptions.bPrependValueLabel = true;
 	heightSliderOptions.min = _minimumDrawerSize;
 	heightSliderOptions.max = _maximumDrawerSize;
 	heightSliderOptions.value = getDrawerHeight();
@@ -248,6 +250,7 @@ const createDrawerOptionsFlyout = () => {
 	setDrawerHeight(getDrawerHeight());
 
 	let columnSliderOptions = new options_LabeledSliderRange();
+	columnSliderOptions.bPrependValueLabel = true;
 	columnSliderOptions.min = 1;
 	columnSliderOptions.max = 10;
 	columnSliderOptions.step = 1;
@@ -259,22 +262,22 @@ const createDrawerOptionsFlyout = () => {
 	setColumnCount(getColumnCount());
 
 	DrawerOptionsFlyout =
-		$el("section.sizing-menu", [
-			$el("label.size-control-handle", { textContent: "👁️" }),
-			$el("div.size-controls-flyout", [
-				$el("tr.section.size-control.drawer-width-control", [
+		$el("section.flyout-handle", [
+			$el("label.flyout-handle-label", { textContent: "👁️" }),
+			$el("div.flyout-menu", [
+				$el("tr.size-control.drawer-width-control", [
 					$el('td', [$el("span", {
 						textContent: 'Drawer Width',
 					})]),
 					$el('td', [drawerWidthSlider])
 				]),
-				$el("tr.section.size-control.drawer-height-control", [
+				$el("tr.size-control.drawer-height-control", [
 					$el('td', [$el("span", {
 						textContent: 'Drawer Height',
 					})]),
 					$el('td', [drawerHeightSlider])
 				]),
-				$el("tr.section.size-control.column-count-control", [
+				$el("tr.size-control.column-count-control", [
 					$el('td', [$el("a", {
 						textContent: "Column count",
 						style: {
@@ -291,7 +294,7 @@ const createDrawerOptionsFlyout = () => {
 					$el('td', [columnSlider])
 				]),
 				// Anchor Select
-				$el("tr.section.drawer-anchor-control", [
+				$el("tr.drawer-anchor-control", [
 					$el('td', [$el("span", {
 						textContent: "Image Drawer Anchor:",
 					})]),
