@@ -1,6 +1,8 @@
 import { $el } from "/scripts/ui.js";
 import { app } from "/scripts/app.js";
 
+// A script governing savable user settings and the creation of user interfaces for those settings
+
 var underButtonContent;
 
 // A class that saves and loads its given value via localStorage automatically. 
@@ -14,12 +16,12 @@ export class ConfigSetting {
 
     // Getter method
     get value() {
-        return this.getValue(this._settingName, this._defaultValue);
+        return this._getValue(this._settingName, this._defaultValue);
     }
 
     // Setter method
     set value(newValue) {
-        this.setValue(this._settingName, newValue);
+        this._setValue(this._settingName, newValue);
         this._onChange(newValue); // Call the callback function when value changes
     }
 
@@ -29,7 +31,7 @@ export class ConfigSetting {
     }
 
     // localStorage
-    getValue(name, defaultValue) {
+    _getValue(name, defaultValue) {
         const val = localStorage.getItem("JNodes.Settings." + name);
         //console.log("localstorage (" + name + " : " + val + ")");
         if (val !== null) {
@@ -43,7 +45,7 @@ export class ConfigSetting {
         return defaultValue;
     };
 
-    setValue(name, val) {
+    _setValue(name, val) {
         localStorage.setItem("JNodes.Settings." + name, val);
     };
 
@@ -167,6 +169,7 @@ export function addJNodesSetting(nameWidget, settingWidget, tooltip) {
 
     sortTable();
 }
+
 export class options_LabeledSliderRange {
     labelTextContent = undefined;
     bIncludeValueLabel = true;
@@ -180,10 +183,10 @@ export class options_LabeledSliderRange {
 
 export function createLabeledSliderRange(options = new options_LabeledSliderRange()) {
 
-    let labelElement;
+    let valueLabelElement;
 
     if (options.bIncludeValueLabel) {
-        labelElement = $el('label', {
+        valueLabelElement = $el('label', {
             textContent: options.value.toFixed(2)
         });
 
@@ -202,7 +205,7 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
             const roundedValue = isNaN(inputValue) ? 0.00 : inputValue.toFixed(2); // Round to 2 decimal places
 
             // Update the labelElement text content with the rounded value
-            labelElement.textContent = roundedValue;
+            valueLabelElement.textContent = roundedValue;
         };
     }
 
@@ -216,7 +219,7 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
         oninput: options.oninput
     });
 
-    let SliderRange = $el('div', {
+    let OuterElement = $el('div', {
         style: {
             display: 'flex',
             alignItems: 'center'
@@ -226,9 +229,38 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
         MainElement
     ]);
 
-    if (labelElement) {
-        SliderRange.appendChild(labelElement);
+    if (valueLabelElement) {
+        OuterElement.appendChild(valueLabelElement);
     }
 
-    return SliderRange;
+    return OuterElement;
+}
+
+export class options_LabeledCheckboxToggle {
+    labelTextContent = undefined;
+    id = undefined;
+    checked = false;
+    oninput = undefined;
+}
+
+export function createLabeledCheckboxToggle(options = new options_LabeledCheckboxToggle()) {
+
+    let MainElement = $el('input', {
+        id: options.id,
+        type: 'checkbox',
+        checked: options.checked,
+        oninput: options.oninput
+    });
+
+    let OuterElement = $el('div', {
+        style: {
+            display: 'flex',
+            alignItems: 'center'
+        }
+    }, [
+        $el('label', { textContent: options.labelTextContent }),
+        MainElement
+    ]);
+
+    return OuterElement;
 }

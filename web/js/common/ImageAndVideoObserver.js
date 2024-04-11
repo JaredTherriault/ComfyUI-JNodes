@@ -2,12 +2,12 @@
 // then plays it. If the image is scrolled out of view, the playback stops. This applies to video
 // and image types including mp4, m4v, wepb, gif, apng, etc.
 
+import { setting_VideoPlaybackOptions } from "../ImageDrawer/UiSettings.js";
+
 // Note: On some browsers the user may have to explicitly allow autoplay in order for playback to work correctly
 // Otherwise, you end up with a bunch of errors while scrolling informing us that the user didn't 'interact' with the page first (even if they are clearly scrolling)
 
 export class ImageAndVideoObserverOptions {
-	autoPlayVideos = true;
-	playMuted = true;
 	playbackThreshold = 0.15;
 }
 
@@ -17,19 +17,17 @@ const observedElements = new Set();
 
 async function tryPlayVideo(element) {
 	if (element.paused) {
-		// Play the animation (e.g., for APNG, WebP, or video files)
 		try {
 			await element.play();
-			element.muted = observerOptions.playMuted;
+			element.muted = setting_VideoPlaybackOptions.muted;
 		} catch (error) {
 			console.error(error);
-		 }
+		}
 	}
 }
 
 function tryStopVideo(element) {
 	if (!element.paused) {
-		// Pause the animation (e.g., for APNG, WebP, or video files)
 		try {
 			element.pause();
 		} catch { }
@@ -76,14 +74,13 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 					return;
 				}
 			}
-			if (observerOptions.autoPlayVideos) {
+
+			if (setting_VideoPlaybackOptions.autoplay) {
 				await tryPlayVideo(element);
 			}
 		} else {
 			// Pause the animation if it's not intersecting with the viewport
-			if (observerOptions.autoPlayVideos) {
-				tryStopVideo(element);
-			}
+			tryStopVideo(element);
 		}
 	});
 }, { threshold: observerOptions.playbackThreshold });

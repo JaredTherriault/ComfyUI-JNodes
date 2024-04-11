@@ -20,7 +20,9 @@ export let setting_bKeyListAllowDenyToggle = new ImageDrawerConfigSetting("Image
 
 export let setting_ModelCardAspectRatio = new ImageDrawerConfigSetting("Models.AspectRatio", 0.67);
 
-export let setting_VideoSettings = new ImageDrawerConfigSetting("Video.VideoOptions", new options_VideoPlayback);
+export let setting_VideoPlaybackOptions = new ImageDrawerConfigSetting("Video.VideoOptions", new options_VideoPlayback);
+
+// A script governing the settings added to the ComfyUI menu and other UI elements
 
 // Button setup
 

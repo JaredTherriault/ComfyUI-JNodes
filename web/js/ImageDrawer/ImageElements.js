@@ -1,7 +1,6 @@
 import { $el } from "/scripts/ui.js";
 import { getPngMetadata } from "/scripts/pnginfo.js";
 
-import { options_VideoPlayback } from "../common/VideoOptions.js"
 import {
 	getMaxZIndex, createDarkContainer, copyToClipboard,
 	isValid, getCurrentSecondsFromEpoch
@@ -13,7 +12,7 @@ import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 import { createModal } from "../common/ModalManager.js";
 
 import { setting_FontSize, setting_FontFamily } from "../textareaFontControl.js"
-import { setting_bKeyListAllowDenyToggle, setting_KeyList } from "./UiSettings.js";
+import { setting_bKeyListAllowDenyToggle, setting_KeyList, setting_VideoPlaybackOptions } from "./UiSettings.js";
 
 let toolTip;
 let toolButtonContainer;
@@ -255,7 +254,7 @@ function removeAndHideToolButtonFromImageElement(imageElementToUse) {
 	}
 }
 
-export async function createImageElementFromFileInfo(fileInfo, videoOptions = new options_VideoPlayback()) {
+export async function createImageElementFromFileInfo(fileInfo) {
 	if (!fileInfo) { return; }
 	const href = `/jnodes_view_image?filename=${encodeURIComponent(fileInfo.filename)}&type=${fileInfo.type}&subfolder=${encodeURIComponent(fileInfo.subfolder)}&t=${+new Date()}`;
 	const bIsVideoFormat = fileInfo.file?.is_video || fileInfo.filename.endsWith(".mp4"); // todo: fetch acceptable video types from python
@@ -294,7 +293,7 @@ export async function createImageElementFromFileInfo(fileInfo, videoOptions = ne
 		//src: href,
 		// Store the image source as a data attribute for easy access
 		dataSrc: href,
-		preload: "none",
+		preload: "metadata",
 		onload: async function () {
 			if (img.complete) {
 				//console.log('Image has been completely loaded.');
@@ -628,10 +627,10 @@ export async function createImageElementFromFileInfo(fileInfo, videoOptions = ne
 	if (bIsVideoFormat) {
 
 		img.type = fileInfo.file?.format || undefined;
-		img.autoplay = videoOptions.autoplay;
-		img.loop = videoOptions.loop;
-		img.controls = videoOptions.controls;
-		img.muted = videoOptions.muted || videoOptions.autoplay; // Autoplay is only allowed if muted is true
+		img.autoplay = false; // Start false, will autoplay via observer
+		img.loop = setting_VideoPlaybackOptions.value.loop;
+		img.controls = setting_VideoPlaybackOptions.value.controls;
+		img.muted = true; // Start true, will unmute via observer
 
 		imageElement.bIsVideoFormat = bIsVideoFormat;
 	}

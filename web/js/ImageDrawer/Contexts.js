@@ -13,8 +13,8 @@ import {
 
 import { options_VideoPlayback } from "../common/VideoOptions.js"
 import { decodeReadableStream } from "../common/Utilities.js"
-import { setting_ModelCardAspectRatio } from "./UiSettings.js";
-import { createLabeledSliderRange, options_LabeledSliderRange } from "../common/SettingsManager.js";
+import { setting_ModelCardAspectRatio, setting_VideoPlaybackOptions } from "./UiSettings.js";
+import { createLabeledCheckboxToggle, createLabeledSliderRange, options_LabeledCheckboxToggle, options_LabeledSliderRange } from "../common/SettingsManager.js";
 
 let Contexts;
 
@@ -288,7 +288,6 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		super(name, description);
 		this.rootFolderName = folderName;
 		this.rootFolderDisplayName = '/root';
-		this.bAutoplayVideos = false;
 		this.bIncludeSubfolders = false;
 		this.fileMap = null;
 		this.subfolderSelector = null;
@@ -378,11 +377,6 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 
 		const bUseBatching = false;
 
-		let videoOptions = new options_VideoPlayback();
-		videoOptions.autoplay = false;
-		videoOptions.loop = true;
-		videoOptions.controls = true;
-
 		const evaluateGuardClauses = (value) => {
 			if (this.bIncludeSubfolders) {
 				if (!bIsRoot && !value.folder_path.startsWith(folder_path)) {
@@ -403,7 +397,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 				file: file,
 				type: this.rootFolderName,
 				subfolder: value.folder_path,
-			}, videoOptions);
+			});
 			if (element !== undefined) {
 				await addElementToImageList(element);
 			} else {
@@ -486,49 +480,18 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		const container = await super.makeToolbar();
 		const self = this;
 
-		const IncludeSubfoldersToggle = $el("input", {
-			id: 'IncludeSubfoldersToggle',
-			type: 'checkbox',
-			checked: self.bIncludeSubfolders,
-			onchange: async (e) => {
-				self.bIncludeSubfolders = e.target.checked;
-				await self.fetchFolderItems(self.subfolderSelector.value);
-			}
-		});
+		let includeSubfoldersToggleOptions = new options_LabeledCheckboxToggle();
+		includeSubfoldersToggleOptions.labelTextContent = 'Include Subfolders';
+		includeSubfoldersToggleOptions.id = 'IncludeSubfoldersToggle';
+		includeSubfoldersToggleOptions.checked = self.bIncludeSubfolders;
+		includeSubfoldersToggleOptions.oninput = async (e) => {
+			self.bIncludeSubfolders = e.target.checked;
+			await self.fetchFolderItems(self.subfolderSelector.value);
+		}
 
-		container.insertBefore($el("div", {
-			style: {
-				display: 'flex',
-				flexDirection: 'row'
-			}
-		}, [
-			$el("label", {
-				textContent: 'Include Subfolders',
-				toolTip: 'Include items found in subfolders? Be careful, this can be very memory-intensive if there are too many items. Browsers can crash.',
-			}), IncludeSubfoldersToggle]),
-			container.firstChild);
+		const IncludeSubfoldersToggle = createLabeledCheckboxToggle(includeSubfoldersToggleOptions);
 
-		const AutoplayVideosToggle = $el("input", {
-			id: 'AutoplayVideosToggle',
-			type: 'checkbox',
-			checked: self.bAutoplayVideos,
-			onchange: (e) => {
-				self.bAutoplayVideos = e.target.checked;
-
-			}
-		});
-
-		container.insertBefore($el("div", {
-			style: {
-				display: 'flex',
-				flexDirection: 'row'
-			}
-		}, [
-			$el("label", {
-				textContent: 'Autoplay Videos',
-				toolTip: 'Autoplay muted videos. Applies only to video files like mp4, m4v, and others and not animated image types like webp or gif.',
-			}), AutoplayVideosToggle]),
-			container.firstChild);
+		container.insertBefore(IncludeSubfoldersToggle, container.firstChild);
 
 		if (!this.subfolderSelector) {
 			this.subfolderSelector = $el("select", { //Inner container so it can maintain 'flex' display attribute
@@ -594,9 +557,7 @@ export class ContextFeed extends ContextClearable {
 		if (imageListLength < this.feedImages.length) {
 			for (let imageIndex = imageListLength; imageIndex < this.feedImages.length; imageIndex++) {
 				let src = this.feedImages[imageIndex];
-				let videoOptions = new options_VideoPlayback();
-				videoOptions.autoplay = true; videoOptions.loop = true;
-				let element = await ImageElements.createImageElementFromFileInfo(src, videoOptions);
+				let element = await ImageElements.createImageElementFromFileInfo(src);
 				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
 				await addElementToImageList(element);
 			}
