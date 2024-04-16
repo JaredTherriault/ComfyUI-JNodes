@@ -1,8 +1,8 @@
 import { app } from '/scripts/app.js'
 import { api } from '/scripts/api.js'
 
-export const acceptableFileTypes = [
-	"video/webm", "video/mp4", "video/mkv",
+export const acceptableFileTypes = [ // todo: get types from python
+	"video/webm", "video/mp4",
 	"image/webp", "image/gif", "image/apng", "image/mjpeg"
 ];
 
