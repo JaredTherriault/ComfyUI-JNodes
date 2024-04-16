@@ -116,9 +116,17 @@ $el("style", {
 		flex-direction: column;
 		align-items: flex-start;
 		z-index: 102;
-		width: 300px;
 		flex: 1 1 100%;
-		padding: 50%;
+		padding: 100%;
+	}
+	.JNodes-image-drawer--top-left .flyout-menu.video-menu,
+	.JNodes-image-drawer--top-right .flyout-menu.video-menu,
+	.JNodes-image-drawer--bottom-left .flyout-menu.video-menu,
+	.JNodes-image-drawer--bottom-right .flyout-menu.video-menu {
+		align-items: flex-end;
+		left: auto;
+		right: 0;
+		width: fit-content;
 	}
 
 	.flyout-handle:hover .flyout-menu {
