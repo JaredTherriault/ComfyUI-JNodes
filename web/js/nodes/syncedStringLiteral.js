@@ -1,6 +1,7 @@
 import { api } from "/scripts/api.js"
 import { app } from "/scripts/app.js";
 import { ComfyWidgets } from '/scripts/widgets.js'
+import { pasteToTextArea } from "../common/Utilities.js"
 
 // Node that allows you to tunnel connections for cleaner graphs
 
