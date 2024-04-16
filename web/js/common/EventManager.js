@@ -1,5 +1,4 @@
 import { app } from "../../../../scripts/app.js";
-
 import { pasteToTextArea } from "./Utilities.js";
 
 // Mouse tracking
@@ -19,6 +18,63 @@ export function getLastMousePosition() {
 export function isPointerDown() {
 	return app?.canvas?.pointer_is_down;
 }
+
+export function getElementUnderPointer() {
+	const mousePos = getLastMousePosition();
+	return document.elementFromPoint(mousePos[0], mousePos[1]);
+}
+
+// Keyboard events
+
+document.addEventListener("keydown", async (event) => {
+
+	// Video shortcuts
+	// note that elementUnderPointer will always be the video element itself, not the container
+
+	if (event.key == "l") { // Seek forward
+		const delta = 1;
+		const elementUnderPointer = getElementUnderPointer();
+
+		if (elementUnderPointer && elementUnderPointer.seekVideo) {
+			event.preventDefault();
+
+			elementUnderPointer.seekVideo(delta);
+		}
+	} else if (event.key == "j") { // See backward
+		const delta = -1;
+		const elementUnderPointer = getElementUnderPointer();
+
+		if (elementUnderPointer && elementUnderPointer.seekVideo) {
+			event.preventDefault();
+
+			elementUnderPointer.seekVideo(delta);
+		}
+	} else if (event.key == "k") { // Pause/play
+		const elementUnderPointer = getElementUnderPointer();
+
+		if (elementUnderPointer && elementUnderPointer.togglePlayback) {
+			event.preventDefault();
+
+			await elementUnderPointer.togglePlayback();
+		}
+	} else if (event.key == "m") { // Toggle mute
+		const elementUnderPointer = getElementUnderPointer();
+
+		if (elementUnderPointer && elementUnderPointer.toggleMute) {
+			event.preventDefault();
+
+			elementUnderPointer.toggleMute()
+		}
+	} else if (event.key == 'f') { // Toggle fullscreen
+		const elementUnderPointer = getElementUnderPointer();
+
+		if (elementUnderPointer && elementUnderPointer.toggleFullscreen) {
+			event.preventDefault();
+
+			elementUnderPointer.toggleFullscreen()
+		}
+	}
+});
 
 document.addEventListener("drop", (event) => {
 
