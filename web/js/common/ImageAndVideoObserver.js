@@ -2,7 +2,7 @@
 // then plays it. If the image is scrolled out of view, the playback stops. This applies to video
 // and image types including mp4, m4v, wepb, gif, apng, etc.
 
-import { setting_VideoPlaybackOptions } from "../ImageDrawer/UiSettings.js";
+import { setting_VideoPlaybackOptions } from "./SettingsManager.js";
 
 // Note: On some browsers the user may have to explicitly allow autoplay in order for playback to work correctly
 // Otherwise, you end up with a bunch of errors while scrolling informing us that the user didn't 'interact' with the page first (even if they are clearly scrolling)
@@ -19,7 +19,7 @@ async function tryPlayVideo(element) {
 	if (element.paused) {
 		try {
 			await element.play();
-			element.muted = setting_VideoPlaybackOptions.muted;
+			element.currentTime = element.lastSeekTime;
 		} catch (error) {
 			console.error(error);
 		}
@@ -27,7 +27,7 @@ async function tryPlayVideo(element) {
 }
 
 function tryStopVideo(element) {
-	if (!element.paused) {
+	if (element.readyState >= element.HAVE_ENOUGH_DATA && !element.paused) {
 		try {
 			element.pause();
 		} catch { }
@@ -66,7 +66,7 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 		}
 		// Check if the video is intersecting with the viewport
 		if (entry.isIntersecting) {
-			if (!element.src) {
+			if (!element.src || element.src === '') {
 				element.src = element.dataSrc;
 
 				if (element.tagName !== 'VIDEO') {
@@ -75,12 +75,21 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 				}
 			}
 
-			if (setting_VideoPlaybackOptions.autoplay) {
+			if (setting_VideoPlaybackOptions.value.autoplay) {
 				await tryPlayVideo(element);
 			}
 		} else {
-			// Pause the animation if it's not intersecting with the viewport
+			// Pause the video if it's not intersecting with the viewport
 			tryStopVideo(element);
+
+			if (element.currentTime) {
+				element.lastSeekTime = element.currentTime;
+			}
+
+			if ('src' in element) {
+				element.removeAttribute('src'); // Unload unobserved videos
+				if (element.load) { element.load(); } // Release memory
+			}
 		}
 	});
 }, { threshold: observerOptions.playbackThreshold });
