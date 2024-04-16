@@ -109,7 +109,7 @@ function videoUpload(node, inputName, inputData, app) {
 			}
 		}
 
-		return false;
+		return true;
 	};
 
 	// On drop upload files
