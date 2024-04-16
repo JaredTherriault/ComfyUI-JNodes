@@ -1,6 +1,5 @@
 import { $el } from "../../../../scripts/ui.js";
 
-
 export function isElementVisible(element) {
 	var rect = element.getBoundingClientRect();
 	return (
