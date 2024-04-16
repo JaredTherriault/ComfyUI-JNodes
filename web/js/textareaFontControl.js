@@ -88,7 +88,7 @@ app.registerExtension({
 				min: "1",
 				value: setting_FontSize.value,
 				oninput: (e) => {
-					let value = parseFloat(e.target.value);
+					let value = e.target.valueAsNumber;
 					if (value <= 1.0) { value = 1.0; }
 					setting_FontSize.value = value;
 					setFontOnAllTextAreas();
