@@ -133,7 +133,7 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
 
         include_files = (
             in_folder == start_getting_files_from_folder or (
-                include_subfolder_files and f"/{start_getting_files_from_folder}" in in_folder))
+                include_subfolder_files and f"{start_getting_files_from_folder}/" in in_folder))
     
         # Separate files and folders
         files = []
@@ -145,7 +145,7 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
                 item (str): The name of the file or folder.
             """
             file_path = os.path.join(full_folder, item)
-            if include_files and os.path.isfile(file_path) and is_acceptable_image_or_video(item):
+            if include_files and os.path.isfile(file_path) and is_acceptable_image_or_video_for_browser_display(item):
                 file_size = os.path.getsize(file_path)
                 dimensions = [0, 0]
                 frame_count = -1

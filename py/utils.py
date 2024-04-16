@@ -43,9 +43,17 @@ for filename in os.listdir(VIDEO_FORMATS_DIRECTORY):
 JNODES_IMAGE_FORMAT_TYPES = ["jpg", "jpeg", "jfif", "png", "gif", "webp", "apng", "mjpeg"] + VIDEO_FORMATS
 JNODES_VAE_LIST = ["Baked VAE"] + folder_paths.get_filename_list("vae")
 
-ACCEPTED_VIDEO_EXTENSIONS = ['webm', 'mp4', 'mkv'] + VIDEO_FORMATS
+ACCEPTED_UPLOAD_VIDEO_EXTENSIONS = ['webm', 'mp4', 'mkv', 'ogg'] + VIDEO_FORMATS
+ACCEPTED_BROWSER_VIDEO_EXTENSIONS = ['webm', 'mp4', 'ogg'] # Extensions of videos that will play in most browsers
+
 ACCEPTED_ANIMATED_IMAGE_EXTENSIONS = ['gif', 'webp', 'apng', 'mjpeg']
 ACCEPTED_STILL_IMAGE_EXTENSIONS = ['gif', 'webp', 'png', 'jpg', 'jpeg', 'jfif']
+ALL_ACCEPTED_IMAGE_EXTENSIONS = ACCEPTED_STILL_IMAGE_EXTENSIONS + ACCEPTED_ANIMATED_IMAGE_EXTENSIONS
+
+ALL_ACCEPTED_UPLOAD_VISUAL_EXTENSIONS = ACCEPTED_UPLOAD_VIDEO_EXTENSIONS + ALL_ACCEPTED_IMAGE_EXTENSIONS
+
+ALL_ACCEPTED_BROWSER_VISUAL_EXTENSIONS = ACCEPTED_BROWSER_VIDEO_EXTENSIONS + ALL_ACCEPTED_IMAGE_EXTENSIONS
+
 
 
 @staticmethod
@@ -117,8 +125,11 @@ def is_image(filename):
     mime_type, _ = mimetypes.guess_type(filename)
     return mime_type and mime_type.startswith('image')
 
-def is_acceptable_image_or_video(filename):
-    return is_image(filename) or is_video(filename)
+def is_acceptable_image_or_video_for_upload(filename):
+    return (is_image(filename) or is_video(filename)) and get_file_extension_without_dot(filename) in ALL_ACCEPTED_UPLOAD_VISUAL_EXTENSIONS
+
+def is_acceptable_image_or_video_for_browser_display(filename):
+    return (is_image(filename) or is_video(filename)) and get_file_extension_without_dot(filename) in ALL_ACCEPTED_BROWSER_VISUAL_EXTENSIONS
 
 def pil2tensor(image: Union[Image.Image, List[Image.Image]]) -> torch.Tensor:
     if isinstance(image, list):
