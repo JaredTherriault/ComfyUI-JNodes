@@ -8,7 +8,7 @@ import { setting_VideoPlaybackOptions } from "./SettingsManager.js";
 // Otherwise, you end up with a bunch of errors while scrolling informing us that the user didn't 'interact' with the page first (even if they are clearly scrolling)
 
 export class ImageAndVideoObserverOptions {
-	playbackThreshold = 0.15;
+	playbackThreshold = 0.01; // Percentage of video that must be visible in order to load. Anything less and it will be unloaded.
 }
 
 let observerOptions = new ImageAndVideoObserverOptions();
@@ -79,16 +79,18 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 				await tryPlayVideo(element);
 			}
 		} else {
-			// Pause the video if it's not intersecting with the viewport
-			tryStopVideo(element);
+			if (element.tagName === 'VIDEO') {
+				// Pause the video if it's not intersecting with the viewport
+				tryStopVideo(element);
 
-			if (element.currentTime) {
-				element.lastSeekTime = element.currentTime;
-			}
+				if (element.currentTime) {
+					element.lastSeekTime = element.currentTime;
+				}
 
-			if ('src' in element) {
-				element.removeAttribute('src'); // Unload unobserved videos
-				if (element.load) { element.load(); } // Release memory
+				if ('src' in element) {
+					element.removeAttribute('src'); // Unload unobserved videos
+					if (element.load) { element.load(); } // Release memory
+				}
 			}
 		}
 	});
