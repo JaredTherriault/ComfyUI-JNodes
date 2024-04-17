@@ -14,11 +14,20 @@ from PIL import Image
 import cv2
 import json
 
+CANCELLATION_REQUESTED = False
+
+def should_cancel_task():
+    return CANCELLATION_REQUESTED
+
+def request_task_cancellation():
+    CANCELLATION_REQUESTED = True
+
 async def read_we_request_content(reader):
     data = await reader.read()
     return data.decode('utf-8')
 
 def get_model_items(request):
+    CANCELLATION_REQUESTED = False
     type = "loras"
     if "type" in request.rel_url.query:
         type = request.rel_url.query["type"]
@@ -42,6 +51,9 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
     familiar_dictionaries = {}
     for item_name in names:
 
+        if should_cancel_task():
+            break
+            
         #logger.info(f"item_name: {item_name}")
         file_name_no_ext, file_ext = os.path.splitext(item_name)
         #logger.info(f"file_name_no_ext: {file_name_no_ext}")
@@ -86,6 +98,10 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
     familiars = []
     
     for file_name in os.listdir(folder_path):
+
+        if should_cancel_task():
+            break
+
         #logger.info(f"file_name in directory: {file_name}")
         file_name_no_ext, ext = os.path.splitext(file_name)
         if ext in extension_filter and base_name in file_name_no_ext:
@@ -128,6 +144,9 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
         Args:
             in_folder (str): The folder to process.
         """
+        if should_cancel_task():
+            return
+
         full_folder = os.path.join(root_folder, in_folder)
         items = os.listdir(full_folder)
 
@@ -144,6 +163,9 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
             Args:
                 item (str): The name of the file or folder.
             """
+            if should_cancel_task():
+                return
+
             file_path = os.path.join(full_folder, item)
             if include_files and os.path.isfile(file_path) and is_acceptable_image_or_video_for_browser_display(item):
                 file_size = os.path.getsize(file_path)
@@ -198,6 +220,7 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
     return results
 
 def get_comfyui_subfolder_items(request):
+    CANCELLATION_REQUESTED = False
     root_folder = request.rel_url.query["root_folder"] or ""
     start_getting_files_from_folder = request.rel_url.query["start_getting_files_from_folder"] or ""
     include_subfolder_files = request.rel_url.query["include_subfolder_files"] == "true"

@@ -29,6 +29,10 @@ async def view_image_wrapper(request):
 async def load_info_wrapper(request):
     return load_info(request)
 
+@server.PromptServer.instance.routes.post('/jnodes_request_task_cancellation')
+async def request_task_cancellation_wrapper(request):
+    return request_task_cancellation(request)
+
 @server.PromptServer.instance.routes.post('/jnodes_save_text')
 async def save_text_wrapper(request):
     return await save_text(request)
