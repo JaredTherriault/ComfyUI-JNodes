@@ -1,7 +1,7 @@
 import { app } from "../../../scripts/app.js";
 
 app.registerExtension({
-    name: "JNodes.ShiftToDragFaster",
+    name: "JNodes.CtrlShiftToDragFaster",
     init() {
         const dragSpeedFactor = 10;
         let last_mouse = [0, 0];
@@ -14,7 +14,7 @@ app.registerExtension({
             ];
             last_mouse = mouse;
 
-            if (event.shiftKey) {
+            if (event.shiftKey && event.ctrlKey) {
 
                 var LiteGraphInstance = window?.LiteGraph;
                 var canvas = LiteGraphInstance?.LGraphCanvas?.active_canvas;
