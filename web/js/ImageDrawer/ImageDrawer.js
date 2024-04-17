@@ -5,22 +5,18 @@ import * as ExtraNetworks from "./ExtraNetworks.js";
 import * as ContextSelector from "./ContextSelector.js";
 import * as Sorting from "./Sorting.js";
 
-import { setElementVisibility, getVisualElements, getVideoElements } from "../common/Utilities.js"
-import { observeVisualElement, unobserveVisualElement } from "../common/ImageAndVideoObserver.js";
 import { 
-	ImageDrawerConfigSetting, setupUiSettings, createDrawerSelectionWidget, 
-	setting_bEnabled, setting_bMasterVisibility, setting_DrawerAnchor
-} from "./UiSettings.js";
-import { createLabeledSliderRange, options_LabeledSliderRange } from "../common/SettingsManager.js";
+	ImageDrawerConfigSetting, setupUiSettings, createDrawerSelectionWidget,
+	setting_bEnabled, setting_bMasterVisibility, setting_DrawerAnchor,
+	createFlyoutHandle, createLabeledSliderRange, options_LabeledSliderRange } from "../common/SettingsManager.js";
+import { clearAndExecuteSearch, createSearchBar, executeSearchWithEnteredSearchText, getImageListElement, setSearchTextAndExecute } from "./ImageListAndSearch.js";
 
 // Attribution: pythongsssss's Image Feed. So much brilliance in that original script.
 
 //Singletons
 
 let imageDrawer;
-let imageList;
 let DrawerOptionsFlyout;
-let SearchBar;
 let ImageDrawerContextToolbar;
 let drawerWidthSlider;
 let drawerHeightSlider;
@@ -32,59 +28,6 @@ const _maximumDrawerSize = 100;
 let setting_ColumnCount = new ImageDrawerConfigSetting("ImageSize", 4);
 let setting_DrawerHeight = new ImageDrawerConfigSetting("DrawerHeight", 25);
 let setting_DrawerWidth = new ImageDrawerConfigSetting("DrawerWidth", 25);
-
-// Helpers
-
-// Returns all child nodes of any kind
-export function getImageListChildren() {
-	return imageList.childNodes;
-}
-
-export function replaceImageListChildren(newChildren) {
-	clearImageListChildren();
-	for (let child of newChildren) {
-		addElementToImageList(child, false);
-	}
-
-	handleSearch();
-}
-
-export function clearImageListChildren() {
-	const childNodeCount = getImageListChildren().length;
-	for (let childIndex = childNodeCount; childIndex >= 0; childIndex--) {
-		removeElementFromImageList(getImageListChildren()[childIndex], false);
-	}
-};
-
-export function removeElementFromImageList(element, bHandleSearch = true) {
-	if (element != undefined) {
-		//console.log("removing element: " + element);
-		for (let videoElement of getVideoElements(element)) {
-			unobserveVisualElement(videoElement);
-		}
-		imageList.removeChild(element);
-		if (bHandleSearch) {
-			handleSearch();
-		}
-	} else {
-		console.log("Attempted to remove undefined element");
-	}
-};
-
-export async function addElementToImageList(element, bHandleSearch = true) {
-	//console.log("adding element: " + element);
-	if (element != undefined) {
-		imageList.appendChild(element);
-		for (let visualElement of getVisualElements(element)) {
-			observeVisualElement(visualElement);
-		}
-		if (bHandleSearch) {
-			handleSearch();
-		}
-	} else {
-		console.log("Attempted to add undefined element");
-	}
-};
 
 export function getColumnCount() {
 	return setting_ColumnCount.value;
@@ -132,91 +75,6 @@ function setDrawerAnchor(value) {
 		`JNodes-image-drawer JNodes-image-drawer--${value}`;
 }
 
-function createSearchBar() {
-	SearchBar = $el("input", {
-		type: "text",
-		id: "SearchInput",
-		placeholder: "Type here to search",
-		autocomplete: "off",
-		style: {
-			width: '100%',
-		}
-	});
-
-	// Attach the handleSearch function to the input's 'input' event
-	SearchBar?.addEventListener('input', handleSearch);
-
-	return SearchBar;
-}
-
-export function clearSearch() {
-	if (!SearchBar) { return; }
-	SearchBar.value = "";
-}
-
-export function getSearchText() {
-	return SearchBar.value;
-}
-
-export function setSearchText(newText) {
-	if (!SearchBar) { return; }
-	SearchBar.value = newText;
-}
-
-export function setSearchTextAndExecute(newText) {
-	if (!SearchBar) { return; }
-	SearchBar.value = newText;
-	handleSearch();
-}
-
-export function clearAndHandleSearch() {
-	clearSearch();
-	handleSearch();
-}
-
-export function focusSearch() {
-	SearchBar.focus();
-}
-
-export function focusAndSelectSearchText() {
-	SearchBar.select(); // Select focuses already
-}
-
-// Function to execute seach with an explicit searchTerm
-export function executeSearch(searchTerm) {
-
-	// Provision search string
-	searchTerm = searchTerm.toLowerCase().trim();
-
-	// Loop through items and check for a match
-	for (let i = 0; i < imageList?.children?.length; i++) {
-		let itemText = imageList?.children[i]?.searchTerms?.toLowerCase().trim();
-		//console.log(itemText + " matched against " + searchTerm + ": " + itemText.includes(searchTerm));
-
-		setElementVisibility(imageList?.children[i], itemText ? itemText.includes(searchTerm) : true)
-	}
-}
-
-// Function to execute search using the term entered in the SearchBar
-function handleSearch() {
-	// Get input value
-	let searchTerm = SearchBar?.value;
-
-	executeSearch(searchTerm);
-}
-
-export function getImageListScrollLevel() {
-	if (imageList) {
-		return imageList.scrollTop;
-	}
-}
-
-export function setImageListScrollLevel(newScrollPosition) {
-	if (imageList) {
-		imageList.scrollTop = newScrollPosition;
-	}
-}
-
 export function setContextToolbarWidget(widget) {
 	ImageDrawerContextToolbar.replaceChildren(widget);
 }
@@ -233,7 +91,7 @@ const createDrawerOptionsFlyout = () => {
 	widthSliderOptions.max = _maximumDrawerSize;
 	widthSliderOptions.value = getDrawerWidth();
 	widthSliderOptions.oninput = (e) => {
-		setDrawerWidth(e.target.value, false);
+		setDrawerWidth(e.target.valueAsNumber, false);
 	};
 	drawerWidthSlider = createLabeledSliderRange(widthSliderOptions);
 	setDrawerWidth(getDrawerWidth());
@@ -244,7 +102,7 @@ const createDrawerOptionsFlyout = () => {
 	heightSliderOptions.max = _maximumDrawerSize;
 	heightSliderOptions.value = getDrawerHeight();
 	heightSliderOptions.oninput = (e) => {
-		setDrawerHeight(e.target.value, false);
+		setDrawerHeight(e.target.valueAsNumber, false);
 	};
 	drawerHeightSlider = createLabeledSliderRange(heightSliderOptions);
 	setDrawerHeight(getDrawerHeight());
@@ -253,55 +111,55 @@ const createDrawerOptionsFlyout = () => {
 	columnSliderOptions.bPrependValueLabel = true;
 	columnSliderOptions.min = 1;
 	columnSliderOptions.max = 10;
-	columnSliderOptions.step = 1;
 	columnSliderOptions.value = getColumnCount();
 	columnSliderOptions.oninput = (e) => {
-		setColumnCount(e.target.value, false);
+		setColumnCount(e.target.valueAsNumber, false);
 	};
 	columnSlider = createLabeledSliderRange(columnSliderOptions);
 	setColumnCount(getColumnCount());
 
-	DrawerOptionsFlyout =
-		$el("section.flyout-handle", [
-			$el("label.flyout-handle-label", { textContent: "👁️" }),
-			$el("div.flyout-menu", [
-				$el("tr.size-control.drawer-width-control", [
-					$el('td', [$el("span", {
-						textContent: 'Drawer Width',
-					})]),
-					$el('td', [drawerWidthSlider])
-				]),
-				$el("tr.size-control.drawer-height-control", [
-					$el('td', [$el("span", {
-						textContent: 'Drawer Height',
-					})]),
-					$el('td', [drawerHeightSlider])
-				]),
-				$el("tr.size-control.column-count-control", [
-					$el('td', [$el("a", {
-						textContent: "Column count",
-						style: {
-							cursor: "pointer",
-							textDecoration: "underline",
-						},
-						onclick: () => {
-							const value = +prompt("Enter custom column count", 20);
-							if (!isNaN(value)) {
-								setColumnCount(value);
-							}
-						},
-					})]),
-					$el('td', [columnSlider])
-				]),
-				// Anchor Select
-				$el("tr.drawer-anchor-control", [
-					$el('td', [$el("span", {
-						textContent: "Image Drawer Anchor:",
-					})]),
-					$el('td', [createDrawerSelectionWidget((e) => { setDrawerAnchor(e.target.value); })])
-				]),
-			])
-		]);
+	let flyout = createFlyoutHandle("👁️");
+	DrawerOptionsFlyout = flyout.handle;
+
+	flyout.menu.appendChild(
+		$el("tr.size-control.drawer-width-control", [
+			$el('td', [$el("span", {
+				textContent: 'Drawer Width',
+			})]),
+			$el('td', [drawerWidthSlider])
+		]));
+	flyout.menu.appendChild(
+		$el("tr.size-control.drawer-height-control", [
+			$el('td', [$el("span", {
+				textContent: 'Drawer Height',
+			})]),
+			$el('td', [drawerHeightSlider])
+		]));
+	flyout.menu.appendChild(
+		$el("tr.size-control.column-count-control", [
+			$el('td', [$el("a", {
+				textContent: "Column count",
+				style: {
+					cursor: "pointer",
+					textDecoration: "underline",
+				},
+				onclick: () => {
+					const value = +prompt("Enter custom column count", 20);
+					if (!isNaN(value)) {
+						setColumnCount(value);
+					}
+				},
+			})]),
+			$el('td', [columnSlider])
+		]));
+	flyout.menu.appendChild(
+		// Anchor Select
+		$el("tr.drawer-anchor-control", [
+			$el('td', [$el("span", {
+				textContent: "Image Drawer Anchor:",
+			})]),
+			$el('td', [createDrawerSelectionWidget((e) => { setDrawerAnchor(e.target.value); })])
+		]));
 };
 
 app.registerExtension({
@@ -341,13 +199,6 @@ app.registerExtension({
 		imageDrawer.className =
 			`JNodes-image-drawer JNodes-image-drawer--${drawerStartingAnchor}`;
 
-		// Where images are shown
-		imageList = $el("div.JNodes-image-drawer-list", {
-			style: {
-				visibility: 'visible',
-			}
-		});
-
 		// Resizing / View options
 		createDrawerOptionsFlyout();
 
@@ -355,15 +206,14 @@ app.registerExtension({
 		const SearchBarClearButton = $el("button.JNodes-search-bar-clear-btn", {
 			textContent: "❌",
 			title: "Clear Search",
-			onclick: clearAndHandleSearch
+			onclick: clearAndExecuteSearch
 		});
 
 		async function onClickSearchRandomizeButton() {
 			let loraDicts = await ExtraNetworks.getLoras();
 			const loraKeys = Object.keys(loraDicts);
 			const randomIndex = Math.floor(Math.random() * loraKeys.length);
-			SearchBar.value = loraKeys[randomIndex];
-			handleSearch();
+			setSearchTextAndExecute(loraKeys[randomIndex]);
 		}
 
 		const RandomizeButton = $el("button.JNodes-search-randomize-btn", {
@@ -424,7 +274,7 @@ app.registerExtension({
 				SearchBarGroup,
 				ImageDrawerContextToolbar,
 			]);
-		imageDrawer.append(ImageDrawerMenu, imageList);
+		imageDrawer.append(ImageDrawerMenu, getImageListElement());
 
 		// If not supposed to be visible on startup, close it
 		if (!setting_bMasterVisibility.value) {

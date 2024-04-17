@@ -1,16 +1,16 @@
 import { app } from "../../../scripts/app.js";
 
 app.registerExtension({
-    name: "JNodes.CtrlShiftToDragFaster",
+    name: "JNodes.CtrlShiftToPanFaster",
     init() {
-        const dragSpeedFactor = 10;
+        const panSpeedFactor = 10;
         let last_mouse = [0, 0];
 
         function processMouseMove(event) {
             var mouse = [event.clientX, event.clientY];
             var delta = [
-                (mouse[0] - last_mouse[0]) * dragSpeedFactor,
-                (mouse[1] - last_mouse[1]) * dragSpeedFactor
+                (mouse[0] - last_mouse[0]) * panSpeedFactor,
+                (mouse[1] - last_mouse[1]) * panSpeedFactor
             ];
             last_mouse = mouse;
 

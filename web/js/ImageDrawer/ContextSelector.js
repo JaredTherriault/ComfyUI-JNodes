@@ -1,11 +1,15 @@
 import { $el } from "/scripts/ui.js";
+import { api } from "/scripts/api.js";
 
 import * as Contexts from "./Contexts.js";
 import * as Sorting from "./Sorting.js";
 import {
-	getImageListChildren, getImageListScrollLevel, getSearchText,
-	focusAndSelectSearchText, getColumnCount, getDrawerHeight, getDrawerWidth
+	getColumnCount, getDrawerHeight, getDrawerWidth
 } from "./ImageDrawer.js"
+
+import {
+	focusAndSelectSearchText, getSearchText, getImageListChildren, getImageListScrollLevel
+} from "./ImageListAndSearch.js"
 
 let ContextSelector;
 
@@ -84,7 +88,7 @@ export const createContextSelector = () => {
 		const option = document.createElement("option");
 		option.value = context.name;
 		option.textContent = context.name;
-		option.title = context.description;
+		option.title = context.tooltip;
 		ContextSelector.appendChild(option);
 	}
 
@@ -92,6 +96,8 @@ export const createContextSelector = () => {
 	ContextSelector.addEventListener("change", async function() {
 		const selectedValue = ContextSelector.value;
 		onOptionSelected(selectedValue);
+		// await api.fetchApi(
+		// 	'/jnodes_request_task_cancellation', { method: "POST"}); // Cancel any outstanding python task
 	});
 
 	// Initialize

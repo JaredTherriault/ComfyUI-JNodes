@@ -1,7 +1,13 @@
+// A script governing savable user settings and the creation of user interfaces for those settings
+
 import { $el } from "/scripts/ui.js";
 import { app } from "/scripts/app.js";
 
-// A script governing savable user settings and the creation of user interfaces for those settings
+import { info_VideoPlaybackOptions, options_VideoPlayback } from "../common/VideoOptions.js";
+import { getVideoElements } from "./Utilities.js";
+import { getImageListChildren } from "../ImageDrawer/ImageListAndSearch.js";
+
+export const defaultKeyList = "prompt, workflow";
 
 var underButtonContent;
 
@@ -36,7 +42,12 @@ export class ConfigSetting {
         //console.log("localstorage (" + name + " : " + val + ")");
         if (val !== null) {
             try { // Try to parse the value automatically, and if we can't then just return the string
-                return JSON.parse(val);
+                const loadedValue = JSON.parse(val);
+                if (typeof loadedValue === 'object') { // If it's an object, get the default first then assign loaded values on top
+                    let fullValue = defaultValue;
+                    Object.assign(fullValue, loadedValue);
+                    return fullValue;
+                } else { return loadedValue; } // If not, just return the parsed value
             } catch (error) {
                 return val;
             }
@@ -46,7 +57,7 @@ export class ConfigSetting {
     };
 
     _setValue(name, val) {
-        localStorage.setItem("JNodes.Settings." + name, val);
+        localStorage.setItem("JNodes.Settings." + name, JSON.stringify(val));
     };
 
     // Usage Example
@@ -63,6 +74,132 @@ export class ConfigSetting {
     //   mySetting.value = 10;
 }
 
+export class ImageDrawerConfigSetting extends ConfigSetting {
+    constructor(settingName, defaultValue) {
+        super("ImageDrawer." + settingName, defaultValue);
+    }
+}
+
+export let setting_bEnabled = new ImageDrawerConfigSetting("bEnabled", true);
+export let setting_bMasterVisibility = new ImageDrawerConfigSetting("bMasterVisibility", true);
+export let setting_DrawerAnchor = new ImageDrawerConfigSetting("DrawerAnchor", "top-left");
+
+export let setting_KeyList = new ImageDrawerConfigSetting("ImageVideo.KeyList", defaultKeyList);
+export let setting_bKeyListAllowDenyToggle = new ImageDrawerConfigSetting("ImageVideo.bKeyListAllowDenyToggle", false);
+
+export let setting_ModelCardAspectRatio = new ImageDrawerConfigSetting("Models.AspectRatio", 0.67);
+
+export let setting_VideoPlaybackOptions = new ImageDrawerConfigSetting("Video.VideoOptions", new options_VideoPlayback());
+
+// Button setup
+
+// A button shown in the comfy modal to show the drawer after it's been hidden
+const showButton = $el("button.comfy-settings-btn", {
+    textContent: "🖼️",
+    style: {
+        right: "16px",
+        cursor: "pointer",
+        display: "none",
+    },
+});
+showButton.onclick = () => {
+    imageDrawer.style.display = "block";
+    showButton.style.display = "none";
+    setting_bMasterVisibility.value = true;
+};
+document.querySelector(".comfy-settings-btn").after(showButton);
+
+export const setupUiSettings = (onDrawerAnchorInput) => {
+    // Enable/disable
+    {
+        const labelWidget = $el("label", {
+            textContent: "Image Drawer Enabled:",
+        });
+
+        const settingWidget = $el(
+            "input",
+            {
+                type: "checkbox",
+                checked: setting_bEnabled.value,
+                oninput: (e) => {
+                    setting_bEnabled.value = e.target.checked;
+                },
+            },
+        );
+
+        const tooltip = "Whether or not the image drawer is initialized (requires page reload)";
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+    // Drawer location
+    {
+        const labelWidget = $el("label", {
+            textContent: "Image Drawer Anchor:",
+        });
+
+        const settingWidget = createDrawerSelectionWidget(onDrawerAnchorInput);
+
+        const tooltip = "To which part of the screen the drawer should be docked";
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+
+    // Mouse over image/video key allow/deny list
+    {
+        const labelWidget = $el("label", {
+            textContent: "Image Drawer Image & Video Key List:",
+        });
+
+        const settingWidget = $el(
+            "input",
+            {
+                defaultValue: setting_KeyList.value,
+                oninput: (e) => {
+                    setting_KeyList.value = e.target.value;
+                },
+            },
+        );
+
+        const tooltip = "A set of comma-separated names to include or exclude " +
+            "from the tooltips applied to images in the drawer";
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+
+    // Mouse over image/video key allow/deny list toggle
+    {
+        const labelWidget = $el("label", {
+            textContent: "Image Drawer Image & Video Key List Allow/Deny Toggle:",
+        });
+
+        const settingWidget = $el(
+            "input",
+            {
+                type: "checkbox",
+                checked: setting_bKeyListAllowDenyToggle.value,
+                oninput: (e) => {
+                    setting_bKeyListAllowDenyToggle.value = e.target.checked;
+                },
+            },
+        );
+
+        const tooltip = `Whether the terms listed in the Key List should be 
+		denied or allowed, excluding everything else.
+		True = Allow list, False = Deny list.`
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+};
+
+export function createDrawerSelectionWidget(onInput) {
+    return $el("select", {
+        oninput: onInput,
+    },
+        ["top-left", "top-right", "bottom-left", "bottom-right"].map((m) =>
+            $el("option", {
+                value: m,
+                textContent: m,
+                selected: setting_DrawerAnchor.value === m,
+            })
+        )
+    );
+}
 
 function createExpandableSettingsArea() {
 
@@ -170,15 +307,103 @@ export function addJNodesSetting(nameWidget, settingWidget, tooltip) {
     sortTable();
 }
 
+export function createFlyoutHandle(handleText, handleClassSuffix = '', menuClassSuffix = '') {
+    let handle = $el(`section.flyout-handle${handleClassSuffix}`, [
+        $el("label.flyout-handle-label", { textContent: handleText })
+    ]);
+
+    let menu = $el(`div.flyout-menu${menuClassSuffix}`);
+
+    handle.appendChild(menu);
+
+    return { handle: handle, menu: menu };
+}
+
+export function createVideoPlaybackOptionsMenuWidgets(menu) {
+
+    const infos = new info_VideoPlaybackOptions();
+
+    function setGenericSettingOnVisualElementsInImageList(propertyName, propertyValue, info) {
+        for (let child of getImageListChildren()) {
+            for (let element of getVideoElements(child)) {
+
+                if (info.bPropagateOnChange) {
+                    element[propertyName] = propertyValue;
+                }
+
+                if (info.forEachElement) {
+                    info.forEachElement(element, propertyValue);
+                }
+            }
+        }
+    }
+
+    function oninput(propertyName, newValue) {
+        let videoOptionsCopy = { ...setting_VideoPlaybackOptions.value }; // Spread to make shallow copy
+        videoOptionsCopy[propertyName] = newValue; // set value of property directly
+        setting_VideoPlaybackOptions.value = videoOptionsCopy; // then replace the config setting value in order to serialize it properly
+
+        // If requested, set similarly named properties on image list
+        const info = infos[propertyName];
+        if (info.bPropagateOnChange || info.forEachElement) {
+            setGenericSettingOnVisualElementsInImageList(propertyName, newValue, info);
+        }
+    }
+
+    // Iterate over properties found in the default options
+    Object.entries(new options_VideoPlayback()).forEach(([propertyName, propertyValue]) => {
+        // In case we're using an old serialization, use the serialized value or default
+        const propertyValueToUse = propertyName in setting_VideoPlaybackOptions.value ? setting_VideoPlaybackOptions.value[propertyName] : propertyValue;
+        let widget;
+        if (typeof propertyValueToUse === 'boolean') {
+            let options = new options_LabeledCheckboxToggle();
+            options.id = `VideoPlaybackOptions.${propertyName}`
+            options.checked = propertyValueToUse;
+            options.labelTextContent = propertyName;
+            options.oninput = (e) => {
+                // This config setting is a class instance, so we need to take a few extra steps to serialize it
+                const newValue = e.target.checked;
+                oninput(propertyName, newValue);
+            }
+            widget = createLabeledCheckboxToggle(options);
+        } else if (typeof propertyValueToUse === 'number') {
+            let options = new options_LabeledSliderRange();
+            options.id = `VideoPlaybackOptions.${propertyName}`
+            options.value = propertyValueToUse;
+            options.labelTextContent = propertyName;
+            options.bIncludeValueLabel = false;
+            options.oninput = (e) => {
+                // This config setting is a class instance, so we need to take a few extra steps to serialize it
+                const newValue = e.target.valueAsNumber;
+                oninput(propertyName, newValue);
+            }
+            widget = createLabeledSliderRange(options);
+        }
+        widget.title = infos[propertyName]?.tooltip || '';
+        menu.appendChild(widget);
+    });
+}
+
+export function createVideoPlaybackOptionsFlyout() {
+    const handleClassSuffix = '.video-handle';
+    const menuClassSuffix = '.video-menu';
+    let flyout = createFlyoutHandle("📽️", handleClassSuffix, menuClassSuffix);
+
+    createVideoPlaybackOptionsMenuWidgets(flyout.menu);
+
+    return flyout;
+}
+
 export class options_LabeledSliderRange {
     labelTextContent = undefined;
     bIncludeValueLabel = true;
     bPrependValueLabel = false;
+    valueLabelFractionalDigits = 0;
     id = undefined;
     value = 0;
     min = 0;
-    max = 1;
-    step = 0.1;
+    max = 100
+    step = 1;
     oninput = undefined;
 }
 
@@ -188,7 +413,7 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
 
     if (options.bIncludeValueLabel) {
         valueLabelElement = $el('label', {
-            textContent: options.value.toFixed(2)
+            textContent: options.value?.toFixed(options.valueLabelFractionalDigits) || 0
         });
 
         // Save the original oninput callback from options
@@ -203,7 +428,7 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
 
             // Get the input value and round it to 2 decimal places
             const inputValue = parseFloat(e.target.value); // Convert input value to number
-            const roundedValue = isNaN(inputValue) ? 0.00 : inputValue.toFixed(2); // Round to 2 decimal places
+            const roundedValue = isNaN(inputValue) ? 0.00 : inputValue.toFixed(options.valueLabelFractionalDigits);
 
             // Update the labelElement text content with the rounded value
             valueLabelElement.textContent = roundedValue;
@@ -231,7 +456,7 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
     if (options.bPrependValueLabel && valueLabelElement) {
         OuterElement.appendChild(valueLabelElement);
     }
-        
+
     OuterElement.appendChild($el('label', { textContent: options.labelTextContent }));
     OuterElement.appendChild(MainElement);
 

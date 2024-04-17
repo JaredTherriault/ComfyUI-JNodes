@@ -1,10 +1,9 @@
 import { api } from "/scripts/api.js";
-import { app } from "/scripts/app.js";
 import { $el } from "/scripts/ui.js";
 import { copyToClipboard, createDarkContainer, getDarkColor } from "../common/Utilities.js"
 
-import { setSearchTextAndExecute } from "./ImageDrawer.js";
-import { setting_ModelCardAspectRatio } from "./UiSettings.js";
+import { setSearchTextAndExecute } from "./ImageListAndSearch.js";
+import { setting_ModelCardAspectRatio } from "../common/SettingsManager.js";
 
 const NoImagePlaceholder = new URL(`../assets/NoImage.png`, import.meta.url);
 
@@ -45,7 +44,7 @@ export async function getEmbeddings(bForceRefresh = false) {
 
 function getLoraTextFontSize(emMultiplier) {
 	const out = `${emMultiplier}em`;
-	console.log(out);
+	//console.log(out);
 	return out;
 }
 
@@ -243,7 +242,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			if (!buttonsRow) { return; }
 
 			function createButton(foregroundElement, tooltipText, onClickFunction, dragText) {
-				const buttonElement = $el("button", {
+				const buttonElement = $el("button.JNodes-extra-networks-toolbar-button", {
 					title: tooltipText,
 					style: {
 						background: 'none',
@@ -278,6 +277,9 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 					createButton(
 						$el("label", {
 							textContent: "📋",
+							style: {
+								cursor: 'pointer',
+							}
 						}),
 						`Copy lora as a1111-style text + trained words (${copyAllText})`,
 						function (e) {
@@ -293,6 +295,9 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 					createButton(
 						$el("label", {
 							textContent: "📝",
+							style: {
+								cursor: 'pointer',
+							}
 						}),
 						`Copy trained words (${trainedWords})`,
 						function (e) {
@@ -309,6 +314,9 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				createButton(
 					$el("label", {
 						textContent: "📜",
+						style: {
+							cursor: 'pointer',
+						}
 					}),
 					bIsLora ? `Copy lora as a1111-style text (${copyModelText})` : `Copy embedding as comfy-style text (${copyModelText})`,
 					function (e) {
@@ -325,6 +333,9 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				buttonsRow.appendChild(createButton(
 					$el("label", {
 						textContent: "📓",
+						style: {
+							cursor: 'grab',
+						}
 					}),
 					`Drag the current model into the graph to create a node with the name ${familiars.full_name}`,
 					undefined,
@@ -341,6 +352,9 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 							target: "_blank",
 							href,
 							textContent: "🔗",
+							style: {
+								cursor: 'pointer',
+							}
 						}),
 						`View model on civit.ai (${href})`
 					)

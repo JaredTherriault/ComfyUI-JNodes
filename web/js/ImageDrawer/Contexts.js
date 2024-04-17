@@ -4,17 +4,23 @@ import { api } from "/scripts/api.js";
 import * as ExtraNetworks from "./ExtraNetworks.js";
 import * as ImageElements from "./ImageElements.js";
 import * as Sorting from "./Sorting.js";
-import { getCurrentContextName } from "./ContextSelector.js";
+import { getCurrentContextName, getCurrentContextObject } from "./ContextSelector.js";
+import {
+	setColumnCount, setDrawerHeight, setDrawerWidth, setContextToolbarWidget
+} from "./ImageDrawer.js"
+
 import {
 	getImageListChildren, replaceImageListChildren, clearImageListChildren,
 	addElementToImageList, setImageListScrollLevel, setSearchTextAndExecute,
-	clearAndHandleSearch, setColumnCount, setDrawerHeight, setDrawerWidth, setContextToolbarWidget
-} from "./ImageDrawer.js"
+	clearAndExecuteSearch
+} from "./ImageListAndSearch.js"
 
-import { options_VideoPlayback } from "../common/VideoOptions.js"
 import { decodeReadableStream } from "../common/Utilities.js"
-import { setting_ModelCardAspectRatio, setting_VideoPlaybackOptions } from "./UiSettings.js";
-import { createLabeledCheckboxToggle, createLabeledSliderRange, options_LabeledCheckboxToggle, options_LabeledSliderRange } from "../common/SettingsManager.js";
+
+import {
+	createLabeledCheckboxToggle, createLabeledSliderRange, createVideoPlaybackOptionsFlyout,
+	options_LabeledCheckboxToggle, options_LabeledSliderRange, setting_ModelCardAspectRatio
+} from "../common/SettingsManager.js";
 
 let Contexts;
 
@@ -71,9 +77,9 @@ export class ImageDrawerContextCache {
 };
 
 class ImageDrawerContext {
-	constructor(name, description) {
+	constructor(name, tooltip) {
 		this.name = name;
-		this.description = description;
+		this.tooltip = tooltip;
 		this.cache = null;
 	}
 
@@ -98,7 +104,7 @@ class ImageDrawerContext {
 	async switchToContext(bSkipRestore = false) {
 		const bSuccessfulRestore = bSkipRestore || await this.checkAndRestoreContextCache();
 		if (!bSuccessfulRestore) {
-			clearAndHandleSearch(); // Reset search if no cache
+			clearAndExecuteSearch(); // Reset search if no cache
 		}
 
 		setContextToolbarWidget(await this.makeToolbar());
@@ -109,7 +115,7 @@ class ImageDrawerContext {
 	async makeToolbar() {
 		return $el("div", { //Inner container so it can maintain 'flex' display attribute
 			style: {
-				alignItems: 'center',
+				alignItems: 'normal',
 				display: 'flex',
 				gap: '.5rem',
 				flex: '0 1 fit-content',
@@ -151,6 +157,10 @@ class ImageDrawerContext {
 	getDefaultSortType() {
 		return { type: Sorting.SortTypeFilename, bIsAscending: true };
 	}
+
+	shouldCancelAsyncOperation() {
+		return getCurrentContextObject() != this; // By default, cancel async operations if the selected context has changed
+	}
 }
 
 class ContextClearable extends ImageDrawerContext {
@@ -162,6 +172,7 @@ class ContextClearable extends ImageDrawerContext {
 			textContent: "Clear",
 			onclick: async () => {
 				await this.onClearClicked();
+				clearButton.blur();
 			},
 			style: {
 				width: "fit-content",
@@ -189,6 +200,7 @@ class ContextRefreshable extends ImageDrawerContext {
 			textContent: "Refresh",
 			onclick: async () => {
 				await this.onRefreshClicked();
+				refreshButton.blur();
 			},
 			style: {
 				width: "fit-content",
@@ -216,6 +228,7 @@ class ContextModel extends ContextRefreshable {
 		clearImageListChildren();
 		await addElementToImageList($el("label", { textContent: `Loading ${this.name}...` }));
 		let modelDicts = await this.getModels(bForceRefresh);
+		if (this.shouldCancelAsyncOperation()) { return; }
 		clearImageListChildren(); // Remove loading indicator
 		//console.log("modelDicts: " + JSON.stringify(loraDicts));
 		const modelKeys = Object.keys(modelDicts);
@@ -223,6 +236,8 @@ class ContextModel extends ContextRefreshable {
 			let count = 0;
 			let maxCount = 0;
 			for (const modelKey of modelKeys) {
+				if (this.shouldCancelAsyncOperation()) { break; }
+
 				if (maxCount > 0 && count > maxCount) { break; }
 				let element = await ExtraNetworks.createExtraNetworkCard(modelKey, modelDicts[modelKey], this.type);
 				if (element == undefined) {
@@ -255,8 +270,9 @@ class ContextModel extends ContextRefreshable {
 		options.max = 2;
 		options.step = 0.01;
 		options.bIncludeValueLabel = true;
+		options.valueLabelFractionalDigits = 2;
 		options.oninput = (e) => {
-			setting_ModelCardAspectRatio.value = e.target.value;
+			setting_ModelCardAspectRatio.value = e.target.valueAsNumber;
 			for (let element of getImageListChildren()) {
 				if (element.classList.contains('extraNetworksCard')) {
 					element.style.aspectRatio = setting_ModelCardAspectRatio.value;
@@ -284,13 +300,14 @@ class ContextModel extends ContextRefreshable {
 }
 
 class ContextSubFolderExplorer extends ContextRefreshable {
-	constructor(name, description, folderName) {
+	constructor(name, description, folderName, bShouldForceLoad = false) {
 		super(name, description);
 		this.rootFolderName = folderName;
 		this.rootFolderDisplayName = '/root';
 		this.bIncludeSubfolders = false;
 		this.fileMap = null;
 		this.subfolderSelector = null;
+		this.bShouldForceLoad = bShouldForceLoad; // Whether or not to lazy load. Lazy load = !bShouldForceLoad
 	}
 
 	// Get the image paths in the folder or directory specified at this.folderName 
@@ -298,11 +315,30 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 	async fetchFolderItems(path_to_load_images_from = '') {
 		clearImageListChildren();
 		const withOrWithout = this.bIncludeSubfolders ? "with" : "without";
+
+		// todo: Python cancellation needs some work
+		// const cancelButton = $el("button.JNodes-image-drawer-btn", {
+		// 	textContent: 'Cancel',
+		// 	onclick: async () => {
+		// 		await api.fetchApi(
+		// 			'/jnodes_request_task_cancellation', { method: "POST" }); // Cancel any outstanding python task
+		// 		cancelButton.textContent = 'Canceling...';
+		// 	},
+		// 	style: {
+		// 		width: "fit-content",
+		// 		padding: '3px',
+		// 	},
+		// });
+
 		await addElementToImageList(
-			$el("label", {
-				textContent:
-					`Loading ${path_to_load_images_from || this.rootFolderName} folder ${withOrWithout} subfolders...`
-			}));
+			$el('div', [
+				$el("label", {
+					textContent:
+						`Loading folder '${path_to_load_images_from || this.rootFolderName}' ${withOrWithout} subfolders...`
+				}),
+				//cancelButton
+			])
+		);
 		const allItems = await api.fetchApi(
 			'/jnodes_comfyui_subfolder_items' +
 			`?root_folder=${this.rootFolderName}` +
@@ -370,6 +406,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 
 	async loadImagesInFolder(folder_path) {
 		if (!this.fileMap) { return; }
+		if (this.shouldCancelAsyncOperation()) { return; }
 
 		const bIsRoot = folder_path === '';
 		clearImageListChildren();
@@ -397,6 +434,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 				file: file,
 				type: this.rootFolderName,
 				subfolder: value.folder_path,
+				bShouldForceLoad: this.bShouldForceLoad
 			});
 			if (element !== undefined) {
 				await addElementToImageList(element);
@@ -408,6 +446,8 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		if (bUseBatching) {
 			const promises = [];
 			for (let valueIndex = 0; valueIndex < values.length; valueIndex++) {
+				if (this.shouldCancelAsyncOperation()) { break; }
+
 				const value = values[valueIndex];
 
 				if (evaluateGuardClauses(value)) {
@@ -454,6 +494,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 			await Promise.all(promises);
 		} else {
 			for (let valueIndex = 0; valueIndex < values.length; valueIndex++) {
+				if (this.shouldCancelAsyncOperation()) { break; }
 
 				const value = values[valueIndex];
 
@@ -480,6 +521,8 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		const container = await super.makeToolbar();
 		const self = this;
 
+		container.insertBefore(createVideoPlaybackOptionsFlyout().handle, container.firstChild);
+
 		let includeSubfoldersToggleOptions = new options_LabeledCheckboxToggle();
 		includeSubfoldersToggleOptions.labelTextContent = 'Include Subfolders';
 		includeSubfoldersToggleOptions.id = 'IncludeSubfoldersToggle';
@@ -502,8 +545,12 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		}
 
 		this.subfolderSelector.addEventListener("change", async function () {
-			IncludeSubfoldersToggle.checked = self.bIncludeSubfolders = false;
+			// Force subfolder inclusion off to avoid OOM - user must opt-in explicitly each time
+			self.bIncludeSubfolders = false;
+			IncludeSubfoldersToggle.checked = false;
 			const selectedValue = this.value;
+			// await api.fetchApi(
+				// '/jnodes_request_task_cancellation', { method: "POST" }); // Cancel any outstanding python task
 			await self.fetchFolderItems(selectedValue);
 		});
 
@@ -552,20 +599,21 @@ export class ContextFeed extends ContextClearable {
 		});
 	}
 
-	async addNewUncachedFeedImages(bShouldSort = true) {
+	async addNewUncachedFeedImages(bShouldSort = true, bShouldApplySearch = true) {
 		const imageListLength = getImageListChildren().length;
 		if (imageListLength < this.feedImages.length) {
 			for (let imageIndex = imageListLength; imageIndex < this.feedImages.length; imageIndex++) {
-				let src = this.feedImages[imageIndex];
-				let element = await ImageElements.createImageElementFromFileInfo(src);
+				if (this.shouldCancelAsyncOperation()) { break; }
+
+				let fileInfo = this.feedImages[imageIndex];
+				fileInfo.bShouldForceLoad = true; // Don't lazy load
+				fileInfo.bShouldSort = bShouldSort; // Optionally apply sort after image load
+				fileInfo.bShouldApplySearch = bShouldApplySearch; // Optionally apply search after image load
+				const element = await ImageElements.createImageElementFromFileInfo(fileInfo);
 				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
-				await addElementToImageList(element);
+				const bHandleSearch = false;
+				await addElementToImageList(element, bHandleSearch);
 			}
-
-			if (bShouldSort) {
-				Sorting.sortWithCurrentType();
-			}
-
 		}
 	}
 
@@ -589,7 +637,8 @@ export class ContextFeed extends ContextClearable {
 
 export class ContextTemp extends ContextSubFolderExplorer {
 	constructor() {
-		super("Temp / History", "The generations you've created since the last comfyUI server restart", "temp");
+		const bShouldForceLoad = true; // These need to be searchable by meta data
+		super("Temp / History", "The generations you've created since the last comfyUI server restart", "temp", bShouldForceLoad);
 	}
 
 	getDefaultSortType() {
@@ -605,7 +654,8 @@ export class ContextInput extends ContextSubFolderExplorer {
 
 export class ContextOutput extends ContextSubFolderExplorer {
 	constructor() {
-		super("Output", "Images and videos found in your output folder", "output");
+		const bShouldForceLoad = true; // These need to be searchable by meta data
+		super("Output", "Images and videos found in your output folder", "output", bShouldForceLoad);
 	}
 }
 

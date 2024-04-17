@@ -1,4 +1,7 @@
 import { $el } from "/scripts/ui.js";
+
+import * as Sorting from "./Sorting.js";
+
 import { getPngMetadata } from "/scripts/pnginfo.js";
 
 import {
@@ -12,7 +15,8 @@ import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 import { createModal } from "../common/ModalManager.js";
 
 import { setting_FontSize, setting_FontFamily } from "../textareaFontControl.js"
-import { setting_bKeyListAllowDenyToggle, setting_KeyList, setting_VideoPlaybackOptions } from "./UiSettings.js";
+import { setting_bKeyListAllowDenyToggle, setting_KeyList, setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
+import { executeSearchWithEnteredSearchText } from "./ImageListAndSearch.js";
 
 let toolTip;
 let toolButtonContainer;
@@ -261,10 +265,10 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	const imageElement =
 		$el("div.imageElement", {
-			complete: false,
+			bComplete: false,
 			style: {
 				width: 'calc(var(--drawer-width) / var(--column-count))',
-				borderRadius: '4px',
+				borderRadius: '4px'
 			}
 		});
 
@@ -290,13 +294,16 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	}
 
 	const img = $el(bIsVideoFormat ? "video" : "img", {
-		//src: href,
 		// Store the image source as a data attribute for easy access
 		dataSrc: href,
 		preload: "metadata",
+		lastSeekTime: 0.0,
 		onload: async function () {
 			if (img.complete) {
-				//console.log('Image has been completely loaded.');
+				if (imageElement.bComplete) {
+					//console.log('Image has been completely loaded.');
+					return;
+				}
 
 				function getDisplayTextFromMetadata(metadata) {
 
@@ -545,13 +552,31 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 				setMetadataAndUpdateTooltipAndSearchTerms(metadata);
 
-				imageElement.complete = true;
+				imageElement.bComplete = true;
+
+				if (fileInfo.bShouldSort) {
+					Sorting.sortWithCurrentType();
+					fileInfo.bShouldSort = false;
+				}
+
+				if (fileInfo.bShouldApplySearch) {
+					executeSearchWithEnteredSearchText();
+					fileInfo.bShouldApplySearch = false;
+				}
 			}
 			else {
 				console.log('Image is still loading.');
 			}
 		}
 	});
+
+	imageElement.forceLoad = function () {
+		img.src = img.dataSrc;
+	}
+
+	if (fileInfo.bShouldForceLoad) {
+		imageElement.forceLoad(); // Immediately load img if we don't want to lazy load (like in feed)
+	}
 
 	// Placeholder dimensions
 	if (fileInfo.file?.metadata_read) {
@@ -561,7 +586,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		imageElement.style.aspectRatio = imageElement.fileWidth / imageElement.fileHeight;
 	} else {
 		//If we can't properly placehold, load the whole image now instead of later
-		img.src = img.dataSrc;
+		imageElement.forceLoad();
 	}
 
 	const aElement = $el("a", {
@@ -570,22 +595,12 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		draggable: false,
 		download: fileInfo.filename,
 		onclick: async (e) => {
-
 			e.preventDefault();
 
 			if (bIsVideoFormat) {
-				function requestFullscreen(element) {
-					if (element.requestFullscreen) {
-						element.requestFullscreen();
-					} else if (element.mozRequestFullScreen) { /* Firefox */
-						element.mozRequestFullScreen();
-					} else if (element.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
-						element.webkitRequestFullscreen();
-					} else if (element.msRequestFullscreen) { /* IE/Edge */
-						element.msRequestFullscreen();
-					}
+				if (img && img.togglePlayback) {
+					img.togglePlayback();
 				}
-				requestFullscreen(img);
 			} else {
 				function createModalContent() {
 					const modalImg = $el("img", {
@@ -619,6 +634,15 @@ export async function createImageElementFromFileInfo(fileInfo) {
 				}
 				createModal(createModalContent());
 			}
+		},
+		ondblclick: async (e) => {
+			e.preventDefault();
+
+			if (bIsVideoFormat) {
+				if (img && img.toggleFullscreen) {
+					img.toggleFullscreen();
+				}
+			}
 		}
 	});
 
@@ -630,9 +654,62 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		img.autoplay = false; // Start false, will autoplay via observer
 		img.loop = setting_VideoPlaybackOptions.value.loop;
 		img.controls = setting_VideoPlaybackOptions.value.controls;
-		img.muted = true; // Start true, will unmute via observer
+		img.muted = setting_VideoPlaybackOptions.value.muted;
+		img.volume = setting_VideoPlaybackOptions.value.defaultVolume / 100; // Slider is 1-100, volume is 0-1
 
 		imageElement.bIsVideoFormat = bIsVideoFormat;
+
+		img.togglePlayback = async function () {
+			if (!img.pause || !img.play || !('paused' in img)) { return; }
+
+			if (img.paused) {
+				await img.play();
+			} else {
+				img.pause();
+			}
+		};
+
+		img.toggleMute = function () {
+			if ('muted' in img) {
+				img.muted = !img.muted;
+			}
+		}
+
+		img.toggleFullscreen = function () {
+			if (!document.fullscreenElement) {
+				img.requestFullscreen();
+			} else {
+				document.exitFullscreen();
+			}
+		}
+
+		img.seekVideo = function (delta) {
+			if (!img.duration || !img.currentTime) { return; }
+
+			const maxTime = img.duration;
+			const currentTime = img.currentTime;
+			const seekStep = Math.min(10, Math.max(1, maxTime / 100)); // Seek multiplier
+
+			let newTime = currentTime + (delta * seekStep);
+			newTime = Math.max(0, Math.min(maxTime, newTime)); // Clamp within valid range
+
+			img.currentTime = newTime; // Seek the video to the new time
+		};
+
+		imageElement.addEventListener('wheel', (event) => {
+			if (setting_VideoPlaybackOptions.value.useWheelSeek) {
+				event.preventDefault(); // Prevent default scroll behavior
+
+				// Determine the scroll direction (positive or negative)
+				let scrollDelta = Math.sign(event.deltaY); // -1 for up, 1 for down
+
+				if (setting_VideoPlaybackOptions.value.invertWheelSeek) {
+					scrollDelta *= -1;
+				}
+
+				img.seekVideo(scrollDelta);
+			}
+		});
 	}
 
 	aElement.appendChild(img);
@@ -645,6 +722,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	imageElement.draggable = true;
 	imageElement.addEventListener('dragstart', function (event) {
+		event.dataTransfer.setData('text/plain', `href=${href}`);
 		removeAndHideToolButtonFromImageElement(imageElement);
 	});
 
