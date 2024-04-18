@@ -40,6 +40,10 @@ async def save_text_wrapper(request):
 @server.PromptServer.instance.routes.post('/jnodes_load_text')
 async def load_text_wrapper(request):
     return await load_text(request)
+
+@server.PromptServer.instance.routes.post("/jnodes_upload_image")
+async def upload_image_wrapper(request):
+    return await upload_image(request)
     
 WEB_DIRECTORY = "./web"
 
