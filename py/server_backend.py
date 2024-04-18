@@ -338,7 +338,51 @@ def view_image(request):
 
     return web.Response(status=404)
 
+async def upload_image(request):
+    try:
+        post = await request.post()
+        image = post.get("image")
+        overwrite = post.get("overwrite")
 
+        image_upload_type = post.get("type")
+        upload_dir = convert_relative_comfyui_path_to_full_path(image_upload_type)
+
+        if image and image.file:
+            filename = post.get("filename")
+            if not filename or filename == "":
+                filename = image.filename
+            if not filename:
+                return web.Response(status=400)
+
+            subfolder = post.get("subfolder", "")
+            full_output_folder = os.path.join(upload_dir, os.path.normpath(subfolder))
+            filepath = os.path.abspath(os.path.join(full_output_folder, filename))
+
+            if os.path.commonpath((upload_dir, filepath)) != upload_dir:
+                return web.Response(status=400)
+
+            if not os.path.exists(full_output_folder):
+                os.makedirs(full_output_folder)
+
+            if overwrite is not None and (overwrite == "true" or overwrite == "1"):
+                pass
+            else:
+                split = os.path.splitext(filename)
+                i = 1
+                while os.path.exists(filepath):
+                    filename = f"{split[0]} ({i}){split[1]}"
+                    filepath = os.path.join(full_output_folder, filename)
+                    i += 1
+
+            with open(filepath, "wb") as f:
+                f.write(image.file.read())
+
+            return web.json_response({"name" : filename, "subfolder": subfolder, "type": image_upload_type})
+        else:
+            return web.Response(status=400)
+    except Exception as e:
+        print(f"Error uploading image: {e}")
+        return web.json_response({"success": False})
 
 async def save_model_config(request):
     type = "loras"
