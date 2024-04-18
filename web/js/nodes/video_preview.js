@@ -2,7 +2,7 @@ import { app } from '/scripts/app.js'
 import { api } from '/scripts/api.js'
 
 export const acceptableFileTypes = [ // todo: get types from python
-	"video/webm", "video/mp4",
+	"video/webm", "video/mp4", "video/ogg",
 	"image/webp", "image/gif", "image/apng", "image/mjpeg"
 ];
 
@@ -64,21 +64,21 @@ export const cleanupNode = (node) => {
 }
 
 const CreatePreviewElement = (name, val, format) => {
-	const [type] = format.split('/')
+	const [type] = format.split('/');
 	const w = {
 		name,
 		type,
 		value: val,
-		draw: function(ctx, node, widgetWidth, widgetY, height) {
+		draw: function (ctx, node, widgetWidth, widgetY, height) {
 			const [cw, ch] = this.computeSize(widgetWidth)
 			offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, ch)
 		},
-		computeSize: function(_) {
+		computeSize: function (_) {
 			const ratio = this.inputRatio || 1
 			const width = Math.max(220, this.parent.size[0])
 			return [width, (width / ratio + 10)]
 		},
-		onRemoved: function() {
+		onRemoved: function () {
 			if (this.inputEl) {
 				this.inputEl.remove()
 			}
@@ -88,18 +88,15 @@ const CreatePreviewElement = (name, val, format) => {
 	w.inputEl = document.createElement(type === 'video' ? 'video' : 'img')
 	w.inputEl.src = w.value
 
-	w.inputEl.onload = function() {
-		w.inputRatio = w.inputEl.naturalWidth / w.inputEl.naturalHeight
+	if (type === 'video') {
+		w.inputEl.muted = true;
+		w.inputEl.autoplay = true
+		w.inputEl.loop = true
+		w.inputEl.controls = false;
+	}
 
-		if (type === 'video') {
-			setTimeout(_=>{
-				w.inputEl.setAttribute('type', 'video/webm');
-				w.inputEl.muted = true;
-				w.inputEl.autoplay = true
-				w.inputEl.loop = true
-				w.inputEl.controls = false;
-			},100);
-		}
+	w.inputEl.onload = function () {
+		w.inputRatio = w.inputEl.naturalWidth / w.inputEl.naturalHeight
 	}
 	document.body.appendChild(w.inputEl)
 	const videoElements = document.querySelectorAll('video');
@@ -109,12 +106,12 @@ const CreatePreviewElement = (name, val, format) => {
 	return w
 }
 
-const gif_preview = {
+const videoPreview = {
 	name: 'JNodes.video_preview',
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
 		switch (nodeData.name) {
 			case 'JNodes_SaveImages': {
-				nodeType.prototype.onNodeCreated = function() {
+				nodeType.prototype.onNodeCreated = function () {
 					this.addWidget("button", "Sync playback", null, () => {
 						const videoElements = document.querySelectorAll('video');
 						videoElements.forEach(video => {
@@ -123,7 +120,7 @@ const gif_preview = {
 					});
 				}
 				const onExecuted = nodeType.prototype.onExecuted
-				nodeType.prototype.onExecuted = function(message) {
+				nodeType.prototype.onExecuted = function (message) {
 					const prefix = 'vhs_gif_preview_'
 					const r = onExecuted ? onExecuted.apply(this, message) : undefined
 
@@ -159,14 +156,14 @@ const gif_preview = {
 			}
 			case 'JNodes_UploadVideo': {
 				const onAdded = nodeType.prototype.onAdded;
-				nodeType.prototype.onAdded = function() {
+				nodeType.prototype.onAdded = function () {
 					onAdded?.apply(this, arguments);
 
 					const node = this;
 					const videoWidget = node.widgets.find((w) => w.name === "video");
 
 					const cb = node.callback;
-					videoWidget.callback = function(message) {
+					videoWidget.callback = function (message) {
 						const components = videoWidget.value.split('/');
 
 						let type = '';
@@ -206,7 +203,7 @@ const gif_preview = {
 								}
 							}
 							const w = node.addCustomWidget(
-								CreatePreviewElement(`${prefix}_${0}`, previewUrl, format || 'image/gif')
+								CreatePreviewElement(`${prefix}_${0}`, previewUrl, format)
 							);
 							w.parent = node;
 						}
@@ -225,4 +222,4 @@ const gif_preview = {
 	}
 }
 
-app.registerExtension(gif_preview)
+app.registerExtension(videoPreview)
