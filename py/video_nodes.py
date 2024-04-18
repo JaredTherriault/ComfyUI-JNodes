@@ -338,7 +338,7 @@ class UploadVideo:
             for f in os.listdir(input_dir):
                 if os.path.isfile(os.path.join(input_dir, f)):
                     file_parts = f.split('.')
-                    if len(file_parts) > 1 and (file_parts[-1] in ACCEPTED_VIDEO_EXTENSIONS + ACCEPTED_ANIMATED_IMAGE_EXTENSIONS):
+                    if len(file_parts) > 1 and (file_parts[-1] in ACCEPTED_UPLOAD_VIDEO_EXTENSIONS + ACCEPTED_ANIMATED_IMAGE_EXTENSIONS):
                         files.append(f"{input_type}/{s.UPLOAD_SUBDIRECTORY}/{f}")
         return {"required": {
                     "video": (sorted(files), {"video_upload": True}),
