@@ -188,6 +188,27 @@ export function getCurrentSecondsFromEpoch() {
 	return secondsSinceEpoch;
 }
 
+// Function to load a file from a URL using fetch
+export async function loadFileFromURL(url) {
+    try {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const fileData = await response.blob(); // Get the response as a Blob
+
+        // Now you can use the `fileData` Blob for further processing (e.g., displaying or downloading)
+        console.log("File loaded successfully:", fileData);
+
+        return fileData; // Return the loaded file data (Blob)
+    } catch (error) {
+        console.error("Error loading file:", error);
+        throw error; // Rethrow the error for handling at the caller level
+    }
+}
+
 export function getKeyList() {
 	return [
 		'ArrowDown',
