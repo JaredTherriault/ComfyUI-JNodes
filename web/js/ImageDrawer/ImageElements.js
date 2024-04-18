@@ -83,6 +83,13 @@ export function updateAndShowTooltip(newTooltipWidget, imageElement) {
 	toolTip.style.opacity = "1";
 }
 
+export function hideToolTip() {
+	if (toolTip) {
+		toolTip.style.visibility = "hidden";
+		toolTip.style.opacity = "0";
+	}
+}
+
 function getOrCreateToolButton() {
 
 	// Early out if it exists already
@@ -282,10 +289,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	imageElement.mouseOutEvent = function (event) {
 
-		if (toolTip) {
-			toolTip.style.visibility = "hidden";
-			toolTip.style.opacity = "0";
-		}
+		hideToolTip();
 
 		// If the new actively moused over element is not a child of imageElement, then hide the button
 		if (!imageElement.contains(event.toElement)) {
@@ -724,6 +728,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	imageElement.addEventListener('dragstart', function (event) {
 		event.dataTransfer.setData('text/plain', `href=${href}`);
 		removeAndHideToolButtonFromImageElement(imageElement);
+		hideToolTip();
 	});
 
 	return imageElement;
