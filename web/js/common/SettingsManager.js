@@ -323,17 +323,10 @@ export function createVideoPlaybackOptionsMenuWidgets(menu) {
 
     const infos = new info_VideoPlaybackOptions();
 
-    function setGenericSettingOnVisualElementsInImageList(propertyName, propertyValue, info) {
+    function callForEachCallbackOnEachElementInImageList(propertyName, propertyValue, info) {
         for (let child of getImageListChildren()) {
             for (let element of getVideoElements(child)) {
-
-                if (info.bPropagateOnChange) {
-                    element[propertyName] = propertyValue;
-                }
-
-                if (info.forEachElement) {
-                    info.forEachElement(element, propertyValue);
-                }
+                info.forEachElement(element, propertyName, propertyValue);
             }
         }
     }
@@ -345,8 +338,8 @@ export function createVideoPlaybackOptionsMenuWidgets(menu) {
 
         // If requested, set similarly named properties on image list
         const info = infos[propertyName];
-        if (info.bPropagateOnChange || info.forEachElement) {
-            setGenericSettingOnVisualElementsInImageList(propertyName, newValue, info);
+        if (info.forEachElement) {
+            callForEachCallbackOnEachElementInImageList(propertyName, newValue, info);
         }
     }
 
@@ -354,8 +347,9 @@ export function createVideoPlaybackOptionsMenuWidgets(menu) {
     Object.entries(new options_VideoPlayback()).forEach(([propertyName, propertyValue]) => {
         // In case we're using an old serialization, use the serialized value or default
         const propertyValueToUse = propertyName in setting_VideoPlaybackOptions.value ? setting_VideoPlaybackOptions.value[propertyName] : propertyValue;
+        const info = infos[propertyName];
         let widget;
-        if (typeof propertyValueToUse === 'boolean') {
+        if (info.widgetType === 'checkbox') {
             let options = new options_LabeledCheckboxToggle();
             options.id = `VideoPlaybackOptions.${propertyName}`
             options.checked = propertyValueToUse;
@@ -366,18 +360,35 @@ export function createVideoPlaybackOptionsMenuWidgets(menu) {
                 oninput(propertyName, newValue);
             }
             widget = createLabeledCheckboxToggle(options);
-        } else if (typeof propertyValueToUse === 'number') {
+        } else if (info.widgetType === 'range') {
             let options = new options_LabeledSliderRange();
             options.id = `VideoPlaybackOptions.${propertyName}`
             options.value = propertyValueToUse;
             options.labelTextContent = propertyName;
             options.bIncludeValueLabel = false;
+            options.min = info?.min ? info.min : options.min;
+            options.max = info?.max ? info.max : options.max;
+            options.step = info?.step ? info.step : options.step;
             options.oninput = (e) => {
                 // This config setting is a class instance, so we need to take a few extra steps to serialize it
                 const newValue = e.target.valueAsNumber;
                 oninput(propertyName, newValue);
             }
             widget = createLabeledSliderRange(options);
+        } else if (info.widgetType === 'number') {
+            let options = new options_LabeledNumberInput();
+            options.id = `VideoPlaybackOptions.${propertyName}`
+            options.value = propertyValueToUse;
+            options.labelTextContent = propertyName;
+            options.min = info?.min ? info.min : options.min;
+            options.max = info?.max ? info.max : options.max;
+            options.step = info?.step ? info.step : options.step;
+            options.onchange = (e) => { // Use onchange here because the user can type a value in, onchange requires commit
+                // This config setting is a class instance, so we need to take a few extra steps to serialize it
+                const newValue = e.target.valueAsNumber;
+                oninput(propertyName, newValue);
+            }
+            widget = createLabeledNumberInput(options);
         }
         widget.title = infos[propertyName]?.tooltip || '';
         menu.appendChild(widget);
@@ -394,17 +405,33 @@ export function createVideoPlaybackOptionsFlyout() {
     return flyout;
 }
 
-export class options_LabeledSliderRange {
+class options_BaseLabeledWidget {
+    id = undefined;
     labelTextContent = undefined;
+    oninput = undefined;
+    onchange = undefined;
+
+    bindEvents(widget) {
+        if (this.oninput) {
+            widget.oninput = this.oninput;
+        }
+
+        if (this.onchange) {
+            widget.onchange = this.onchange;
+        }
+
+        return widget;
+    }
+}
+
+export class options_LabeledSliderRange extends options_BaseLabeledWidget {
     bIncludeValueLabel = true;
     bPrependValueLabel = false;
     valueLabelFractionalDigits = 0;
-    id = undefined;
     value = 0;
     min = 0;
     max = 100
     step = 1;
-    oninput = undefined;
 }
 
 export function createLabeledSliderRange(options = new options_LabeledSliderRange()) {
@@ -441,9 +468,10 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
         value: options.value,
         min: options.min,
         max: options.max,
-        step: options.step,
-        oninput: options.oninput
+        step: options.step
     });
+
+    options.bindEvents(MainElement);
 
     let OuterElement = $el('div', {
         style: {
@@ -467,11 +495,42 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
     return OuterElement;
 }
 
-export class options_LabeledCheckboxToggle {
-    labelTextContent = undefined;
-    id = undefined;
+export class options_LabeledNumberInput extends options_BaseLabeledWidget {
+    value = 0;
+    min = 0;
+    max = 100
+    step = 1;
+}
+
+export function createLabeledNumberInput(options = new options_LabeledNumberInput()) {
+
+    let MainElement = $el('input', {
+        id: options.id,
+        type: 'number',
+        value: options.value,
+        min: options.min,
+        max: options.max,
+        step: options.step
+    });
+
+    options.bindEvents(MainElement);
+
+    let OuterElement = $el('div', {
+        style: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5%'
+        }
+    });
+
+    OuterElement.appendChild($el('label', { textContent: options.labelTextContent }));
+    OuterElement.appendChild(MainElement);
+
+    return OuterElement;
+}
+
+export class options_LabeledCheckboxToggle extends options_BaseLabeledWidget {
     checked = false;
-    oninput = undefined;
 }
 
 export function createLabeledCheckboxToggle(options = new options_LabeledCheckboxToggle()) {
@@ -479,9 +538,10 @@ export function createLabeledCheckboxToggle(options = new options_LabeledCheckbo
     let MainElement = $el('input', {
         id: options.id,
         type: 'checkbox',
-        checked: options.checked,
-        oninput: options.oninput
+        checked: options.checked
     });
+
+    options.bindEvents(MainElement);
 
     let OuterElement = $el('div', {
         style: {

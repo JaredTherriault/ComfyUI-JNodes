@@ -67,7 +67,7 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 		// Check if the video is intersecting with the viewport
 		if (entry.isIntersecting) {
 			if (!element.src || element.src === '') {
-				element.src = element.dataSrc;
+				element.forceLoad();
 
 				if (element.tagName !== 'VIDEO') {
 					unobserveVisualElement(element);

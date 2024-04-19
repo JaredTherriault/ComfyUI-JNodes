@@ -63,7 +63,7 @@ document.addEventListener("keydown", async (event) => {
 		if (elementUnderPointer && elementUnderPointer.toggleMute) {
 			event.preventDefault();
 
-			elementUnderPointer.toggleMute()
+			elementUnderPointer.toggleMute();
 		}
 	} else if (event.key == 'f') { // Toggle fullscreen
 		const elementUnderPointer = getElementUnderPointer();
@@ -71,7 +71,23 @@ document.addEventListener("keydown", async (event) => {
 		if (elementUnderPointer && elementUnderPointer.toggleFullscreen) {
 			event.preventDefault();
 
-			elementUnderPointer.toggleFullscreen()
+			elementUnderPointer.toggleFullscreen();
+		}
+	} else if (event.key == ',') { // Decrease playback rate
+		const elementUnderPointer = getElementUnderPointer();
+
+		if (elementUnderPointer && elementUnderPointer.playbackRate && elementUnderPointer.setPlaybackRate) {
+			event.preventDefault();
+
+			elementUnderPointer.setPlaybackRate(elementUnderPointer.playbackRate - 0.05);
+		}
+	} else if (event.key == '.') { // Increase playback rate
+		const elementUnderPointer = getElementUnderPointer();
+
+		if (elementUnderPointer && elementUnderPointer.playbackRate && elementUnderPointer.setPlaybackRate) {
+			event.preventDefault();
+
+			elementUnderPointer.setPlaybackRate(elementUnderPointer.playbackRate + 0.05);
 		}
 	}
 });

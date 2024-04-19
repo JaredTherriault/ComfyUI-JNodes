@@ -6,7 +6,7 @@ import { getPngMetadata } from "/scripts/pnginfo.js";
 
 import {
 	getMaxZIndex, createDarkContainer, copyToClipboard,
-	isValid, getCurrentSecondsFromEpoch
+	isValid, getCurrentSecondsFromEpoch, clamp
 } from "../common/Utilities.js";
 
 import { getLastMousePosition, isPointerDown } from "../common/EventManager.js";
@@ -574,8 +574,27 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		}
 	});
 
-	imageElement.forceLoad = function () {
+	img.forceLoad = function () {
 		img.src = img.dataSrc;
+
+		if (bIsVideoFormat) {
+			img.setPlaybackRate(setting_VideoPlaybackOptions.value.defaultPlaybackRate); // This gets reset when src is reset
+		}
+	}
+
+	img.initVideo = function () {
+
+		img.type = fileInfo.file?.format || undefined;
+		img.autoplay = false; // Start false, will autoplay via observer
+		img.loop = setting_VideoPlaybackOptions.value.loop;
+		img.controls = setting_VideoPlaybackOptions.value.controls;
+		img.muted = setting_VideoPlaybackOptions.value.muted;
+		img.setVolume(setting_VideoPlaybackOptions.value.defaultVolume);
+		img.setPlaybackRate(setting_VideoPlaybackOptions.value.defaultPlaybackRate);
+	}
+
+	imageElement.forceLoad = function () {
+		img.forceLoad();
 	}
 
 	if (fileInfo.bShouldForceLoad) {
@@ -654,15 +673,6 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	if (bIsVideoFormat) {
 
-		img.type = fileInfo.file?.format || undefined;
-		img.autoplay = false; // Start false, will autoplay via observer
-		img.loop = setting_VideoPlaybackOptions.value.loop;
-		img.controls = setting_VideoPlaybackOptions.value.controls;
-		img.muted = setting_VideoPlaybackOptions.value.muted;
-		img.volume = setting_VideoPlaybackOptions.value.defaultVolume / 100; // Slider is 1-100, volume is 0-1
-
-		imageElement.bIsVideoFormat = bIsVideoFormat;
-
 		img.togglePlayback = async function () {
 			if (!img.pause || !img.play || !('paused' in img)) { return; }
 
@@ -679,6 +689,10 @@ export async function createImageElementFromFileInfo(fileInfo) {
 			}
 		}
 
+		img.setVolume = function (percentage) {
+			img.volume = clamp(percentage / 100, 0.0, 1.0); // Slider is 1-100, volume is 0-1
+		}
+
 		img.toggleFullscreen = function () {
 			if (!document.fullscreenElement) {
 				img.requestFullscreen();
@@ -687,15 +701,19 @@ export async function createImageElementFromFileInfo(fileInfo) {
 			}
 		}
 
+		img.setPlaybackRate = function (rate) {
+			img.playbackRate = clamp(rate, 0.05, 100.00);
+		}
+
 		img.seekVideo = function (delta) {
 			if (!img.duration || !img.currentTime) { return; }
 
 			const maxTime = img.duration;
 			const currentTime = img.currentTime;
-			const seekStep = Math.min(10, Math.max(1, maxTime / 100)); // Seek multiplier
+			const seekStep = clamp(maxTime / 100, 1, 10); // Seek multiplier: 1 sec min / 1% of video / 10 sec max
 
 			let newTime = currentTime + (delta * seekStep);
-			newTime = Math.max(0, Math.min(maxTime, newTime)); // Clamp within valid range
+			newTime = clamp(newTime, 0, maxTime); // Clamp within valid range
 
 			img.currentTime = newTime; // Seek the video to the new time
 		};
@@ -714,6 +732,10 @@ export async function createImageElementFromFileInfo(fileInfo) {
 				img.seekVideo(scrollDelta);
 			}
 		});
+
+		img.initVideo();
+
+		imageElement.bIsVideoFormat = bIsVideoFormat;
 	}
 
 	aElement.appendChild(img);
