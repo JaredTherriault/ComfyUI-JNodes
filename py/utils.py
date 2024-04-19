@@ -60,7 +60,7 @@ ALL_ACCEPTED_BROWSER_VISUAL_EXTENSIONS = ACCEPTED_BROWSER_VIDEO_EXTENSIONS + ALL
 def return_random_int(min = 1, max = 100000):
     return random.randint(min, max)
 
-def convert_relative_comfyui_path_to_full_path(directory_name = "output"):
+def convert_relative_comfyui_path_to_full_path(relative_path = "output"):
     # Get the directory containing this file
     directory = os.path.dirname(os.path.realpath(__file__))
     
@@ -70,7 +70,7 @@ def convert_relative_comfyui_path_to_full_path(directory_name = "output"):
     # Chop off everything after "ComfyUI"
     comfy_path = os.path.join(directory[:index])
     
-    return os.path.join(comfy_path, directory_name)
+    return os.path.join(comfy_path, relative_path)
 
 def resolve_file_path(in_file_path):
     if os.path.isabs(in_file_path):
