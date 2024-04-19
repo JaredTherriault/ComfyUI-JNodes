@@ -310,29 +310,14 @@ class UploadVideo:
     This is also found in Kosinkadink's VideoHelperSuite, but that was something I contributed.
     """
     UPLOAD_SUBDIRECTORY = "upload_video"
-    INPUT_DIR_TYPE_NAMES = ["input", "temp"]
-    
-    def get_selected_upload_directory(upload_to_directory):
-        return os.path.join(folder_paths.get_directory_by_type(upload_to_directory), UploadVideo.UPLOAD_SUBDIRECTORY)
-    
-    def get_full_path(string_from_selector, upload_to_directory):
-        type = upload_to_directory
-        name = string_from_selector
-        
-        # If the string has all three component parts, it's best to get the info directly from there
-        split = re.split(r'[/\\]', string_from_selector)
-        if len(split) == 3:
-            type = split[0]
-            sub = split[1]
-            name = split[2]
-        return os.path.join(UploadVideo.get_selected_upload_directory(type), name)
-            
+    INPUT_DIR_TYPE_NAMES = ["input", "temp"]         
     
     @classmethod
     def INPUT_TYPES(s):
         files = []
+        # This just pulls in whatever's in the /input/upload_video folder on start
         for input_type in s.INPUT_DIR_TYPE_NAMES:
-            input_dir = s.get_selected_upload_directory(input_type)
+            input_dir = convert_relative_comfyui_path_to_full_path(input_type)
             if not os.path.isdir(input_dir):
                 continue
             for f in os.listdir(input_dir):
@@ -351,11 +336,11 @@ class UploadVideo:
     FUNCTION = "upload_video"
     
     def upload_video(self, video, upload_to_directory):
-        return (UploadVideo.get_full_path(video, upload_to_directory),)
+        return (convert_relative_comfyui_path_to_full_path(video),)
 
     @classmethod
     def VALIDATE_INPUTS(s, video, upload_to_directory, **kwargs):
-        full_path = UploadVideo.get_full_path(video, upload_to_directory)
+        full_path = convert_relative_comfyui_path_to_full_path(video)
         if not os.path.isfile(full_path):
             return f"Invalid video file: {full_path}"
         return True
