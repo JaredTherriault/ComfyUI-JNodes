@@ -92,7 +92,7 @@ const CreatePreviewElement = (name, val, format) => {
 		w.inputEl.muted = true;
 		w.inputEl.autoplay = true
 		w.inputEl.loop = true
-		w.inputEl.controls = false;
+		w.inputEl.controls = true;
 	}
 
 	w.inputEl.onload = function () {
@@ -162,7 +162,7 @@ const videoPreview = {
 					const node = this;
 					const videoWidget = node.widgets.find((w) => w.name === "video");
 
-					const cb = node.callback;
+					const originalCallback = node.callback;
 					videoWidget.callback = function (message) {
 						const components = videoWidget.value.split('/');
 
@@ -170,7 +170,11 @@ const videoPreview = {
 						let subfolder = '';
 						let name = '';
 
-						if (components.length === 3) {
+						if (components.length > 3) {
+							type = components[0];
+							subfolder = components.slice(1, components.length - 1).join('/'); // For deeply nested assets
+							name = components[components.length - 1];
+						} else if (components.length === 3) {
 							[type, subfolder, name] = components;
 						} else if (components.length === 2) {
 							[type, name] = components;
@@ -182,7 +186,7 @@ const videoPreview = {
 						const extension = extSplit[extSplit.length - 1];
 
 						const prefix = 'jnodes_video_preview_';
-						const r = cb ? cb.apply(node, message) : undefined;
+						const result = originalCallback ? originalCallback.apply(node, message) : undefined;
 
 						if (node.widgets) {
 							const pos = node.widgets.findIndex((w) => w.name === `${prefix}_0`);
@@ -202,10 +206,10 @@ const videoPreview = {
 									format = fileType;
 								}
 							}
-							const w = node.addCustomWidget(
+							const newWidget = node.addCustomWidget(
 								CreatePreviewElement(`${prefix}_${0}`, previewUrl, format)
 							);
-							w.parent = node;
+							newWidget.parent = node;
 						}
 						const onRemoved = node.onRemoved;
 						node.onRemoved = () => {
@@ -213,11 +217,11 @@ const videoPreview = {
 							return onRemoved?.();
 						};
 						node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]]);
-						return r;
+						return result;
 					}
 				};
-			};
 				break;
+			};
 		}
 	}
 }
