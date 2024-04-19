@@ -1,5 +1,6 @@
 import { app } from "../../../../scripts/app.js";
 import { pasteToTextArea } from "./Utilities.js";
+import * as VideoControl from './VideoControl.js';
 
 // Mouse tracking
 
@@ -31,63 +32,67 @@ document.addEventListener("keydown", async (event) => {
 	// Video shortcuts
 	// note that elementUnderPointer will always be the video element itself, not the container
 
+	function isElementAppropriateForVideoEvent(elementUnderPointer) {
+		return elementUnderPointer && VideoControl.isElementVideo(elementUnderPointer);
+	}
+
 	if (event.key == "l") { // Seek forward
 		const delta = 1;
 		const elementUnderPointer = getElementUnderPointer();
 
-		if (elementUnderPointer && elementUnderPointer.seekVideo) {
+		if (isElementAppropriateForVideoEvent(elementUnderPointer)) {
 			event.preventDefault();
 
-			elementUnderPointer.seekVideo(delta);
+			VideoControl.seekVideo(elementUnderPointer, delta);
 		}
 	} else if (event.key == "j") { // See backward
 		const delta = -1;
 		const elementUnderPointer = getElementUnderPointer();
 
-		if (elementUnderPointer && elementUnderPointer.seekVideo) {
+		if (isElementAppropriateForVideoEvent(elementUnderPointer)) {
 			event.preventDefault();
 
-			elementUnderPointer.seekVideo(delta);
+			VideoControl.seekVideo(elementUnderPointer, delta);
 		}
 	} else if (event.key == "k") { // Pause/play
 		const elementUnderPointer = getElementUnderPointer();
 
-		if (elementUnderPointer && elementUnderPointer.togglePlayback) {
+		if (isElementAppropriateForVideoEvent(elementUnderPointer)) {
 			event.preventDefault();
 
-			await elementUnderPointer.togglePlayback();
+			await VideoControl.toggleVideoPlayback(elementUnderPointer);
 		}
 	} else if (event.key == "m") { // Toggle mute
 		const elementUnderPointer = getElementUnderPointer();
 
-		if (elementUnderPointer && elementUnderPointer.toggleMute) {
+		if (isElementAppropriateForVideoEvent(elementUnderPointer)) {
 			event.preventDefault();
 
-			elementUnderPointer.toggleMute();
+			VideoControl.toggleVideoMute(elementUnderPointer);
 		}
 	} else if (event.key == 'f') { // Toggle fullscreen
 		const elementUnderPointer = getElementUnderPointer();
 
-		if (elementUnderPointer && elementUnderPointer.toggleFullscreen) {
+		if (isElementAppropriateForVideoEvent(elementUnderPointer)) {
 			event.preventDefault();
 
-			elementUnderPointer.toggleFullscreen();
+			VideoControl.toggleVideoFullscreen(elementUnderPointer);
 		}
 	} else if (event.key == ',') { // Decrease playback rate
 		const elementUnderPointer = getElementUnderPointer();
 
-		if (elementUnderPointer && elementUnderPointer.playbackRate && elementUnderPointer.setPlaybackRate) {
+		if (isElementAppropriateForVideoEvent(elementUnderPointer)) {
 			event.preventDefault();
 
-			elementUnderPointer.setPlaybackRate(elementUnderPointer.playbackRate - 0.05);
+			VideoControl.setVideoPlaybackRate(elementUnderPointer, elementUnderPointer.playbackRate - 0.05);
 		}
 	} else if (event.key == '.') { // Increase playback rate
 		const elementUnderPointer = getElementUnderPointer();
 
-		if (elementUnderPointer && elementUnderPointer.playbackRate && elementUnderPointer.setPlaybackRate) {
+		if (isElementAppropriateForVideoEvent(elementUnderPointer)) {
 			event.preventDefault();
 
-			elementUnderPointer.setPlaybackRate(elementUnderPointer.playbackRate + 0.05);
+			VideoControl.setVideoPlaybackRate(elementUnderPointer, elementUnderPointer.playbackRate + 0.05);
 		}
 	}
 });

@@ -17,6 +17,7 @@ import { createModal } from "../common/ModalManager.js";
 import { setting_FontSize, setting_FontFamily } from "../textareaFontControl.js"
 import { setting_bKeyListAllowDenyToggle, setting_KeyList, setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
 import { executeSearchWithEnteredSearchText } from "./ImageListAndSearch.js";
+import { onScrollVideo, setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen } from "../common/VideoControl.js";
 
 let toolTip;
 let toolButtonContainer;
@@ -268,6 +269,7 @@ function removeAndHideToolButtonFromImageElement(imageElementToUse) {
 export async function createImageElementFromFileInfo(fileInfo) {
 	if (!fileInfo) { return; }
 	const href = `/jnodes_view_image?filename=${encodeURIComponent(fileInfo.filename)}&type=${fileInfo.type}&subfolder=${encodeURIComponent(fileInfo.subfolder)}&t=${+new Date()}`;
+	fileInfo.href = href;
 	const bIsVideoFormat = fileInfo.file?.is_video || fileInfo.filename.endsWith(".mp4"); // todo: fetch acceptable video types from python
 
 	const imageElement =
@@ -578,7 +580,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		img.src = img.dataSrc;
 
 		if (bIsVideoFormat) {
-			img.setPlaybackRate(setting_VideoPlaybackOptions.value.defaultPlaybackRate); // This gets reset when src is reset
+			setVideoPlaybackRate(img, setting_VideoPlaybackOptions.value.defaultPlaybackRate); // This gets reset when src is reset
 		}
 	}
 
@@ -589,8 +591,8 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		img.loop = setting_VideoPlaybackOptions.value.loop;
 		img.controls = setting_VideoPlaybackOptions.value.controls;
 		img.muted = setting_VideoPlaybackOptions.value.muted;
-		img.setVolume(setting_VideoPlaybackOptions.value.defaultVolume);
-		img.setPlaybackRate(setting_VideoPlaybackOptions.value.defaultPlaybackRate);
+		setVideoVolume(img, setting_VideoPlaybackOptions.value.defaultVolume);
+		setVideoPlaybackRate(img, setting_VideoPlaybackOptions.value.defaultPlaybackRate);
 	}
 
 	imageElement.forceLoad = function () {
@@ -662,8 +664,8 @@ export async function createImageElementFromFileInfo(fileInfo) {
 			e.preventDefault();
 
 			if (bIsVideoFormat) {
-				if (img && img.toggleFullscreen) {
-					img.toggleFullscreen();
+				if (img) {
+					toggleVideoFullscreen(img);
 				}
 			}
 		}
@@ -673,64 +675,8 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	if (bIsVideoFormat) {
 
-		img.togglePlayback = async function () {
-			if (!img.pause || !img.play || !('paused' in img)) { return; }
-
-			if (img.paused) {
-				await img.play();
-			} else {
-				img.pause();
-			}
-		};
-
-		img.toggleMute = function () {
-			if ('muted' in img) {
-				img.muted = !img.muted;
-			}
-		}
-
-		img.setVolume = function (percentage) {
-			img.volume = clamp(percentage / 100, 0.0, 1.0); // Slider is 1-100, volume is 0-1
-		}
-
-		img.toggleFullscreen = function () {
-			if (!document.fullscreenElement) {
-				img.requestFullscreen();
-			} else {
-				document.exitFullscreen();
-			}
-		}
-
-		img.setPlaybackRate = function (rate) {
-			img.playbackRate = clamp(rate, 0.05, 100.00);
-		}
-
-		img.seekVideo = function (delta) {
-			if (!img.duration || !img.currentTime) { return; }
-
-			const maxTime = img.duration;
-			const currentTime = img.currentTime;
-			const seekStep = clamp(maxTime / 100, 1, 10); // Seek multiplier: 1 sec min / 1% of video / 10 sec max
-
-			let newTime = currentTime + (delta * seekStep);
-			newTime = clamp(newTime, 0, maxTime); // Clamp within valid range
-
-			img.currentTime = newTime; // Seek the video to the new time
-		};
-
 		imageElement.addEventListener('wheel', (event) => {
-			if (setting_VideoPlaybackOptions.value.useWheelSeek) {
-				event.preventDefault(); // Prevent default scroll behavior
-
-				// Determine the scroll direction (positive or negative)
-				let scrollDelta = Math.sign(event.deltaY); // -1 for up, 1 for down
-
-				if (setting_VideoPlaybackOptions.value.invertWheelSeek) {
-					scrollDelta *= -1;
-				}
-
-				img.seekVideo(scrollDelta);
-			}
+			onScrollVideo(img, event);
 		});
 
 		img.initVideo();
@@ -748,7 +694,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	imageElement.draggable = true;
 	imageElement.addEventListener('dragstart', function (event) {
-		event.dataTransfer.setData('text/plain', `href=${href}`);
+		event.dataTransfer.setData('text/jnodes_image_drawer_payload', `${JSON.stringify(fileInfo)}`);
 		removeAndHideToolButtonFromImageElement(imageElement);
 		hideToolTip();
 	});
