@@ -60,6 +60,13 @@ ALL_ACCEPTED_BROWSER_VISUAL_EXTENSIONS = ACCEPTED_BROWSER_VIDEO_EXTENSIONS + ALL
 def return_random_int(min = 1, max = 100000):
     return random.randint(min, max)
 
+@staticmethod
+def clamp(value, min_val, max_val):
+    """
+    Clamp the 'value' between 'min_val' and 'max_val'.
+    """
+    return max(min(value, max_val), min_val)
+
 def convert_relative_comfyui_path_to_full_path(relative_path = "output"):
     # Get the directory containing this file
     directory = os.path.dirname(os.path.realpath(__file__))
