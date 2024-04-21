@@ -453,6 +453,30 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 		return mainContainer;
 	}
 
+	backgroundImage.forceLoad = function () {
+		backgroundImage.src = backgroundImage.dataSrc;
+
+		const bIsVideoFormat = false;
+		if (bIsVideoFormat) {
+			setVideoPlaybackRate(backgroundImage, setting_VideoPlaybackOptions.value.defaultPlaybackRate); // This gets reset when src is reset
+		}
+	}
+
+	backgroundImage.initVideo = function () {
+
+		backgroundImage.type = fileInfo.file?.format || undefined;
+		backgroundImage.autoplay = false; // Start false, will autoplay via observer
+		backgroundImage.loop = setting_VideoPlaybackOptions.value.loop;
+		backgroundImage.controls = setting_VideoPlaybackOptions.value.controls;
+		backgroundImage.muted = setting_VideoPlaybackOptions.value.muted;
+		setVideoVolume(backgroundImage, setting_VideoPlaybackOptions.value.defaultVolume);
+		setVideoPlaybackRate(backgroundImage, setting_VideoPlaybackOptions.value.defaultPlaybackRate);
+	}
+
+	modelElement.forceLoad = function () {
+		backgroundImage.forceLoad();
+	}
+
 	//console.log("nameToUse: " + nameToUse);
 
 	modelElement.appendChild(backgroundImage);
