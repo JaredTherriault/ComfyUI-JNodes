@@ -14,7 +14,7 @@ import { getLastMousePosition, isPointerDown } from "../common/EventManager.js";
 import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 import { createModal } from "../common/ModalManager.js";
 
-import { setting_FontSize, setting_FontFamily } from "../textareaFontControl.js"
+import { setting_FontSize, setting_FontFamily } from "../TextareaFontControl.js"
 import { setting_bKeyListAllowDenyToggle, setting_KeyList, setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
 import { executeSearchWithEnteredSearchText } from "./ImageListAndSearch.js";
 import { onScrollVideo, setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen } from "../common/VideoControl.js";
