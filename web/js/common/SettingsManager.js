@@ -93,22 +93,6 @@ export let setting_VideoPlaybackOptions = new ImageDrawerConfigSetting("Video.Vi
 
 // Button setup
 
-// A button shown in the comfy modal to show the drawer after it's been hidden
-const showButton = $el("button.comfy-settings-btn", {
-    textContent: "🖼️",
-    style: {
-        right: "16px",
-        cursor: "pointer",
-        display: "none",
-    },
-});
-showButton.onclick = () => {
-    imageDrawer.style.display = "block";
-    showButton.style.display = "none";
-    setting_bMasterVisibility.value = true;
-};
-document.querySelector(".comfy-settings-btn").after(showButton);
-
 export const setupUiSettings = (onDrawerAnchorInput) => {
     // Enable/disable
     {

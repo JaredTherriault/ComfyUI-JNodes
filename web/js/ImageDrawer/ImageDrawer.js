@@ -5,10 +5,11 @@ import * as ExtraNetworks from "./ExtraNetworks.js";
 import * as ContextSelector from "./ContextSelector.js";
 import * as Sorting from "./Sorting.js";
 
-import { 
+import {
 	ImageDrawerConfigSetting, setupUiSettings, createDrawerSelectionWidget,
 	setting_bEnabled, setting_bMasterVisibility, setting_DrawerAnchor,
-	createFlyoutHandle, createLabeledSliderRange, options_LabeledSliderRange } from "../common/SettingsManager.js";
+	createFlyoutHandle, createLabeledSliderRange, options_LabeledSliderRange
+} from "../common/SettingsManager.js";
 import { clearAndExecuteSearch, createSearchBar, executeSearchWithEnteredSearchText, getImageListElement, setSearchTextAndExecute } from "./ImageListAndSearch.js";
 
 // Attribution: pythongsssss's Image Feed. So much brilliance in that original script.
@@ -167,6 +168,22 @@ app.registerExtension({
 	async setup() {
 
 		setupUiSettings((e) => { setDrawerAnchor(e.target.value); });
+
+		// A button shown in the comfy modal to show the drawer after it's been hidden
+		const showButton = $el("button.comfy-settings-btn", {
+			textContent: "🖼️",
+			style: {
+				right: "16px",
+				cursor: "pointer",
+				display: setting_bMasterVisibility.value == true ? "none" : "unset",
+			},
+		});
+		showButton.onclick = () => {
+			imageDrawer.style.display = "block";
+			showButton.style.display = "none";
+			setting_bMasterVisibility.value = true;
+		};
+		document.querySelector(".comfy-settings-btn").after(showButton); // insert Show after Settings
 
 		if (!setting_bEnabled.value) {
 			return;
