@@ -5,6 +5,7 @@ from pathlib import Path
 import folder_paths
 from .logger import logger
 from .misc import *
+from .utils import *
 
 import cv2
 import json
@@ -26,19 +27,12 @@ from PIL import Image, ImageSequence
 from PIL.PngImagePlugin import PngInfo
 from typing import Dict, List
 
-folder_paths.folder_names_and_paths["video_formats"] = (
-    [
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "video_formats"),
-    ],
-    [".json"]
-)
-
-ffmpeg_path = shutil.which("ffmpeg")
-if ffmpeg_path is None:
+FFMPEG_PATH = shutil.which("ffmpeg")
+if FFMPEG_PATH is None:
     logger.info("ffmpeg could not be found. Using ffmpeg from imageio-ffmpeg.")
     from imageio_ffmpeg import get_ffmpeg_exe
     try:
-        ffmpeg_path = get_ffmpeg_exe()
+        FFMPEG_PATH = get_ffmpeg_exe()
     except:
         logger.warning("ffmpeg could not be found. Outputs that require it have been disabled")
 
@@ -53,11 +47,15 @@ class SaveVideo():
     '''
     @classmethod
     def INPUT_TYPES(s):
-        #Hide ffmpeg formats if ffmpeg isn't available
-        if ffmpeg_path is not None:
-            ffmpeg_formats = ["video/"+x[:-5] for x in folder_paths.get_filename_list("video_formats")]
-        else:
-            ffmpeg_formats = []
+        # Get the list of filenames (including .json files) in the directory
+        file_names = os.listdir(VIDEO_FORMATS_DIRECTORY)
+
+        # Filter out only the JSON files (those ending with .json)
+        json_files = [filename for filename in file_names if filename.endswith(".json")]
+
+        # Generate the video format names by removing ".json" and prefixing with "video/"
+        video_formats = ["video/" + filename[:-5] for filename in json_files]
+
         return {
             "required": {
                 "images": ("IMAGE",),
@@ -67,7 +65,7 @@ class SaveVideo():
                 ),
                 "loop_count": ("INT", {"default": 0, "min": 0, "max": 100, "step": 1}),
                 "filename_suffix": ("STRING", {"default": ""}),
-                "format": (["image/gif", "image/webp", "image/apng"] + ffmpeg_formats,),
+                "format": (["image/gif", "image/webp", "image/apng"] + video_formats,),
                 "save_to_output_dir": ("BOOLEAN", {"default": True}),
                 "quality": ("INT", {"default": 95, "min": 0, "max": 100, "step": 1}),
             },
@@ -181,18 +179,19 @@ class SaveVideo():
             frames[0].save(file_path, **args)
         else:
             # Use ffmpeg to save a video
-            if ffmpeg_path is None:
+            if FFMPEG_PATH is None:
                 #Should never be reachable
                 raise ProcessLookupError("Could not find ffmpeg")
 
-            video_format_path = folder_paths.get_full_path("video_formats", format_ext + ".json")
+            video_format_path = os.path.join(VIDEO_FORMATS_DIRECTORY, format_ext + ".json")
             with open(video_format_path, 'r') as stream:
                 video_format = json.load(stream)
             file = f"{counter:05}_{filename}.{video_format['extension']}"
             file_path = os.path.join(full_output_folder, file)
             dimensions = f"{len(images[0][0])}x{len(images[0])}"
-            args = [ffmpeg_path, "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
-                    "-s", dimensions, "-r", str(frame_rate), "-i", "-", "-crf", str(quality) ] \
+            output_quality = map_to_range(quality, 0, 100, 50, 1) # ffmpeg quality maps from 50 (worst) to 1 (best)
+            args = [FFMPEG_PATH, "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
+                    "-s", dimensions, "-r", str(frame_rate), "-i", "-", "-crf", str(output_quality) ] \
                     + video_format['main_pass']
 
             env=os.environ.copy()
@@ -261,7 +260,7 @@ class SaveVideo():
 
                     # FFmpeg command with audio re-encoding
                     mux_args = [
-                        ffmpeg_path, "-y", "-i", str(file_path), "-i", str(audio_file_path),
+                        FFMPEG_PATH, "-y", "-i", str(file_path), "-i", str(audio_file_path),
                         "-c:v", "copy", "-c:a", audio_codec, "-b:a", "192k", "-strict", "experimental", "-shortest", str(output_file_with_audio_path)
                     ]
                     
