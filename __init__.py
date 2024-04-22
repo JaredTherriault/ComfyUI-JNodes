@@ -6,6 +6,8 @@ from .py.misc import *
 from .py.parameter_list import *
 from .py.server_backend import *
 
+from .py.deprecated_nodes import *
+
 from aiohttp import web
 import server
 
@@ -90,16 +92,22 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_ImageFormatSelector": ImageFormatSelector,
     
     # video_nodes
-    "JNodes_OutVideoInfo": OutVideoInfo,
+    "JNodes_MediaInfoToString": MediaInfoToString,
+    "JNodes_BreakMediaInfo": BreakMediaInfo,
     "JNodes_AppendReversedFrames": AppendReversedFrames,
-    "JNodes_LoadVideo": LoadVideo,
-    "JNodes_UploadVideo": UploadVideo,
+    "JNodes_LoadVisualMediaFromPath": LoadVisualMediaFromPath,
+    "JNodes_UploadVisualMedia": UploadVisualMedia,
     
     # misc
     "JNodes_GetTempDirectory": GetTempDirectory,
     "JNodes_GetOutputDirectory": GetOutputDirectory,
     "JNodes_StringLiteral" : StringLiteral,
     "JNodes_AnyToString" : AnyToString,
+
+    # deprecated_nodes
+    "JNodes_OutVideoInfo": OutVideoInfo,
+    "JNodes_LoadVideo": LoadVideo,
+    "JNodes_UploadVideo": UploadVideo,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -143,16 +151,22 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_ImageFormatSelector": "Image Format Selector",
     
     # video_nodes
-    "JNodes_OutVideoInfo": "Out Video Info",
+    "JNodes_MediaInfoToString": "Media Info To String",
+    "JNodes_BreakMediaInfo": "Break Media Info",
     "JNodes_AppendReversedFrames": "Append Reversed Frames",
-    "JNodes_LoadVideo": "Load Video",
-    "JNodes_UploadVideo": "Upload Video",
+    "JNodes_LoadVisualMediaFromPath": "Load Visual Media From Path",
+    "JNodes_UploadVisualMedia": "Upload Visual Media",
     
     # misc
     "JNodes_GetTempDirectory": "Get Temp Directory",
     "JNodes_GetOutputDirectory": "Get Output Directory",
     "JNodes_StringLiteral" : "String Literal",
     "JNodes_AnyToString" : "Anything To String",
+
+    # deprecated_nodes
+    "JNodes_OutVideoInfo": "Out Video Info (DEPRECATED, USE JNodes_BreakMediaInfo)",
+    "JNodes_LoadVideo": "Load Video (DEPRECATED, USE JNodes_LoadVisualMediaFromPath)",
+    "JNodes_UploadVideo": "Upload Video (DEPRECATED, USE JNodes_UploadVisualMedia)",
 }
 
 
