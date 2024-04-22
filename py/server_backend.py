@@ -148,6 +148,9 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
             return
 
         full_folder = os.path.join(root_folder, in_folder)
+        if not os.path.isdir(full_folder):
+            return
+            
         items = os.listdir(full_folder)
 
         include_files = (
