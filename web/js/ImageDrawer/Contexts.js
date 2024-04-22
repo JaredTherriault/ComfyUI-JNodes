@@ -345,10 +345,16 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 			`&start_getting_files_from_folder=${path_to_load_images_from}` +
 			`&include_subfolder_files=${this.bIncludeSubfolders}`);
 
-		// Decode into a string
-		const decodedString = await decodeReadableStream(allItems.body);
+		let decodedString;
+		try {
+			// Decode into a string
+			decodedString = await decodeReadableStream(allItems.body);
 
-		this.fileMap = JSON.parse(decodedString);
+			this.fileMap = JSON.parse(decodedString);
+		} catch (e) {
+			console.error(`Could not get list of files when loading "${this.rootFolderName}": ${e}`)
+			this.fileMap.clear(); // Set an empty map on failure. This allows the function to complete without further failures.
+		}
 
 		// Fill out combo box options based on folder paths
 		const lastSelectedValue = this.subfolderSelector.value; // Cache last selection
@@ -550,7 +556,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 			IncludeSubfoldersToggle.checked = false;
 			const selectedValue = this.value;
 			// await api.fetchApi(
-				// '/jnodes_request_task_cancellation', { method: "POST" }); // Cancel any outstanding python task
+			// '/jnodes_request_task_cancellation', { method: "POST" }); // Cancel any outstanding python task
 			await self.fetchFolderItems(selectedValue);
 		});
 
