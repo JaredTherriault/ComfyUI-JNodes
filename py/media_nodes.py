@@ -45,7 +45,7 @@ class MediaInfo:
         }
 
     def to_string(self):
-        return json.dumps(self.to_dict()).replace(", ", ",\n")
+        return json.dumps(self.to_dict(), indent=4)
 
 
 class MediaInfoToString:
