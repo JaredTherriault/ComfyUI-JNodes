@@ -1,3 +1,5 @@
+import { $el } from "/scripts/ui.js";
+
 import { app } from '/scripts/app.js'
 import { api } from '/scripts/api.js'
 
@@ -64,7 +66,7 @@ export const cleanupNode = (node) => {
 	}
 }
 
-const CreatePreviewElement = (name, val, format) => {
+const CreatePreviewElement = (name, val, format, jnodesPayload = null) => {
 	const [type] = format.split('/');
 	const widget = {
 		name,
@@ -86,20 +88,92 @@ const CreatePreviewElement = (name, val, format) => {
 		},
 	}
 
-	widget.inputEl = document.createElement(type === 'video' ? 'video' : 'img')
-	widget.inputEl.src = widget.value
+	let Container = $el("div", {
+		style: {
+			display: "flex",
+			flexDirection: "column",
+		}
+	});
 
-	if (type === 'video') {
-		widget.inputEl.muted = true;
-		widget.inputEl.autoplay = true
-		widget.inputEl.loop = true
-		widget.inputEl.controls = true;
+	const bIsVideo = type === 'video';
+
+	let MediaElement = $el(bIsVideo ? 'video' : 'img');
+	MediaElement.src = widget.value
+
+	if (bIsVideo) {
+		MediaElement.muted = true;
+		MediaElement.autoplay = true
+		MediaElement.loop = true
+		MediaElement.controls = true;
 	}
 
-	widget.inputEl.onload = function () {
-		widget.inputRatio = widget.inputEl.naturalWidth / widget.inputEl.naturalHeight
+	MediaElement.onload = function () {
+		widget.inputRatio = Container.naturalWidth / Container.naturalHeight
 	}
-	document.body.appendChild(widget.inputEl)
+
+	Container.appendChild(MediaElement);
+
+	if (bIsVideo) {
+		try {
+			let StreamlinedPayload = {};
+			if (jnodesPayload?.file?.duration_in_seconds) {
+				StreamlinedPayload.duration_in_seconds = jnodesPayload.file.duration_in_seconds;
+			}
+			if (jnodesPayload?.file?.fps) {
+				StreamlinedPayload.fps = jnodesPayload.file.fps;
+			}
+			if (jnodesPayload?.file?.frame_count) {
+				StreamlinedPayload.frame_count = jnodesPayload.file.frame_count;
+			}
+			if (jnodesPayload?.file?.file_size) {
+				StreamlinedPayload.file_size = jnodesPayload.file.file_size;
+			}
+			if (jnodesPayload?.file?.dimensions) {
+				StreamlinedPayload.dimensions = jnodesPayload.file.dimensions;
+			}
+			const PayloadString = JSON.stringify(StreamlinedPayload, null, 4); // Pretty formatting
+			console.log(PayloadString);
+			const TextWidget = $el("textarea", {
+				wrap: "hard",
+				style: {
+					resize: "none",
+					width: "95%",
+					height: "95%",
+					color: "inherit",
+					backgroundColor: "inherit"
+				}
+			});
+			TextWidget.value = PayloadString;
+			TextWidget.readOnly = true;
+			Container.appendChild(TextWidget);
+
+			// Function to update the label text dynamically
+			function updateCurrentInfo() {
+				// Update the text content of CurrentInfo based on updated MediaElement.currentTime and StreamlinedPayload.fps
+				CurrentInfo.textContent = `Current Time In Seconds: ${MediaElement.currentTime.toFixed(0)} Current Frame: ${(MediaElement.currentTime * StreamlinedPayload.fps).toFixed(0)}`;
+			}
+
+			const CurrentInfo = $el("label", {
+				textContent: "",
+				style: {
+					fontSize: "small"
+				}
+			});
+			Container.appendChild(CurrentInfo);
+
+			updateCurrentInfo();
+
+			// Attach an event listener to the MediaElement to trigger updates on time change
+			MediaElement.addEventListener("timeupdate", updateCurrentInfo);
+
+		} catch (e) {
+			console.error(e);
+		}
+	}
+
+	widget.inputEl = Container;
+
+	document.body.appendChild(widget.inputEl);
 	return widget;
 }
 
@@ -108,7 +182,7 @@ const mediaPreview = {
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
 		switch (nodeData.name) {
 			case 'JNodes_SaveVideo': {
-				const onExecuted = nodeType.prototype.onExecuted
+				const onExecuted = nodeType.prototype.onExecuted;
 				nodeType.prototype.onExecuted = function (message) {
 					const r = onExecuted ? onExecuted.apply(this, message) : undefined
 
@@ -139,10 +213,12 @@ const mediaPreview = {
 					node.onRemoved = () => {
 						cleanupNode(node)
 						return onRemoved?.()
-					}
+					};
+
+					node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]]);
+					return r;
 				};
-				node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]]);
-				return r;
+				break;
 			};
 			case 'JNodes_UploadVisualMedia': {
 				const onAdded = nodeType.prototype.onAdded;
@@ -152,7 +228,7 @@ const mediaPreview = {
 					const node = this;
 					const mediaWidget = node.widgets.find((w) => w.name === "media");
 
-					function createMediaPreview() {
+					function createMediaPreview(jnodesPayload = null) {
 						if (!mediaWidget.value) { return; }
 
 						const components = mediaWidget.value.split('/');
@@ -198,7 +274,7 @@ const mediaPreview = {
 								}
 							}
 							const newWidget = node.addCustomWidget(
-								CreatePreviewElement(`${prefix}_${0}`, previewUrl, format)
+								CreatePreviewElement(`${prefix}_${0}`, previewUrl, format, jnodesPayload)
 							);
 							newWidget.parent = node;
 						}
@@ -212,8 +288,8 @@ const mediaPreview = {
 					}
 
 					const originalCallback = node.callback;
-					mediaWidget.callback = (message) => {
-						createMediaPreview();
+					mediaWidget.callback = (message, jnodesPayload = null) => {
+						createMediaPreview(jnodesPayload);
 						return originalCallback ? originalCallback.apply(node, message) : undefined;
 					};
 

@@ -1,7 +1,7 @@
 import { app } from "/scripts/app.js";
 import { api } from '/scripts/api.js';
 import { ComfyWidgets } from "/scripts/widgets.js";
-import { acceptableFileTypes } from "./video_preview.js";
+import { acceptableFileTypes } from "./VideoPreview.js";
 import { loadFileFromURL } from "../common/Utilities.js";
 
 function mediaUpload(node, inputName, inputData, app) {
@@ -74,7 +74,7 @@ function mediaUpload(node, inputName, inputData, app) {
 			alert(error);
 		}
 	}
-	async function updateNode(path, bUpdateMediaWidget) {
+	async function updateNode(path, bUpdateMediaWidget, jnodesPayload = null) {
 		try {
 			// Add the file to the dropdown list and update the widget value
 			if (!mediaWidget.options.values.includes(path)) {
@@ -83,8 +83,11 @@ function mediaUpload(node, inputName, inputData, app) {
 
 			if (bUpdateMediaWidget) {
 				mediaWidget.value = path;
-				mediaWidget.callback(path); // Update media container
+				mediaWidget.callback(path, jnodesPayload); // Update media container
 			}
+
+			// Remove metadata text widget
+
 
 			return true;
 
@@ -170,7 +173,7 @@ function mediaUpload(node, inputName, inputData, app) {
 											if (jnodesPayload.type) path = jnodesPayload.type + "/" + path;
 
 											const bUpdateMediaWidget = true;
-											const bSuccess = updateNode(path, bUpdateMediaWidget);
+											const bSuccess = updateNode(path, bUpdateMediaWidget, jnodesPayload);
 
 											// Resolve the promise with the result of updateNode()
 											resolve(bSuccess);
