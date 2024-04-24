@@ -97,12 +97,16 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 	}
 
 	const BaseWidgetSize = node.computeSize([0, 0]); // Plus padding
+	const WidgetMargin = 0.9;
+	const WidgetMarginAsPercentage = (100 * WidgetMargin).toFixed(0) + "%";
 
 	let Container = $el("div", {
 		style: {
 			display: "flex",
 			flexDirection: "column",
 			alignItems: "center",
+			pointerEvents: "none",
+			maxHeight: "100%",
 		}
 	});
 
@@ -110,10 +114,43 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 	const bIsAnimatedImage = AnimatedImagetypes.includes(format);
 
 	let MediaElement = $el(bIsVideo ? 'video' : 'img', {
+		// draggable: false,
 		style: {
-			width: "95%",
+			maxWidth: WidgetMarginAsPercentage,
+			// height: WidgetMarginAsPercentage,
+			maxHeight: "100%",
+			objectFit: "contain",
+			pointerEvents: "all",
 		}
 	});
+
+	function ResizeToImage() {
+		if (Container) {
+			let WidgetHeights = 0;
+			for (const WidgetChild of Container.childNodes) {
+				if (WidgetChild) {
+					if (WidgetChild.tagName === "IMG") {
+						// The image is loaded but not added to the node yet
+						const AspectRatio = WidgetChild.width / WidgetChild.height;
+						// So we need to calculate its pixel aspect and apply that to the node's current width * WidgetMargin 
+						WidgetHeights += ((BaseWidgetSize[0] * WidgetMargin) / AspectRatio);
+					} else if (WidgetChild.tagName === "VIDEO") {
+						// The image is loaded but not added to the node yet
+						const AspectRatio = WidgetChild.videoWidth / WidgetChild.videoHeight;
+						// So we need to calculate its pixel aspect and apply that to the node's current width * WidgetMargin 
+						WidgetHeights += ((BaseWidgetSize[0] * WidgetMargin) / AspectRatio);
+					} else {
+						WidgetHeights += WidgetChild.clientHeight; // Other widgets are expected to be calculated normally
+					}
+				}
+			}
+			// widget.inputRatio = node.size[0] / (WidgetHeights + BaseWidgetSize[1]);
+			const WidgetSize = widget.computeSize();
+			node.setSize(WidgetSize);
+			// node.setSizeForimage?.();
+			// delete widget.inputRatio; // Allow free resizing
+		}
+	}
 
 	if (bIsVideo) {
 
@@ -122,27 +159,11 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 		MediaElement.loop = true
 		MediaElement.controls = true;
 
-	} else { // Images, still or animated
-
-		function ResizeToImage() {
-			if (Container) {
-				let WidgetHeights = 0;
-				for (const WidgetChild of Container.childNodes) {
-					if (WidgetChild) {
-						if (WidgetChild.tagName === "IMG") {
-							const AspectRatio = WidgetChild.width / WidgetChild.height; // The image is loaded but not added to the node yet
-							WidgetHeights += (BaseWidgetSize[0] / AspectRatio); // So we need to calculate its pixel aspect and apply that to the node's current width 
-						} else {
-							WidgetHeights += WidgetChild.clientHeight; // Other widgets are expected to be calculated normally
-						}
-					}
-				}
-				widget.inputRatio = BaseWidgetSize[0] / (WidgetHeights + BaseWidgetSize[1]);
-				const WidgetSize = widget.computeSize();
-				node.setSize([node.size[0], WidgetSize[1] * 0.9]);
-				node.setSizeForimage?.();
-			}
+		MediaElement.oncanplay = function () {
+			ResizeToImage();
 		}
+
+	} else { // Images, still or animated
 
 		MediaElement.onload = function () {
 			ResizeToImage();
@@ -171,7 +192,7 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 				StreamlinedPayload.dimensions = JnodesPayload.file.dimensions;
 			}
 
-			if (StreamlinedPayload.length > 0) {
+			if (Object.keys(StreamlinedPayload).length > 0) {
 				const PayloadString = JSON.stringify(StreamlinedPayload, null, 4); // Pretty formatting
 				// console.log(PayloadString);
 				const TextWidget = $el("textarea", {
@@ -179,7 +200,7 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 					rows: 10,
 					style: {
 						resize: "none",
-						width: "95%",
+						width: WidgetMarginAsPercentage,
 						color: "inherit",
 						backgroundColor: "inherit"
 					}
@@ -206,6 +227,7 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 							widget.inputRatio = Container.clientWidth / (WidgetHeights + BaseWidgetSize[1]);
 							const WidgetSize = widget.computeSize();
 							node.setSize([node.size[0], WidgetSize[1]]);
+							delete widget.inputRatio; // Allow free resizing
 
 							Container.bHasAutoResized = true;
 						}
@@ -363,7 +385,7 @@ const mediaPreview = {
 					const MediaWidget = ThisNode.widgets.find((w) => w.name === "media");
 					createMediaPreview(MediaWidget.value, ThisNode);
 				};
-				
+
 				break;
 			};
 		}
