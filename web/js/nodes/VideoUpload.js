@@ -1,7 +1,7 @@
 import { app } from "/scripts/app.js";
 import { api } from '/scripts/api.js';
 import { ComfyWidgets } from "/scripts/widgets.js";
-import { acceptableFileTypes } from "./VideoPreview.js";
+import { AcceptableFileTypes } from "./VideoPreview.js";
 import { loadFileFromURL } from "../common/Utilities.js";
 
 function mediaUpload(node, inputName, inputData, app) {
@@ -100,7 +100,7 @@ function mediaUpload(node, inputName, inputData, app) {
 	const fileInput = document.createElement("input");
 	Object.assign(fileInput, {
 		type: "file",
-		accept: acceptableFileTypes.join(","),
+		accept: AcceptableFileTypes.join(","),
 		style: "display: none",
 		onchange: async () => {
 			if (fileInput.files.length) {
@@ -129,7 +129,7 @@ function mediaUpload(node, inputName, inputData, app) {
 		if (e.dataTransfer) {
 
 			function conditionallyUploadFile(file) {
-				if (acceptableFileTypes.includes(file.type)) {
+				if (AcceptableFileTypes.includes(file.type)) {
 					const bUpdateMediaWidget = true;
 					uploadFile(file, bUpdateMediaWidget); // Just upload the very first matching object in the payload
 					return true;
