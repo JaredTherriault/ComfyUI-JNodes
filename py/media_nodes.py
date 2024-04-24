@@ -433,21 +433,25 @@ class UploadVisualMedia:
     @classmethod
     def INPUT_TYPES(s):
         files = []
-        # This just pulls in whatever's in the /input or /temp /upload_media folders on start
+        valid_dirs = ["input"]
         for input_type in s.INPUT_DIR_TYPE_NAMES:
+            valid_dirs.append(f"{input_type}/{s.UPLOAD_SUBDIRECTORY}")
+        # This just pulls in whatever's in the /input or /temp /upload_media folders on start
+        for input_type in valid_dirs:
             input_dir = convert_relative_comfyui_path_to_full_path(input_type)
             if not os.path.isdir(input_dir):
                 continue
-            for f in os.listdir(input_dir):
-                if os.path.isfile(os.path.join(input_dir, f)):
-                    file_parts = f.split(".")
+            for filename in os.listdir(input_dir):
+                file_path = os.path.join(input_dir, filename)
+                if os.path.isfile(file_path):
+                    file_parts = filename.split(".")
                     if len(file_parts) > 1 and (
                         file_parts[-1]
                         in ACCEPTED_UPLOAD_VIDEO_EXTENSIONS
                         + ACCEPTED_ANIMATED_IMAGE_EXTENSIONS
                         + ACCEPTED_STILL_IMAGE_EXTENSIONS
                     ):
-                        files.append(f"{input_type}/{s.UPLOAD_SUBDIRECTORY}/{f}")
+                        files.append(f"{input_type}/{filename}")
         return {
             "required": {
                 "media": (sorted(files), {"media_upload": True}),
