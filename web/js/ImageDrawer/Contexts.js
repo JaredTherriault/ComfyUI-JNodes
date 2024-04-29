@@ -440,7 +440,9 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 				file: file,
 				type: this.rootFolderName,
 				subfolder: value.folder_path,
-				bShouldForceLoad: this.bShouldForceLoad
+				bShouldForceLoad: this.bShouldForceLoad,
+				bShouldSort: false,
+				bShouldApplySearch: false,
 			});
 			if (element !== undefined) {
 				await addElementToImageList(element);
