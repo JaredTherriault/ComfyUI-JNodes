@@ -74,8 +74,6 @@ export const cleanupNode = (node) => {
 	}
 }
 
-
-
 function fitHeight(node) {
     node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]])
     node.graph.setDirtyCanvas(true);
@@ -109,6 +107,7 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 	}
 
 	const MediaMargin = 0.95;
+	const MediaAspectAdjustment = -((1.0 - MediaMargin) / 2);
 
 	let Container = $el("div", {
 		style: {
@@ -154,9 +153,13 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 						// }
 					}
 				}
-				widget.aspectRatio = (MediaElement.naturalWidth * (MediaMargin - 0.01)) / WidgetHeights;
+				widget.aspectRatio = (MediaElement.naturalWidth * (MediaMargin + MediaAspectAdjustment)) / WidgetHeights;
 				fitHeight(node);
 			}
+		}
+
+		MediaElement.onload = function () {
+			ResizeToImage();
 		}
 
 	} 
@@ -215,7 +218,7 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 									WidgetHeights += WidgetChild.clientHeight;
 								}
 							}
-							widget.aspectRatio = (Container.clientWidth * (MediaMargin - 0.01)) / WidgetHeights;
+							widget.aspectRatio = (Container.clientWidth * (MediaMargin + MediaAspectAdjustment)) / WidgetHeights;
 							fitHeight(node);
 
 							Container.bHasAutoResized = true;
