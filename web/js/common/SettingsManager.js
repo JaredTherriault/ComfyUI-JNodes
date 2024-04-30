@@ -476,6 +476,10 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
         OuterElement.appendChild(valueLabelElement);
     }
 
+    OuterElement.getMainElement = function() {
+        return MainElement;
+    };
+
     return OuterElement;
 }
 
@@ -534,6 +538,10 @@ export function createLabeledNumberInput(options = new options_LabeledNumberInpu
     OuterElement.appendChild($el('label', { textContent: options.labelTextContent }));
     OuterElement.appendChild(MainElement);
 
+    OuterElement.getMainElement = function() {
+        return MainElement;
+    };
+
     return OuterElement;
 }
 
@@ -560,6 +568,10 @@ export function createLabeledCheckboxToggle(options = new options_LabeledCheckbo
         $el('label', { textContent: options.labelTextContent }),
         MainElement
     ]);
+
+    OuterElement.getMainElement = function() {
+        return MainElement;
+    };
 
     return OuterElement;
 }

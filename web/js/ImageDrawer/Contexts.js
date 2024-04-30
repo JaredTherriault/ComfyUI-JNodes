@@ -555,7 +555,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		this.subfolderSelector.addEventListener("change", async function () {
 			// Force subfolder inclusion off to avoid OOM - user must opt-in explicitly each time
 			self.bIncludeSubfolders = false;
-			IncludeSubfoldersToggle.checked = false;
+			IncludeSubfoldersToggle.getMainElement().checked = false;
 			const selectedValue = this.value;
 			// await api.fetchApi(
 			// '/jnodes_request_task_cancellation', { method: "POST" }); // Cancel any outstanding python task
