@@ -74,6 +74,13 @@ export const cleanupNode = (node) => {
 	}
 }
 
+
+
+function fitHeight(node) {
+    node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]])
+    node.graph.setDirtyCanvas(true);
+}
+
 const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => {
 	const [type] = format.split('/');
 	const widget = {
@@ -84,10 +91,15 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 			const [cw, ch] = this.computeSize()
 			offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, ch)
 		},
-		computeSize: function () {
-			const ratio = this.inputRatio || 1
-			const width = Math.max(220, node.size[0])
-			return [width, (width / ratio + 10)]
+		computeSize : function(width) {
+			if (this.aspectRatio && !this.parentEl?.hidden) {
+				let height = (node.size[0]-30)/ this.aspectRatio;
+				if (!(height > 0)) {
+					height = 0;
+				}
+				return [width, height];
+			}
+			return [width, -4];//no loaded src, widget should not display
 		},
 		onRemoved: function () {
 			if (this.inputEl) {
@@ -96,9 +108,7 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 		},
 	}
 
-	const BaseWidgetSize = node.computeSize([0, 0]); // Plus padding
-	const WidgetMargin = 0.9;
-	const WidgetMarginAsPercentage = (100 * WidgetMargin).toFixed(0) + "%";
+	const MediaMargin = 0.95;
 
 	let Container = $el("div", {
 		style: {
@@ -116,41 +126,9 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 	let MediaElement = $el(bIsVideo ? 'video' : 'img', {
 		// draggable: false,
 		style: {
-			maxWidth: WidgetMarginAsPercentage,
-			// height: WidgetMarginAsPercentage,
-			maxHeight: "100%",
-			objectFit: "contain",
-			pointerEvents: "all",
+			width: `${MediaMargin * 100}%`,
 		}
 	});
-
-	function ResizeToImage() {
-		if (Container) {
-			let WidgetHeights = 0;
-			for (const WidgetChild of Container.childNodes) {
-				if (WidgetChild) {
-					if (WidgetChild.tagName === "IMG") {
-						// The image is loaded but not added to the node yet
-						const AspectRatio = WidgetChild.width / WidgetChild.height;
-						// So we need to calculate its pixel aspect and apply that to the node's current width * WidgetMargin 
-						WidgetHeights += ((BaseWidgetSize[0] * WidgetMargin) / AspectRatio);
-					} else if (WidgetChild.tagName === "VIDEO") {
-						// The image is loaded but not added to the node yet
-						const AspectRatio = WidgetChild.videoWidth / WidgetChild.videoHeight;
-						// So we need to calculate its pixel aspect and apply that to the node's current width * WidgetMargin 
-						WidgetHeights += ((BaseWidgetSize[0] * WidgetMargin) / AspectRatio);
-					} else {
-						WidgetHeights += WidgetChild.clientHeight; // Other widgets are expected to be calculated normally
-					}
-				}
-			}
-			// widget.inputRatio = node.size[0] / (WidgetHeights + BaseWidgetSize[1]);
-			const WidgetSize = widget.computeSize();
-			node.setSize(WidgetSize);
-			// node.setSizeForimage?.();
-			// delete widget.inputRatio; // Allow free resizing
-		}
-	}
 
 	if (bIsVideo) {
 
@@ -159,16 +137,29 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 		MediaElement.loop = true
 		MediaElement.controls = true;
 
-		MediaElement.oncanplay = function () {
-			ResizeToImage();
-		}
-
 	} else { // Images, still or animated
 
-		MediaElement.onload = function () {
-			ResizeToImage();
+		function ResizeToImage() {
+			if (Container) {
+				// let WidgetWidth = 0;
+				let WidgetHeights = 0;
+				for (const WidgetChild of Container.childNodes) {
+					if (WidgetChild) {
+						// if (WidgetChild.tagName === "IMG") {
+						// 	if (WidgetWidth == 0) { WidgetWidth = WidgetChild.width; }
+						// 	const AspectRatio = WidgetChild.width / WidgetChild.height; // The image is loaded but not added to the node yet
+						// 	WidgetHeights += (WidgetWidth / AspectRatio); // So we need to calculate its pixel aspect and apply that to the node's current width 
+						// } else {
+							WidgetHeights += WidgetChild.naturalHeight; // Other widgets are expected to be calculated normally
+						// }
+					}
+				}
+				widget.aspectRatio = (MediaElement.naturalWidth * (MediaMargin - 0.01)) / WidgetHeights;
+				fitHeight(node);
+			}
 		}
-	}
+
+	} 
 
 	Container.appendChild(MediaElement);
 
@@ -224,15 +215,13 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 									WidgetHeights += WidgetChild.clientHeight;
 								}
 							}
-							widget.inputRatio = Container.clientWidth / (WidgetHeights + BaseWidgetSize[1]);
-							const WidgetSize = widget.computeSize();
-							node.setSize([node.size[0], WidgetSize[1]]);
-							delete widget.inputRatio; // Allow free resizing
+							widget.aspectRatio = (Container.clientWidth * (MediaMargin - 0.01)) / WidgetHeights;
+							fitHeight(node);
 
 							Container.bHasAutoResized = true;
 						}
 					}
-
+					
 					const CurrentInfo = $el("label", {
 						textContent: "",
 						style: {
