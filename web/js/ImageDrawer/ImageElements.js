@@ -614,6 +614,9 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	// Placeholder dimensions
 	if (fileInfo.file?.metadata_read) {
+		if (!imageElement.DisplayData) {
+			imageElement.DisplayData = {};
+		}
 		imageElement.DisplayData.FileDimensions = fileInfo.file.dimensions;
 
 		imageElement.DisplayData.AspectRatio = imageElement.DisplayData.FileDimensions[0] / imageElement.DisplayData.FileDimensions[1];
@@ -681,6 +684,10 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	});
 
 	imageElement.appendChild(aElement);
+
+	if (!imageElement.DisplayData) {
+		imageElement.DisplayData = {};
+	}
 
 	if (bIsVideoFormat) {
 
