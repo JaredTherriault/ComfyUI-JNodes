@@ -497,6 +497,17 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 					imageElement.metadata = metadata;
 
+					if (!imageElement.fileWidth) {
+						imageElement.fileWidth = img.naturalWidth;
+					}
+					if (!imageElement.fileHeight) {
+						imageElement.fileHeight = img.naturalHeight;
+					}
+
+					if (!imageElement.aspectRatio) {
+						imageElement.aspectRatio = imageElement.fileWidth / imageElement.fileHeight;
+					}
+
 					const toolTipWidget = makeTooltipWidgetFromMetadata(metadata);
 
 					if (toolTipWidget) {
@@ -694,6 +705,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	imageElement.fileType = imageElement.filename.split(".")[1];
 	imageElement.file_age = fileInfo.file?.file_age || getCurrentSecondsFromEpoch(); // todo: fix for feed images
 	imageElement.file_size = fileInfo.file?.file_size || -1;
+
 	imageElement.searchTerms = href; // Search terms to start with, onload will add more
 
 	imageElement.draggable = true;
