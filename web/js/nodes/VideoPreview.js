@@ -75,8 +75,8 @@ export const cleanupNode = (node) => {
 }
 
 function fitHeight(node) {
-    node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]])
-    node.graph.setDirtyCanvas(true);
+	node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]])
+	node.graph.setDirtyCanvas(true);
 }
 
 const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => {
@@ -89,9 +89,9 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 			const [cw, ch] = this.computeSize()
 			offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, ch)
 		},
-		computeSize : function(width) {
+		computeSize: function (width) {
 			if (this.aspectRatio && !this.parentEl?.hidden) {
-				let height = (node.size[0]-30)/ this.aspectRatio;
+				let height = (node.size[0] - 30) / this.aspectRatio;
 				if (!(height > 0)) {
 					height = 0;
 				}
@@ -107,6 +107,7 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 	}
 
 	const MediaMargin = 0.95;
+	const MediaMarginAsPercentage = `${MediaMargin * 100}%`;
 	const MediaAspectAdjustment = -((1.0 - MediaMargin) / 2);
 
 	let Container = $el("div", {
@@ -125,7 +126,7 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 	let MediaElement = $el(bIsVideo ? 'video' : 'img', {
 		// draggable: false,
 		style: {
-			width: `${MediaMargin * 100}%`,
+			width: MediaMarginAsPercentage,
 		}
 	});
 
@@ -144,13 +145,7 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 				let WidgetHeights = 0;
 				for (const WidgetChild of Container.childNodes) {
 					if (WidgetChild) {
-						// if (WidgetChild.tagName === "IMG") {
-						// 	if (WidgetWidth == 0) { WidgetWidth = WidgetChild.width; }
-						// 	const AspectRatio = WidgetChild.width / WidgetChild.height; // The image is loaded but not added to the node yet
-						// 	WidgetHeights += (WidgetWidth / AspectRatio); // So we need to calculate its pixel aspect and apply that to the node's current width 
-						// } else {
-							WidgetHeights += WidgetChild.naturalHeight; // Other widgets are expected to be calculated normally
-						// }
+						WidgetHeights += WidgetChild.naturalHeight;
 					}
 				}
 				widget.aspectRatio = (MediaElement.naturalWidth * (MediaMargin + MediaAspectAdjustment)) / WidgetHeights;
@@ -162,7 +157,7 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 			ResizeToImage();
 		}
 
-	} 
+	}
 
 	Container.appendChild(MediaElement);
 
@@ -194,7 +189,7 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 					rows: 10,
 					style: {
 						resize: "none",
-						width: WidgetMarginAsPercentage,
+						width: MediaMarginAsPercentage,
 						color: "inherit",
 						backgroundColor: "inherit"
 					}
@@ -211,22 +206,22 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 						const CurrentFrame = MediaElement.currentTime * StreamlinedPayload.fps;
 						CurrentInfo.textContent = `Current Time: ${MediaElement.currentTime.toFixed(0)} Current Frame: ${CurrentFrame.toFixed(0)}`;
 
-						if (CurrentFrame > 1 && Container && !Container.bHasAutoResized) {
+						if (MediaElement.currentTime > 0.01 && Container && !Container.bHasAutoResized) {
 							let WidgetHeights = 0;
 							for (const WidgetChild of Container.childNodes) {
 								if (WidgetChild) {
 									WidgetHeights += WidgetChild.clientHeight;
 								}
 							}
-							widget.aspectRatio = (Container.clientWidth * (MediaMargin + MediaAspectAdjustment)) / WidgetHeights;
+							widget.aspectRatio = (Container.clientWidth ) / Container.clientHeight;
 							fitHeight(node);
 
 							Container.bHasAutoResized = true;
 						}
 					}
-					
+
 					const CurrentInfo = $el("label", {
-						textContent: "",
+						textContent: "MediaInfo",
 						style: {
 							fontSize: "small"
 						}
