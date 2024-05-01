@@ -178,11 +178,11 @@ app.registerExtension({
 				display: setting_bMasterVisibility.value == true ? "none" : "unset",
 			},
 		});
-		showButton.addEventListener("onclick", function () {
+		showButton.addEventListener("click", function () {
 			imageDrawer.style.display = "block";
 			showButton.style.display = "none";
 			setting_bMasterVisibility.value = true;
-		};
+		});
 		document.querySelector(".comfy-settings-btn").after(showButton); // insert Show after Settings
 
 		if (!setting_bEnabled.value) {
