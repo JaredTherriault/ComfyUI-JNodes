@@ -493,29 +493,27 @@ export async function createImageElementFromFileInfo(fileInfo) {
 					}
 				}
 
-				function setMetadataAndUpdateTooltipAndSearchTerms(metadata) {
+				function setMetadataAndUpdateTooltipAndSearchTerms(Metadata) {
 
-					imageElement.metadata = metadata;
+					imageElement.PromptMetadata = Metadata;
 
-					if (!imageElement.fileWidth) {
-						imageElement.fileWidth = img.naturalWidth;
-					}
-					if (!imageElement.fileHeight) {
-						imageElement.fileHeight = img.naturalHeight;
+					// Set the dimensional display data in the event that it's not found in python meta sweep
+					if (!imageElement.DisplayData.FileDimensions) {
+						imageElement.DisplayData.FileDimensions = fileInfo.file.dimensions;
 					}
 
-					if (!imageElement.aspectRatio) {
-						imageElement.aspectRatio = imageElement.fileWidth / imageElement.fileHeight;
+					if (!imageElement.DisplayData.AspectRatio) {
+						imageElement.DisplayData.AspectRatio = imageElement.DisplayData.FileDimensions[0] / imageElement.DisplayData.FileDimensions[1];
 					}
 
-					const toolTipWidget = makeTooltipWidgetFromMetadata(metadata);
+					const toolTipWidget = makeTooltipWidgetFromMetadata(Metadata);
 
 					if (toolTipWidget) {
 						setTooltipFromWidget(toolTipWidget);
 					}
 
 					// Finally, set search terms on the element
-					imageElement.searchTerms += " " + getDisplayTextFromMetadata(metadata);
+					imageElement.searchTerms += " " + getDisplayTextFromMetadata(Metadata);
 				}
 
 				const response = await fetch(href);
@@ -616,11 +614,10 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	// Placeholder dimensions
 	if (fileInfo.file?.metadata_read) {
-		imageElement.fileWidth = fileInfo.file.dimensions[0];
-		imageElement.fileHeight = fileInfo.file.dimensions[1];
+		imageElement.DisplayData.FileDimensions = fileInfo.file.dimensions;
 
-		imageElement.aspectRatio = imageElement.fileWidth / imageElement.fileHeight;
-		imageElement.style.aspectRatio = imageElement.aspectRatio;
+		imageElement.DisplayData.AspectRatio = imageElement.DisplayData.FileDimensions[0] / imageElement.DisplayData.FileDimensions[1];
+		imageElement.style.aspectRatio = imageElement.DisplayData.AspectRatio;
 	} else {
 		//If we can't properly placehold, load the whole image now instead of later
 		imageElement.forceLoad();
@@ -695,6 +692,12 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 		img.initVideo();
 
+		imageElement.DisplayData.DurationInSeconds = fileInfo.file?.duration_in_seconds;
+		imageElement.DisplayData.FramesPerSecond = fileInfo.file?.fps;
+		imageElement.DisplayData.FrameCount = fileInfo.file?.frame_count;
+		imageElement.DisplayData.FramesPerSecond = fileInfo.file?.fps;
+		imageElement.DisplayData.FramesPerSecond = fileInfo.file?.fps;
+
 		imageElement.bIsVideoFormat = bIsVideoFormat;
 	}
 
@@ -704,12 +707,13 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	imageElement.filename = fileInfo.filename;
 	imageElement.fileType = imageElement.filename.split(".")[1];
 	imageElement.file_age = fileInfo.file?.file_age || getCurrentSecondsFromEpoch(); // todo: fix for feed images
-	imageElement.file_size = fileInfo.file?.file_size || -1;
+	imageElement.DisplayData.FileSize = fileInfo.file?.file_size || -1;
 
 	imageElement.searchTerms = href; // Search terms to start with, onload will add more
 
 	imageElement.draggable = true;
 	imageElement.addEventListener('dragstart', function (event) {
+		fileInfo.DisplayData = imageElement.DisplayData;
 		event.dataTransfer.setData('text/jnodes_image_drawer_payload', `${JSON.stringify(fileInfo)}`);
 		removeAndHideToolButtonFromImageElement(imageElement);
 		hideToolTip();

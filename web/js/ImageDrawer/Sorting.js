@@ -146,7 +146,7 @@ export class SortTypeFileSize extends SortType {
 	}
 
 	getSortingLambda() {
-		return (a, b) => this.bIsAscending ? a.file_size - b.file_size : b.file_size - a.file_size;
+		return (a, b) => this.bIsAscending ? a.DisplayData.FileSize - b.DisplayData.FileSize : b.DisplayData.FileSize - a.DisplayData.FileSize;
 	}
 }
 
@@ -156,7 +156,7 @@ export class SortTypeImageWidth extends SortType {
 	}
 
 	getSortingLambda() {
-		return (a, b) => this.bIsAscending ? a.fileWidth - b.fileWidth : b.fileWidth - a.fileWidth;
+		return (a, b) => this.bIsAscending ? a.DisplayData.FileDimensions[0] - b.DisplayData.FileDimensions[0] : b.DisplayData.FileDimensions[0] - a.DisplayData.FileDimensions[0];
 	}
 }
 
@@ -166,7 +166,7 @@ export class SortTypeImageHeight extends SortType {
 	}
 
 	getSortingLambda() {
-		return (a, b) => this.bIsAscending ? a.fileHeight - b.fileHeight : b.fileHeight - a.fileHeight;
+		return (a, b) => this.bIsAscending ? a.DisplayData.FileDimensions[1] - b.DisplayData.FileDimensions[1] : b.DisplayData.FileDimensions[1] - a.DisplayData.FileDimensions[1];
 	}
 }
 
@@ -176,7 +176,7 @@ export class SortTypeImageAspectRatio extends SortType {
 	}
 
 	getSortingLambda() {
-		return (a, b) => this.bIsAscending ? a.aspectRatio - b.aspectRatio : b.aspectRatio - a.aspectRatio;
+		return (a, b) => this.bIsAscending ? a.DisplayData.AspectRatio - b.DisplayData.AspectRatio : b.DisplayData.AspectRatio - a.DisplayData.AspectRatio;
 	}
 }
 
