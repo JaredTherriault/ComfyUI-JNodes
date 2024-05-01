@@ -75,7 +75,7 @@ export async function onOptionSelected(selectedValue) {
 	focusAndSelectSearchText();
 }
 
-export const createContextSelector = () => {
+export function createContextSelector() {
 
 	ContextSelector = $el("select");
 

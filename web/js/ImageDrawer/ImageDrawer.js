@@ -84,7 +84,7 @@ export function setSortingOptions(options) {
 	ImageDrawerContextToolbar.replaceChildren(widget);
 }
 
-const createDrawerOptionsFlyout = () => {
+function createDrawerOptionsFlyout() {
 
 	let widthSliderOptions = new options_LabeledSliderRange();
 	widthSliderOptions.bPrependValueLabel = true;
@@ -178,7 +178,7 @@ app.registerExtension({
 				display: setting_bMasterVisibility.value == true ? "none" : "unset",
 			},
 		});
-		showButton.onclick = () => {
+		showButton.addEventListener("onclick", function () {
 			imageDrawer.style.display = "block";
 			showButton.style.display = "none";
 			setting_bMasterVisibility.value = true;
