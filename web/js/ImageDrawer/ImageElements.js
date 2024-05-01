@@ -608,7 +608,8 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		imageElement.fileWidth = fileInfo.file.dimensions[0];
 		imageElement.fileHeight = fileInfo.file.dimensions[1];
 
-		imageElement.style.aspectRatio = imageElement.fileWidth / imageElement.fileHeight;
+		imageElement.aspectRatio = imageElement.fileWidth / imageElement.fileHeight;
+		imageElement.style.aspectRatio = imageElement.aspectRatio;
 	} else {
 		//If we can't properly placehold, load the whole image now instead of later
 		imageElement.forceLoad();

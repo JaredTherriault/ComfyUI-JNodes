@@ -19,6 +19,8 @@ export function initializeSortTypes() {
 		imageWidthDescending: new SortTypeImageWidth(false),
 		imageHeightAscending: new SortTypeImageHeight(true),
 		imageHeightDescending: new SortTypeImageHeight(false),
+		imageAspectRatioAscending: new SortTypeImageAspectRatio(true),
+		imageAspectRatioDescending: new SortTypeImageAspectRatio(false),
 		fileTypeAscending: new SortTypeFileType(true),
 		fileTypeDescending: new SortTypeFileType(false),
 	}
@@ -165,6 +167,16 @@ export class SortTypeImageHeight extends SortType {
 
 	getSortingLambda() {
 		return (a, b) => this.bIsAscending ? a.fileHeight - b.fileHeight : b.fileHeight - a.fileHeight;
+	}
+}
+
+export class SortTypeImageAspectRatio extends SortType {
+	constructor(bIsAscending) {
+		super('Image Aspect Ratio', bIsAscending)
+	}
+
+	getSortingLambda() {
+		return (a, b) => this.bIsAscending ? a.aspectRatio - b.aspectRatio : b.aspectRatio - a.aspectRatio;
 	}
 }
 

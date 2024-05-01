@@ -188,7 +188,7 @@ class ContextClearable extends ImageDrawerContext {
 	}
 
 	getSupportedSortTypes() {
-		const SortTypes = [Sorting.SortTypeFileSize, Sorting.SortTypeImageWidth, Sorting.SortTypeImageHeight, Sorting.SortTypeFileType];
+		const SortTypes = [Sorting.SortTypeFileSize, Sorting.SortTypeImageWidth, Sorting.SortTypeImageHeight, Sorting.SortTypeImageAspectRatio, Sorting.SortTypeFileType];
 		return super.getSupportedSortTypes().concat(SortTypes);
 	}
 }
@@ -584,7 +584,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 	}
 
 	getSupportedSortTypes() {
-		const SortTypes = [Sorting.SortTypeFileSize, Sorting.SortTypeImageWidth, Sorting.SortTypeImageHeight, Sorting.SortTypeFileType];
+		const SortTypes = [Sorting.SortTypeFileSize, Sorting.SortTypeImageWidth, Sorting.SortTypeImageHeight, Sorting.SortTypeImageAspectRatio, Sorting.SortTypeFileType];
 		return super.getSupportedSortTypes().concat(SortTypes);
 	}
 }
