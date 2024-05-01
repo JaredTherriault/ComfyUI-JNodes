@@ -13,10 +13,14 @@ export function initializeSortTypes() {
 		friendlyNameDescending: new SortTypeFriendlyName(false),
 		dateAscending: new SortTypeDate(true),
 		dateDescending: new SortTypeDate(false),
-		//		width: "Width",
-		//		height: "Height",
-		//		size: "File Size",
-		//		type: "Type",
+		fileSizeAscending: new SortTypeFileSize(true),
+		fileSizeDescending: new SortTypeFileSize(false),
+		imageWidthAscending: new SortTypeImageWidth(true),
+		imageWidthDescending: new SortTypeImageWidth(false),
+		imageHeightAscending: new SortTypeImageHeight(true),
+		imageHeightDescending: new SortTypeImageHeight(false),
+		fileTypeAscending: new SortTypeFileType(true),
+		fileTypeDescending: new SortTypeFileType(false),
 	}
 }
 
@@ -131,6 +135,46 @@ export class SortTypeDate extends SortType {
 
 	getSortingLambda() {
 		return (a, b) => this.bIsAscending ? a.file_age - b.file_age : b.file_age - a.file_age;
+	}
+}
+
+export class SortTypeFileSize extends SortType {
+	constructor(bIsAscending) {
+		super('File Size', bIsAscending)
+	}
+
+	getSortingLambda() {
+		return (a, b) => this.bIsAscending ? a.file_size - b.file_size : b.file_size - a.file_size;
+	}
+}
+
+export class SortTypeImageWidth extends SortType {
+	constructor(bIsAscending) {
+		super('Image Width', bIsAscending)
+	}
+
+	getSortingLambda() {
+		return (a, b) => this.bIsAscending ? a.fileWidth - b.fileWidth : b.fileWidth - a.fileWidth;
+	}
+}
+
+export class SortTypeImageHeight extends SortType {
+	constructor(bIsAscending) {
+		super('Image Height', bIsAscending)
+	}
+
+	getSortingLambda() {
+		return (a, b) => this.bIsAscending ? a.fileHeight - b.fileHeight : b.fileHeight - a.fileHeight;
+	}
+}
+
+export class SortTypeFileType extends SortType {
+	constructor(bIsAscending) {
+		super('File Type', bIsAscending)
+	}
+
+	getSortingLambda() {
+		return (a, b) => this.bIsAscending ? a.fileType.localeCompare(b.fileType) : b.fileType.localeCompare(a.fileType);
 	}
 }
 

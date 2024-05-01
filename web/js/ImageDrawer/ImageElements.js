@@ -688,6 +688,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	// Sorting meta information
 	imageElement.filename = fileInfo.filename;
+	imageElement.fileType = imageElement.filename.split(".")[1];
 	imageElement.file_age = fileInfo.file?.file_age || getCurrentSecondsFromEpoch(); // todo: fix for feed images
 	imageElement.file_size = fileInfo.file?.file_size || -1;
 	imageElement.searchTerms = href; // Search terms to start with, onload will add more
