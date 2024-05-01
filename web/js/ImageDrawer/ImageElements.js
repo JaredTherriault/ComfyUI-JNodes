@@ -677,7 +677,9 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	if (bIsVideoFormat) {
 
 		imageElement.addEventListener('wheel', (event) => {
-			onScrollVideo(img, event);
+			if (setting_VideoPlaybackOptions.value.useWheelSeek) {
+				onScrollVideo(img, event, setting_VideoPlaybackOptions.value.invertWheelSeek);
+			}
 		});
 
 		img.initVideo();

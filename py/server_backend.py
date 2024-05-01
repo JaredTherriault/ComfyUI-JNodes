@@ -189,6 +189,8 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
 
                             frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                             fps = cap.get(cv2.CAP_PROP_FPS)
+
+                            cap.release()
                     else:
                         with Image.open(file_path) as img:
                             dimensions = img.size

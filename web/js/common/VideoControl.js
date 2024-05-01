@@ -1,5 +1,3 @@
-import { setting_VideoPlaybackOptions } from "./SettingsManager.js";
-
 export function isElementVideo(element) {
     return element && element.tagName === 'VIDEO';
 }
@@ -49,17 +47,15 @@ export function seekVideo(video, delta) {
     video.currentTime = newTime; // Seek the video to the new time
 };
 
-export function onScrollVideo(video, event) {
-    if (setting_VideoPlaybackOptions.value.useWheelSeek) {
-        event.preventDefault(); // Prevent default scroll behavior
+export function onScrollVideo(video, event, bInvertWheelSeek) {
+    event.preventDefault(); // Prevent default scroll behavior
 
-        // Determine the scroll direction (positive or negative)
-        let scrollDelta = Math.sign(event.deltaY); // -1 for up, 1 for down
+    // Determine the scroll direction (positive or negative)
+    let scrollDelta = Math.sign(event.deltaY); // -1 for up, 1 for down
 
-        if (setting_VideoPlaybackOptions.value.invertWheelSeek) {
-            scrollDelta *= -1;
-        }
-
-        seekVideo(video, scrollDelta);
+    if (bInvertWheelSeek) {
+        scrollDelta *= -1;
     }
+
+    seekVideo(video, scrollDelta);
 }

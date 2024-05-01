@@ -476,6 +476,10 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
         OuterElement.appendChild(valueLabelElement);
     }
 
+    OuterElement.getMainElement = function() {
+        return MainElement;
+    };
+
     return OuterElement;
 }
 
@@ -497,6 +501,30 @@ export function createLabeledNumberInput(options = new options_LabeledNumberInpu
         step: options.step
     });
 
+
+    // Save the original oninput callback from options
+    const originalOnInput = options.oninput;
+
+    // Update the options.oninput callback
+    options.oninput = (e) => {
+
+        // Get the input value and round it to 2 decimal places
+        const inputValue = parseFloat(e.target.value); // Convert input value to number
+        if (isNaN(inputValue)) {
+            e.target.value = MainElement.lastValue ? MainElement.lastValue : 1.00;
+            e.target.select();
+        }
+
+        // Update the labelElement text content with the rounded value
+        
+        // Call the original oninput callback if available
+        if (originalOnInput && typeof originalOnInput === 'function') {
+            originalOnInput(e);
+        }
+
+        MainElement.lastValue = e.target.value;
+    };
+
     options.bindEvents(MainElement);
 
     let OuterElement = $el('div', {
@@ -509,6 +537,10 @@ export function createLabeledNumberInput(options = new options_LabeledNumberInpu
 
     OuterElement.appendChild($el('label', { textContent: options.labelTextContent }));
     OuterElement.appendChild(MainElement);
+
+    OuterElement.getMainElement = function() {
+        return MainElement;
+    };
 
     return OuterElement;
 }
@@ -536,6 +568,10 @@ export function createLabeledCheckboxToggle(options = new options_LabeledCheckbo
         $el('label', { textContent: options.labelTextContent }),
         MainElement
     ]);
+
+    OuterElement.getMainElement = function() {
+        return MainElement;
+    };
 
     return OuterElement;
 }

@@ -1,3 +1,5 @@
+import { setVideoPlaybackRate, setVideoVolume } from "./VideoControl.js";
+
 export class options_VideoPlayback { 
     autoplay = false; loop = true; controls = true; muted = true; useWheelSeek = true; invertWheelSeek = true; defaultVolume = 50; defaultPlaybackRate = 1.00;
 }; 
@@ -28,13 +30,13 @@ function forEachElement_genericPropagatation(element, propertyName, propertyValu
 }
 
 function forEachElement_Volume(element, propertyName, propertyValue) {
-    if (propertyValue && element.setVolume) {
-        element.setVolume(propertyValue);
-    }
+    if (isNaN(propertyValue)) { propertyValue = 1; }
+
+    setVideoVolume(element, propertyValue);
 }
 
 function forEachElement_playbackRate(element, propertyName, propertyValue) {
-    if (propertyValue && element.setPlaybackRate) {
-        element.setPlaybackRate(propertyValue);
-    }
+    if (isNaN(propertyValue)) { propertyValue = 1; }
+
+    setVideoPlaybackRate(element, propertyValue);
 }
