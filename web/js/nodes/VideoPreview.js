@@ -74,7 +74,7 @@ export const cleanupNode = (node) => {
 	}
 }
 
-function fitHeight(node) {
+function FitNodeToMedia(node) {
 	node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]])
 	node.graph.setDirtyCanvas(true);
 }
@@ -86,11 +86,27 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 		type,
 		value: val,
 		draw: function (ctx, node, widgetWidth, widgetY, height) {
-			const [cw, ch] = this.computeSize()
-			offsetDOMWidget(this, ctx, node, widgetWidth, widgetY, ch)
+			//update widget position, hide if off-screen
+			const transform = ctx.getTransform();
+			const scale = app.canvas.ds.scale;//gets the litegraph zoom
+			//calculate coordinates with account for browser zoom
+			const x = transform.e * scale / transform.a;
+			const y = transform.f * scale / transform.a;
+			Object.assign(this.inputEl.style, {
+				left: (x + 15 * scale) + "px",
+				top: (y + widgetY * scale) + "px",
+				width: ((widgetWidth - 30) * scale) + "px",
+				zIndex: 2 + (node.is_selected ? 1 : 0),
+				position: "absolute",
+			});
+			this._boundingCount = 0;
+
+			if (!this.inputEl.bHasAutoResized) {
+				this.inputEl.bHasAutoResized = FitNode();
+			}
 		},
 		computeSize: function (width) {
-			if (this.aspectRatio && !this.parentEl?.hidden) {
+			if (this.aspectRatio && !this.inputEl?.hidden) {
 				let height = (node.size[0] - 30) / this.aspectRatio;
 				if (!(height > 0)) {
 					height = 0;
@@ -101,12 +117,12 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 		},
 		onRemoved: function () {
 			if (this.inputEl) {
-				this.inputEl.remove()
+				this.inputEl.remove();
 			}
 		},
 	}
 
-	const MediaMargin = 0.95;
+	const MediaMargin = 1;
 	const MediaMarginAsPercentage = `${MediaMargin * 100}%`;
 	const MediaAspectAdjustment = -((1.0 - MediaMargin) / 2);
 
@@ -115,13 +131,12 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 			display: "flex",
 			flexDirection: "column",
 			alignItems: "center",
-			pointerEvents: "none",
+			draggable: false,
 			maxHeight: "100%",
 		}
 	});
 
 	const bIsVideo = type === 'video';
-	const bIsAnimatedImage = AnimatedImagetypes.includes(format);
 
 	let MediaElement = $el(bIsVideo ? 'video' : 'img', {
 		// draggable: false,
@@ -130,107 +145,106 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 		}
 	});
 
+	function FitNode() {
+		try {
+			const ConstantWidth = bIsVideo ? MediaElement.videoWidth : MediaElement.naturalWidth;
+			let WidgetHeights = bIsVideo ? MediaElement.videoHeight : MediaElement.naturalHeight;
+
+			if (ConstantWidth > 0 && WidgetHeights > 0) {
+				for (const WidgetChild of Container.childNodes) {
+					if (WidgetChild && WidgetChild != MediaElement) {
+						let ChildAspect = (WidgetChild.clientWidth / WidgetChild.clientHeight);
+						WidgetHeights += (ConstantWidth / ChildAspect);
+					}
+				}
+				widget.aspectRatio = ((ConstantWidth) / WidgetHeights);
+				FitNodeToMedia(node);
+				return true;
+			} else {
+				return false;
+			}
+		} catch (e) {
+			return false;
+		}
+	}
+
 	if (bIsVideo) {
 
 		MediaElement.muted = true;
 		MediaElement.autoplay = true
 		MediaElement.loop = true
 		MediaElement.controls = true;
-
-	} else { // Images, still or animated
-
-		function ResizeToImage() {
-			if (Container) {
-				// let WidgetWidth = 0;
-				let WidgetHeights = 0;
-				for (const WidgetChild of Container.childNodes) {
-					if (WidgetChild) {
-						WidgetHeights += WidgetChild.naturalHeight;
-					}
-				}
-				widget.aspectRatio = (MediaElement.naturalWidth * (MediaMargin + MediaAspectAdjustment)) / WidgetHeights;
-				fitHeight(node);
-			}
-		}
-
-		MediaElement.onload = function () {
-			ResizeToImage();
-		}
-
 	}
 
 	Container.appendChild(MediaElement);
 
 	// Info can only be appended if we have a JNodesPayload since we need to get this info in python beforehand
-	if (JnodesPayload && (bIsVideo || bIsAnimatedImage)) {
+	if (JnodesPayload?.DisplayData) {
 		try {
-			let StreamlinedPayload = {};
-			if (JnodesPayload?.file?.duration_in_seconds > 0) {
-				StreamlinedPayload.duration_in_seconds = JnodesPayload.file.duration_in_seconds;
-			}
-			if (JnodesPayload?.file?.fps > 0) {
-				StreamlinedPayload.fps = JnodesPayload.file.fps;
-			}
-			if (JnodesPayload?.file?.frame_count > 0) {
-				StreamlinedPayload.frame_count = JnodesPayload.file.frame_count;
-			}
-			if (JnodesPayload?.file?.file_size) {
-				StreamlinedPayload.file_size = JnodesPayload.file.file_size;
-			}
-			if (JnodesPayload?.file?.dimensions) {
-				StreamlinedPayload.dimensions = JnodesPayload.file.dimensions;
-			}
-
-			if (Object.keys(StreamlinedPayload).length > 0) {
-				const PayloadString = JSON.stringify(StreamlinedPayload, null, 4); // Pretty formatting
-				// console.log(PayloadString);
-				const TextWidget = $el("textarea", {
-					wrap: "hard",
-					rows: 10,
-					style: {
-						resize: "none",
-						width: MediaMarginAsPercentage,
-						color: "inherit",
-						backgroundColor: "inherit"
+			if (Object.keys(JnodesPayload.DisplayData).length > 0) {
+				const FileDimensionStringifier = (key, value) => {
+					// Check if the key is 'FileDimensions'
+					if (key === 'FileDimensions') {
+						// Serialize the value of 'FileDimensions' as a single line string
+						return JSON.stringify(value);
 					}
-				});
-				TextWidget.value = PayloadString;
-				TextWidget.readOnly = true;
-				Container.appendChild(TextWidget);
+					// Return the original value for other keys
+					return value;
+				};
 
-				if (bIsVideo) {
+				const PayloadString = JSON.stringify(JnodesPayload.DisplayData, FileDimensionStringifier, 4); // Pretty formatting
 
-					// Function to update the label text dynamically
-					Container.updateCurrentInfo = function () {
-						// Update the text content of CurrentInfo based on updated MediaElement.currentTime and StreamlinedPayload.fps
-						const CurrentFrame = MediaElement.currentTime * StreamlinedPayload.fps;
-						CurrentInfo.textContent = `Current Time: ${MediaElement.currentTime.toFixed(0)} Current Frame: ${CurrentFrame.toFixed(0)}`;
-
-						if (MediaElement.currentTime > 0.01 && Container && !Container.bHasAutoResized) {
-							let WidgetHeights = 0;
-							for (const WidgetChild of Container.childNodes) {
-								if (WidgetChild) {
-									WidgetHeights += WidgetChild.clientHeight;
-								}
-							}
-							widget.aspectRatio = (Container.clientWidth ) / Container.clientHeight;
-							fitHeight(node);
-
-							Container.bHasAutoResized = true;
-						}
-					}
-
-					const CurrentInfo = $el("label", {
-						textContent: "MediaInfo",
+				if (PayloadString) {
+					// console.log(PayloadString);
+					const TextWidget = $el("textarea", {
+						wrap: "hard",
+						rows: 10,
 						style: {
-							fontSize: "small"
+							resize: "none",
+							width: MediaMarginAsPercentage,
+							color: "inherit",
+							backgroundColor: "inherit"
 						}
 					});
-					Container.appendChild(CurrentInfo);
+					// Remove curly braces
+					const Lines = PayloadString.substring(1, PayloadString.length - 1).split('\n');
+					const UnindentedLines = Lines.map(Line => {
+						// Use a regular expression to match the first tab or leading whitespace
+						const UnindentedLine = Line.replace(/^\s{4}/, ''); // Replace leading tab (\t)
+						// Alternatively, replace leading spaces (e.g., with /^\s{4}/ for 4 spaces)
 
-					// Attach an event listener to the MediaElement to trigger updates on time change
-					MediaElement.addEventListener("timeupdate", Container.updateCurrentInfo);
+						return UnindentedLine;
+					});
+					TextWidget.value = UnindentedLines.join('\n').trim();
+					TextWidget.readOnly = true;
+					Container.appendChild(TextWidget);
 				}
+			}
+
+			if (bIsVideo) {
+				// Function to update the label text dynamically
+				Container.updateCurrentInfo = function () {
+					// Update the text content of CurrentInfo based on updated currentTime and fps
+					if (MediaElement.currentTime) {
+						CurrentInfo.textContent = `Current Time: ${MediaElement.currentTime.toFixed(0)}`;
+
+						if (JnodesPayload?.DisplayData?.FramesPerSecond) {
+							const CurrentFrame = MediaElement.currentTime * JnodesPayload.DisplayData.FramesPerSecond;
+							CurrentInfo.textContent += ` Current Frame: ${CurrentFrame.toFixed(0)}`;
+						}
+					}
+				}
+
+				const CurrentInfo = $el("label", {
+					textContent: "Current Time: 0",
+					style: {
+						fontSize: "small"
+					}
+				});
+				Container.appendChild(CurrentInfo);
+
+				// Attach an event listener to the MediaElement to trigger updates on time change
+				MediaElement.addEventListener("timeupdate", Container.updateCurrentInfo);
 			}
 
 		} catch (e) {
@@ -356,8 +370,8 @@ const mediaPreview = {
 					const MediaWidget = ThisNode.widgets.find((w) => w.name === "media");
 
 					const originalCallback = ThisNode.callback;
-					MediaWidget.callback = (message, jnodesPayload = null) => {
-						createMediaPreview(MediaWidget.value, ThisNode, jnodesPayload);
+					MediaWidget.callback = (message, JnodesPayload = null) => {
+						createMediaPreview(MediaWidget.value, ThisNode, JnodesPayload);
 						return originalCallback ? originalCallback.apply(ThisNode, message) : undefined;
 					};
 
