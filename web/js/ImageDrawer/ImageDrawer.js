@@ -84,7 +84,7 @@ export function setSortingOptions(options) {
 	ImageDrawerContextToolbar.replaceChildren(widget);
 }
 
-const createDrawerOptionsFlyout = () => {
+function createDrawerOptionsFlyout() {
 
 	let widthSliderOptions = new options_LabeledSliderRange();
 	widthSliderOptions.bPrependValueLabel = true;
@@ -178,11 +178,11 @@ app.registerExtension({
 				display: setting_bMasterVisibility.value == true ? "none" : "unset",
 			},
 		});
-		showButton.onclick = () => {
+		showButton.addEventListener("click", function () {
 			imageDrawer.style.display = "block";
 			showButton.style.display = "none";
 			setting_bMasterVisibility.value = true;
-		};
+		});
 		document.querySelector(".comfy-settings-btn").after(showButton); // insert Show after Settings
 
 		if (!setting_bEnabled.value) {

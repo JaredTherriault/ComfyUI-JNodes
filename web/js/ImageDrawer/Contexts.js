@@ -186,6 +186,11 @@ class ContextClearable extends ImageDrawerContext {
 
 		return finalWidget;
 	}
+
+	getSupportedSortTypes() {
+		const SortTypes = [Sorting.SortTypeFileSize, Sorting.SortTypeImageWidth, Sorting.SortTypeImageHeight, Sorting.SortTypeImageAspectRatio, Sorting.SortTypeFileType];
+		return super.getSupportedSortTypes().concat(SortTypes);
+	}
 }
 
 class ContextRefreshable extends ImageDrawerContext {
@@ -576,6 +581,11 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 	async onRefreshClicked() {
 		await this.fetchFolderItems(this.subfolderSelector.value);
 		await super.onRefreshClicked();
+	}
+
+	getSupportedSortTypes() {
+		const SortTypes = [Sorting.SortTypeFileSize, Sorting.SortTypeImageWidth, Sorting.SortTypeImageHeight, Sorting.SortTypeImageAspectRatio, Sorting.SortTypeFileType];
+		return super.getSupportedSortTypes().concat(SortTypes);
 	}
 }
 

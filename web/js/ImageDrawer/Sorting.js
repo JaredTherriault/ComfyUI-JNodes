@@ -13,10 +13,16 @@ export function initializeSortTypes() {
 		friendlyNameDescending: new SortTypeFriendlyName(false),
 		dateAscending: new SortTypeDate(true),
 		dateDescending: new SortTypeDate(false),
-		//		width: "Width",
-		//		height: "Height",
-		//		size: "File Size",
-		//		type: "Type",
+		fileSizeAscending: new SortTypeFileSize(true),
+		fileSizeDescending: new SortTypeFileSize(false),
+		imageWidthAscending: new SortTypeImageWidth(true),
+		imageWidthDescending: new SortTypeImageWidth(false),
+		imageHeightAscending: new SortTypeImageHeight(true),
+		imageHeightDescending: new SortTypeImageHeight(false),
+		imageAspectRatioAscending: new SortTypeImageAspectRatio(true),
+		imageAspectRatioDescending: new SortTypeImageAspectRatio(false),
+		fileTypeAscending: new SortTypeFileType(true),
+		fileTypeDescending: new SortTypeFileType(false),
 	}
 }
 
@@ -131,6 +137,56 @@ export class SortTypeDate extends SortType {
 
 	getSortingLambda() {
 		return (a, b) => this.bIsAscending ? a.file_age - b.file_age : b.file_age - a.file_age;
+	}
+}
+
+export class SortTypeFileSize extends SortType {
+	constructor(bIsAscending) {
+		super('File Size', bIsAscending)
+	}
+
+	getSortingLambda() {
+		return (a, b) => this.bIsAscending ? a.DisplayData.FileSize - b.DisplayData.FileSize : b.DisplayData.FileSize - a.DisplayData.FileSize;
+	}
+}
+
+export class SortTypeImageWidth extends SortType {
+	constructor(bIsAscending) {
+		super('Image Width', bIsAscending)
+	}
+
+	getSortingLambda() {
+		return (a, b) => this.bIsAscending ? a.DisplayData.FileDimensions[0] - b.DisplayData.FileDimensions[0] : b.DisplayData.FileDimensions[0] - a.DisplayData.FileDimensions[0];
+	}
+}
+
+export class SortTypeImageHeight extends SortType {
+	constructor(bIsAscending) {
+		super('Image Height', bIsAscending)
+	}
+
+	getSortingLambda() {
+		return (a, b) => this.bIsAscending ? a.DisplayData.FileDimensions[1] - b.DisplayData.FileDimensions[1] : b.DisplayData.FileDimensions[1] - a.DisplayData.FileDimensions[1];
+	}
+}
+
+export class SortTypeImageAspectRatio extends SortType {
+	constructor(bIsAscending) {
+		super('Image Aspect Ratio', bIsAscending)
+	}
+
+	getSortingLambda() {
+		return (a, b) => this.bIsAscending ? a.DisplayData.AspectRatio - b.DisplayData.AspectRatio : b.DisplayData.AspectRatio - a.DisplayData.AspectRatio;
+	}
+}
+
+export class SortTypeFileType extends SortType {
+	constructor(bIsAscending) {
+		super('File Type', bIsAscending)
+	}
+
+	getSortingLambda() {
+		return (a, b) => this.bIsAscending ? a.fileType.localeCompare(b.fileType) : b.fileType.localeCompare(a.fileType);
 	}
 }
 
