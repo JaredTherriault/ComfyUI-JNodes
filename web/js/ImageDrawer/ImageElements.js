@@ -6,7 +6,7 @@ import { getPngMetadata } from "/scripts/pnginfo.js";
 
 import {
 	getMaxZIndex, createDarkContainer, copyToClipboard,
-	isValid, getCurrentSecondsFromEpoch, clamp
+	isValid, getCurrentSecondsFromEpoch, SortJsonObjectByKeys
 } from "../common/Utilities.js";
 
 import { getLastMousePosition, isPointerDown } from "../common/EventManager.js";
@@ -506,6 +506,8 @@ export async function createImageElementFromFileInfo(fileInfo) {
 						imageElement.DisplayData.AspectRatio = imageElement.DisplayData.FileDimensions[0] / imageElement.DisplayData.FileDimensions[1];
 					}
 
+					imageElement.DisplayData = SortJsonObjectByKeys(imageElement.DisplayData);
+
 					const toolTipWidget = makeTooltipWidgetFromMetadata(Metadata);
 
 					if (toolTipWidget) {
@@ -715,6 +717,8 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	imageElement.fileType = imageElement.filename.split(".")[1];
 	imageElement.file_age = fileInfo.file?.file_age || getCurrentSecondsFromEpoch(); // todo: fix for feed images
 	imageElement.DisplayData.FileSize = fileInfo.file?.file_size || -1;
+
+	imageElement.DisplayData = SortJsonObjectByKeys(imageElement.DisplayData);
 
 	imageElement.searchTerms = href; // Search terms to start with, onload will add more
 
