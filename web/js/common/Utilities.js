@@ -209,6 +209,19 @@ export async function loadFileFromURL(url) {
     }
 }
 
+export function SortJsonObjectByKeys(JsonObject) {
+    // Convert JSON object to array of key-value pairs
+    const Entries = Object.entries(JsonObject);
+
+    // Sort the array of key-value pairs by keys (property names)
+    Entries.sort((a, b) => a[0].localeCompare(b[0])); // Sort alphabetically by keys (case-sensitive)
+
+    // Reconstruct the sorted object from the sorted array of key-value pairs
+    const SortedObject = Object.fromEntries(Entries);
+
+    return SortedObject;
+}
+
 export function getKeyList() {
 	return [
 		'ArrowDown',
