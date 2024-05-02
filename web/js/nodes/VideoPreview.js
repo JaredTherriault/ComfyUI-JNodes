@@ -2,6 +2,7 @@ import { $el } from "/scripts/ui.js";
 
 import { app } from '/scripts/app.js'
 import { api } from '/scripts/api.js'
+import { SortJsonObjectByKeys } from "../common/Utilities.js";
 
 const VideoTypes = [
 	"video/webm", "video/mp4", "video/ogg", // Video formats
@@ -74,12 +75,7 @@ export const cleanupNode = (node) => {
 	}
 }
 
-function FitNodeToMedia(node) {
-	node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]])
-	node.graph.setDirtyCanvas(true);
-}
-
-const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => {
+const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => {
 	const [type] = format.split('/');
 	const widget = {
 		name,
@@ -101,8 +97,9 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 			});
 			this._boundingCount = 0;
 
+			// Fit node once everything has been loaded in and displayed
 			if (!this.inputEl.bHasAutoResized) {
-				this.inputEl.bHasAutoResized = FitNode();
+				this.inputEl.bHasAutoResized = fitNode();
 			}
 		},
 		computeSize: function (width) {
@@ -122,11 +119,32 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 		},
 	}
 
-	const MediaMargin = 1;
-	const MediaMarginAsPercentage = `${MediaMargin * 100}%`;
-	const MediaAspectAdjustment = -((1.0 - MediaMargin) / 2);
+	function fitNode() {
+		try {
+			const constantWidth = bIsVideo ? mediaElement.videoWidth : mediaElement.naturalWidth;
+			let widgetHeights = bIsVideo ? mediaElement.videoHeight : mediaElement.naturalHeight;
 
-	let Container = $el("div", {
+			if (constantWidth > 0 && widgetHeights > 0) {
+				for (const widgetChild of container.childNodes) {
+					if (widgetChild && widgetChild != mediaElement) {
+						let childAspect = (widgetChild.clientWidth / widgetChild.clientHeight);
+						widgetHeights += (constantWidth / childAspect);
+					}
+				}
+				widget.aspectRatio = ((constantWidth) / widgetHeights);
+
+				node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]])
+				node.graph.setDirtyCanvas(true);
+				return true;
+			} else {
+				return false;
+			}
+		} catch (e) {
+			return false;
+		}
+	}
+
+	let container = $el("div", {
 		style: {
 			display: "flex",
 			flexDirection: "column",
@@ -138,50 +156,31 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 
 	const bIsVideo = type === 'video';
 
-	let MediaElement = $el(bIsVideo ? 'video' : 'img', {
-		// draggable: false,
+	let mediaElement = $el(bIsVideo ? 'video' : 'img', {
 		style: {
-			width: MediaMarginAsPercentage,
+			width: "100%"
 		}
 	});
+	container.appendChild(mediaElement);
 
-	function FitNode() {
-		try {
-			const ConstantWidth = bIsVideo ? MediaElement.videoWidth : MediaElement.naturalWidth;
-			let WidgetHeights = bIsVideo ? MediaElement.videoHeight : MediaElement.naturalHeight;
-
-			if (ConstantWidth > 0 && WidgetHeights > 0) {
-				for (const WidgetChild of Container.childNodes) {
-					if (WidgetChild && WidgetChild != MediaElement) {
-						let ChildAspect = (WidgetChild.clientWidth / WidgetChild.clientHeight);
-						WidgetHeights += (ConstantWidth / ChildAspect);
-					}
-				}
-				widget.aspectRatio = ((ConstantWidth) / WidgetHeights);
-				FitNodeToMedia(node);
-				return true;
-			} else {
-				return false;
-			}
-		} catch (e) {
-			return false;
+	// Ideally info can be appended if we have a JNodesPayload since we get this info in python beforehand
+	let infoTextArea = $el("textarea", {
+		wrap: "hard",
+		style: {
+			display: "none",
+			resize: "none",
+			color: "inherit",
+			backgroundColor: "inherit",
+			width: "100%"
 		}
-	}
+	});
+	container.appendChild(infoTextArea);
 
-	if (bIsVideo) {
+	let displayData = jnodesPayload?.DisplayData;
 
-		MediaElement.muted = true;
-		MediaElement.autoplay = true
-		MediaElement.loop = true
-		MediaElement.controls = true;
-	}
-
-	Container.appendChild(MediaElement);
-
-	// Info can only be appended if we have a JNodesPayload since we need to get this info in python beforehand
-	if (JnodesPayload?.DisplayData) {
-		try {
-			if (Object.keys(JnodesPayload.DisplayData).length > 0) {
+	function setInfoTextFromDisplayData(inDisplayData) {
+		if (inDisplayData && Object.keys(inDisplayData).length > 0) {
+			try {
 				const FileDimensionStringifier = (key, value) => {
 					// Check if the key is 'FileDimensions'
 					if (key === 'FileDimensions') {
@@ -192,71 +191,142 @@ const CreatePreviewElement = (name, val, format, node, JnodesPayload = null) => 
 					return value;
 				};
 
-				const PayloadString = JSON.stringify(JnodesPayload.DisplayData, FileDimensionStringifier, 4); // Pretty formatting
+				inDisplayData = SortJsonObjectByKeys(inDisplayData);
+				const payloadString = JSON.stringify(inDisplayData, FileDimensionStringifier, 4); // Pretty formatting
 
-				if (PayloadString) {
+				if (payloadString) {
 					// console.log(PayloadString);
-					const TextWidget = $el("textarea", {
-						wrap: "hard",
-						rows: 10,
-						style: {
-							resize: "none",
-							width: MediaMarginAsPercentage,
-							color: "inherit",
-							backgroundColor: "inherit"
-						}
-					});
+
 					// Remove curly braces
-					const Lines = PayloadString.substring(1, PayloadString.length - 1).split('\n');
-					const UnindentedLines = Lines.map(Line => {
+					const lines = payloadString.substring(1, payloadString.length - 1).split('\n');
+					const unindentedLines = lines.map(Line => {
 						// Use a regular expression to match the first tab or leading whitespace
-						const UnindentedLine = Line.replace(/^\s{4}/, ''); // Replace leading tab (\t)
+						const unindentedLine = Line.replace(/^\s{4}/, ''); // Replace leading tab (\t)
 						// Alternatively, replace leading spaces (e.g., with /^\s{4}/ for 4 spaces)
 
-						return UnindentedLine;
+						return unindentedLine;
 					});
-					TextWidget.value = UnindentedLines.join('\n').trim();
-					TextWidget.readOnly = true;
-					Container.appendChild(TextWidget);
-				}
-			}
-
-			if (bIsVideo) {
-				// Function to update the label text dynamically
-				Container.updateCurrentInfo = function () {
-					// Update the text content of CurrentInfo based on updated currentTime and fps
-					if (MediaElement.currentTime) {
-						CurrentInfo.textContent = `Current Time: ${MediaElement.currentTime.toFixed(0)}`;
-
-						if (JnodesPayload?.DisplayData?.FramesPerSecond) {
-							const CurrentFrame = MediaElement.currentTime * JnodesPayload.DisplayData.FramesPerSecond;
-							CurrentInfo.textContent += ` Current Frame: ${CurrentFrame.toFixed(0)}`;
-						}
-					}
+					infoTextArea.style.display = "unset";
+					infoTextArea.value = unindentedLines.join('\n').trim();
+					infoTextArea.rows = infoTextArea.value.split('\n').length || 5;
+					infoTextArea.readOnly = true;
 				}
 
-				const CurrentInfo = $el("label", {
-					textContent: "Current Time: 0",
-					style: {
-						fontSize: "small"
-					}
-				});
-				Container.appendChild(CurrentInfo);
-
-				// Attach an event listener to the MediaElement to trigger updates on time change
-				MediaElement.addEventListener("timeupdate", Container.updateCurrentInfo);
+			} catch (e) {
+				console.error(e);
 			}
-
-		} catch (e) {
-			console.error(e);
 		}
 	}
 
-	widget.inputEl = Container;
+	if (displayData && Object.keys(displayData).length > 0) {
+		// Set immediately
+		setInfoTextFromDisplayData(displayData);
+	} else {
+		function constructAndDisplayData(inDisplayData) {
+			if (inDisplayData.FileDimensions) {
+				inDisplayData.AspectRatio = inDisplayData.FileDimensions[0] / inDisplayData.FileDimensions[1];
+			}
+			setInfoTextFromDisplayData(inDisplayData);
+			setFontSizesBasedOnCanvasScale();
+			container.bHasAutoResized = false; // Resize node on next draw call
+		}
+		// Construct DisplayData on load
+		if (bIsVideo) {
+			mediaElement.addEventListener("loadedmetadata", () => {
+				let displayData = {};
+				displayData.FileDimensions = [mediaElement.videoWidth, mediaElement.videoHeight];
+				constructAndDisplayData(displayData);
+			});
+		} else {
+			mediaElement.addEventListener("load", () => {
+				let displayData = {};
+				displayData.FileDimensions = [mediaElement.naturalWidth, mediaElement.naturalHeight];
+				constructAndDisplayData(displayData);
+			});
+		}
+	}
+
+	let currentInfo = null;
+
+	// Good for all videos
+	if (bIsVideo) {
+
+		mediaElement.muted = true;
+		mediaElement.autoplay = true
+		mediaElement.loop = true
+		mediaElement.controls = true;
+
+		// Function to update the label text dynamically
+		container.updateCurrentInfo = function () {
+			// Update the text content of CurrentInfo based on updated currentTime and fps
+			if (mediaElement.currentTime) {
+				currentInfo.textContent = `Current Time: ${mediaElement.currentTime.toFixed(0)}`;
+
+				let fps = displayData?.FramesPerSecond;
+
+				if (!fps) {
+					if (mediaElement.currentTime && mediaElement.mozPresentedFrames) {
+						fps = mediaElement.mozPresentedFrames / mediaElement.currentTime;
+					}
+				}
+
+				if (mediaElement.mozPresentedFrames || fps) {
+					const currentFrame = mediaElement.mozPresentedFrames ? mediaElement.mozPresentedFrames : mediaElement.currentTime * fps;
+					currentInfo.textContent += ` Current Frame: ${currentFrame.toFixed(0)}`;
+				}
+			}
+		}
+
+		currentInfo = $el("label", {
+			textContent: "Current Time: 0",
+		});
+		container.appendChild(currentInfo);
+
+		// Attach an event listener to the MediaElement to trigger updates on time change
+		mediaElement.addEventListener("timeupdate", container.updateCurrentInfo);
+	}
+
+	function setFontSizesBasedOnCanvasScale() {
+
+		const currentScale = app?.canvas?.ds?.scale;
+
+		const newFontSize = `${15 * currentScale}px`;
+
+		if (infoTextArea) {
+			infoTextArea.style.fontSize = newFontSize;
+		}
+		if (currentInfo) {
+			currentInfo.style.fontSize = newFontSize;
+		}
+	};
+
+	if (infoTextArea || currentInfo) {
+
+		const originalOnRedraw = app?.canvas?.ds?.onredraw;
+		app.canvas.ds.onredraw = () => {
+
+			if (originalOnRedraw && typeof originalOnRedraw === 'function') {
+				originalOnRedraw();
+			}
+
+			setFontSizesBasedOnCanvasScale();
+		};
+
+		setFontSizesBasedOnCanvasScale(); // Call it to set font size immediately
+	}
+
+	widget.inputEl = container;
 	widget.parent = node;
 
 	document.body.appendChild(widget.inputEl);
-	MediaElement.src = widget.value;
+
+	// Set src to JNodes href if available, otherwise use constructed src
+	if (jnodesPayload?.href) {
+		mediaElement.src = jnodesPayload.href;
+	} else {
+		mediaElement.src = widget.value;
+	}
+
 	return widget;
 }
 
@@ -336,7 +406,7 @@ const mediaPreview = {
 							ThisNode.widgets.length = pos;
 						}
 						const previewUrl = api.apiURL(
-							`/view?filename=${encodeURIComponent(name)}&type=${type}&subfolder=${encodeURIComponent(subfolder)}`
+							`/jnodes_view_image?filename=${encodeURIComponent(name)}&type=${type}&subfolder=${encodeURIComponent(subfolder)}`
 						);
 
 						const extSplit = name.split('.');

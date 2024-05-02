@@ -495,18 +495,18 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 				function setMetadataAndUpdateTooltipAndSearchTerms(Metadata) {
 
-					imageElement.PromptMetadata = Metadata;
+					imageElement.promptMetadata = Metadata;
 
 					// Set the dimensional display data in the event that it's not found in python meta sweep
-					if (!imageElement.DisplayData.FileDimensions) {
-						imageElement.DisplayData.FileDimensions = fileInfo.file.dimensions;
+					if (!imageElement.displayData.FileDimensions) {
+						imageElement.displayData.FileDimensions = fileInfo.file.dimensions;
 					}
 
-					if (!imageElement.DisplayData.AspectRatio) {
-						imageElement.DisplayData.AspectRatio = imageElement.DisplayData.FileDimensions[0] / imageElement.DisplayData.FileDimensions[1];
+					if (!imageElement.displayData.AspectRatio) {
+						imageElement.displayData.AspectRatio = imageElement.displayData.FileDimensions[0] / imageElement.displayData.FileDimensions[1];
 					}
 
-					imageElement.DisplayData = SortJsonObjectByKeys(imageElement.DisplayData);
+					imageElement.displayData = SortJsonObjectByKeys(imageElement.displayData);
 
 					const toolTipWidget = makeTooltipWidgetFromMetadata(Metadata);
 
@@ -616,13 +616,13 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	// Placeholder dimensions
 	if (fileInfo.file?.metadata_read) {
-		if (!imageElement.DisplayData) {
-			imageElement.DisplayData = {};
+		if (!imageElement.displayData) {
+			imageElement.displayData = {};
 		}
-		imageElement.DisplayData.FileDimensions = fileInfo.file.dimensions;
+		imageElement.displayData.FileDimensions = fileInfo.file.dimensions;
 
-		imageElement.DisplayData.AspectRatio = imageElement.DisplayData.FileDimensions[0] / imageElement.DisplayData.FileDimensions[1];
-		imageElement.style.aspectRatio = imageElement.DisplayData.AspectRatio;
+		imageElement.displayData.AspectRatio = imageElement.displayData.FileDimensions[0] / imageElement.displayData.FileDimensions[1];
+		imageElement.style.aspectRatio = imageElement.displayData.AspectRatio;
 	} else {
 		//If we can't properly placehold, load the whole image now instead of later
 		imageElement.forceLoad();
@@ -687,8 +687,8 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	imageElement.appendChild(aElement);
 
-	if (!imageElement.DisplayData) {
-		imageElement.DisplayData = {};
+	if (!imageElement.displayData) {
+		imageElement.displayData = {};
 	}
 
 	if (bIsVideoFormat) {
@@ -701,11 +701,11 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 		img.initVideo();
 
-		imageElement.DisplayData.DurationInSeconds = fileInfo.file?.duration_in_seconds;
-		imageElement.DisplayData.FramesPerSecond = fileInfo.file?.fps;
-		imageElement.DisplayData.FrameCount = fileInfo.file?.frame_count;
-		imageElement.DisplayData.FramesPerSecond = fileInfo.file?.fps;
-		imageElement.DisplayData.FramesPerSecond = fileInfo.file?.fps;
+		imageElement.displayData.DurationInSeconds = fileInfo.file?.duration_in_seconds;
+		imageElement.displayData.FramesPerSecond = fileInfo.file?.fps;
+		imageElement.displayData.FrameCount = fileInfo.file?.frame_count;
+		imageElement.displayData.FramesPerSecond = fileInfo.file?.fps;
+		imageElement.displayData.FramesPerSecond = fileInfo.file?.fps;
 
 		imageElement.bIsVideoFormat = bIsVideoFormat;
 	}
@@ -716,15 +716,15 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	imageElement.filename = fileInfo.filename;
 	imageElement.fileType = imageElement.filename.split(".")[1];
 	imageElement.file_age = fileInfo.file?.file_age || getCurrentSecondsFromEpoch(); // todo: fix for feed images
-	imageElement.DisplayData.FileSize = fileInfo.file?.file_size || -1;
+	imageElement.displayData.FileSize = fileInfo.file?.file_size || -1;
 
-	imageElement.DisplayData = SortJsonObjectByKeys(imageElement.DisplayData);
+	imageElement.displayData = SortJsonObjectByKeys(imageElement.displayData);
 
 	imageElement.searchTerms = href; // Search terms to start with, onload will add more
 
 	imageElement.draggable = true;
 	imageElement.addEventListener('dragstart', function (event) {
-		fileInfo.DisplayData = imageElement.DisplayData;
+		fileInfo.displayData = imageElement.displayData;
 		event.dataTransfer.setData('text/jnodes_image_drawer_payload', `${JSON.stringify(fileInfo)}`);
 		removeAndHideToolButtonFromImageElement(imageElement);
 		hideToolTip();
