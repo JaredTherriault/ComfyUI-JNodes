@@ -534,7 +534,10 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		const container = await super.makeToolbar();
 		const self = this;
 
-		container.insertBefore(createVideoPlaybackOptionsFlyout().handle, container.firstChild);
+		const flyoutHandle = createVideoPlaybackOptionsFlyout().handle;
+
+		container.insertBefore(flyoutHandle, container.firstChild);
+		flyoutHandle.determineTransformLayout(); // Call immediately after parenting to avoid first caling being from the center
 
 		let includeSubfoldersToggleOptions = new options_LabeledCheckboxToggle();
 		includeSubfoldersToggleOptions.labelTextContent = 'Include Subfolders';

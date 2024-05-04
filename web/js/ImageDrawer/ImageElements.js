@@ -191,46 +191,11 @@ function getOrCreateToolButton(imageElementToUse) {
 
 	const handleClassSuffix = '.imageElement-flyout-handle';
 	const menuClassSuffix = '.imageElement-flyout-menu';
-	const flyout = createFlyoutHandle("⋮", handleClassSuffix, menuClassSuffix);
-
-	flyout.menu.className = "flyout-menu-imageElement-options"; // starting custom flyout class
-
-	flyout.handle.addEventListener('mouseover', function () {
-		const handle = flyout.handle;
-		const menu = flyout.menu;
-		const handleRect = handle.getBoundingClientRect();
-		const listRect = getImageListElement().getBoundingClientRect();
-
-		const bIsHandleInTopHalf = handleRect.top < listRect.height / 2;
-		if (bIsHandleInTopHalf) {
-			// Menu is in the top half of the viewport
-			menu.classList.add("top");
-			menu.classList.remove("bottom");
-			menu.style.maxHeight = `${listRect.bottom - handleRect.top - 50}px`;
-		} else {
-			// Menu is in the bottom half of the viewport
-			menu.classList.add("bottom");
-			menu.classList.remove("top");
-			menu.style.maxHeight = `${handleRect.top - listRect.top - 50}px`;
-		}
-
-		const bIsHandleInLeftHalf = handleRect.left < listRect.width / 2;
-		if (bIsHandleInLeftHalf) {
-			// Menu is in the top half of the viewport
-			menu.classList.add("left");
-			menu.classList.remove("right");
-			menu.style.maxWidth = `${listRect.right - handleRect.left - 50}px`;
-		} else {
-			// Menu is in the bottom half of the viewport
-			menu.classList.add("right");
-			menu.classList.remove("left");
-			menu.style.maxWidth = `${handleRect.left - listRect.left - 50}px`;
-			console.log(menu.style.maxHeight);
-		}
-	});
+	const parentRect = getImageListElement().getBoundingClientRect();
+	const flyout = createFlyoutHandle("⋮", handleClassSuffix, menuClassSuffix, parentRect);
 
 	toolButtonContainer.style.top = '2%';
-	toolButtonContainer.style.left = '2%';
+	toolButtonContainer.style.right = '2%';
 	toolButtonContainer.style.visibility = "hidden";
 
 	while (toolButtonContainer.firstChild) {
@@ -239,6 +204,8 @@ function getOrCreateToolButton(imageElementToUse) {
 	toolButtonContainer.appendChild(flyout.handle);
 
 	createButtons(flyout);
+
+	toolButtonContainer.flyout = flyout;
 
 	return toolButtonContainer;
 }
@@ -253,6 +220,8 @@ function addToolButtonToImageElement(imageElementToUse) {
 
 	imageElementToUse.appendChild(toolButton);
 	toolButton.style.visibility = "visible";
+
+	toolButton.flyout.handle.determineTransformLayout(); // Call immediately after parenting to avoid first caling being from the center
 }
 
 function removeAndHideToolButtonFromImageElement(imageElementToUse) {

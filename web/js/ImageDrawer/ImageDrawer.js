@@ -253,6 +253,8 @@ app.registerExtension({
 		const BasicControlsGroup =
 			$el("div.JNodes-image-drawer-basic-controls-group", [hideButton, DrawerOptionsFlyout]);
 
+		DrawerOptionsFlyout.determineTransformLayout(); // Call immediately after parenting to avoid first caling being from the center
+
 		ImageDrawerContextToolbar =
 			$el("div.JNodes-image-drawer-context-toolbar");
 

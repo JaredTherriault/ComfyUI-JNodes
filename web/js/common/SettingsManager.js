@@ -291,7 +291,7 @@ export function addJNodesSetting(nameWidget, settingWidget, tooltip) {
     sortTable();
 }
 
-export function createFlyoutHandle(handleText, handleClassSuffix = '', menuClassSuffix = '') {
+export function createFlyoutHandle(handleText, handleClassSuffix = '', menuClassSuffix = '', parentRect = window) {
     let handle = $el(`section.flyout-handle${handleClassSuffix}`, [
         $el("label.flyout-handle-label", { textContent: handleText })
     ]);
@@ -299,6 +299,46 @@ export function createFlyoutHandle(handleText, handleClassSuffix = '', menuClass
     let menu = $el(`div.flyout-menu${menuClassSuffix}`);
 
     handle.appendChild(menu);
+
+    handle.determineTransformLayout = function () {
+
+        const handleRect = handle.getBoundingClientRect();
+
+        let transformOriginX = "0%";
+        let transformOriginY = "0%";
+
+        const bIsHandleInTopHalf = handleRect.top < (parentRect.innerHeight || parentRect.height) / 2;
+        if (bIsHandleInTopHalf) {
+            // Menu is in the top half of the viewport
+            menu.style.top = "0";
+            menu.style.bottom = "auto";
+            menu.style.maxHeight = `${parentRect.bottom - handleRect.top - 50}px`;
+        } else {
+            // Menu is in the bottom half of the viewport
+            transformOriginY = "100%";
+            menu.style.bottom = "0";
+            menu.style.top = "auto";
+            menu.style.maxHeight = `${handleRect.top - parentRect.top - 50}px`;
+        }
+
+        const bIsHandleInLeftHalf = handleRect.left < (parentRect.innerWidth || parentRect.width) / 2;
+        if (bIsHandleInLeftHalf) {
+            // Menu is in the top half of the viewport
+            menu.style.left = "0";
+            menu.style.right = "auto";
+            menu.style.maxWidth = `${parentRect.right - handleRect.left - 50}px`;
+        } else {
+            // Menu is in the bottom half of the viewport
+            transformOriginX = "100%";
+            menu.style.right = "0";
+            menu.style.left = "auto";
+            menu.style.maxWidth = `${handleRect.left - parentRect.left - 50}px`;
+        }
+
+        menu.style.transformOrigin = `${transformOriginX} ${transformOriginY}`;
+    };
+
+    handle.addEventListener('mouseover', handle.determineTransformLayout);
 
     return { handle: handle, menu: menu };
 }
@@ -476,7 +516,7 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
         OuterElement.appendChild(valueLabelElement);
     }
 
-    OuterElement.getMainElement = function() {
+    OuterElement.getMainElement = function () {
         return MainElement;
     };
 
@@ -516,7 +556,7 @@ export function createLabeledNumberInput(options = new options_LabeledNumberInpu
         }
 
         // Update the labelElement text content with the rounded value
-        
+
         // Call the original oninput callback if available
         if (originalOnInput && typeof originalOnInput === 'function') {
             originalOnInput(e);
@@ -538,7 +578,7 @@ export function createLabeledNumberInput(options = new options_LabeledNumberInpu
     OuterElement.appendChild($el('label', { textContent: options.labelTextContent }));
     OuterElement.appendChild(MainElement);
 
-    OuterElement.getMainElement = function() {
+    OuterElement.getMainElement = function () {
         return MainElement;
     };
 
@@ -569,7 +609,7 @@ export function createLabeledCheckboxToggle(options = new options_LabeledCheckbo
         MainElement
     ]);
 
-    OuterElement.getMainElement = function() {
+    OuterElement.getMainElement = function () {
         return MainElement;
     };
 

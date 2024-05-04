@@ -75,8 +75,7 @@ $el("style", {
 	}
 	
 	.flyout-handle,
-	.flyout-handle .flyout-menu,
-	.flyout-handle .flyout-menu-imageElement-options {
+	.flyout-menu {
 		background: rgba(0,0,0,0.9);
 		display: flex;
 		gap: 5px;
@@ -85,6 +84,7 @@ $el("style", {
 	.flyout-handle {
 		align-items: center;
 		padding: 0 5px;
+		position: relative;
 	}
 	.flyout-handle .flyout-menu tr {
 		width: 100%
@@ -104,10 +104,6 @@ $el("style", {
 		z-index: 100;
 	}
 
-	.flyout-handle {
-		position: relative;
-	}
-
 	.flyout-handle .flyout-handle-label {
 		width: max-content;
 	}
@@ -119,78 +115,20 @@ $el("style", {
 		z-index: 102;
 		flex: 1 1 100%;
 		padding: 100%;
-	}
-	.JNodes-image-drawer--top-left .flyout-menu.video-menu,
-	.JNodes-image-drawer--top-right .flyout-menu.video-menu,
-	.JNodes-image-drawer--bottom-left .flyout-menu.video-menu,
-	.JNodes-image-drawer--bottom-right .flyout-menu.video-menu {
-		align-items: flex-end;
-		left: auto;
-		right: 0;
-		width: fit-content;
-	}
-
-	.flyout-handle:hover .flyout-menu {
-		transform: scale(1, 1);
-		transition: 200ms linear;
-		transition-delay: 0;
-	}
-	.JNodes-image-drawer--top-left .flyout-menu,
-	.JNodes-image-drawer--top-right .flyout-menu  {
-		transform: scale(1,0);
-		transform-origin: top;
-		top: 0;
-	}
-	.JNodes-image-drawer--top-left .flyout-menu  {
-		left: 0;
-	}
-	.JNodes-image-drawer--top-right .flyout-menu  {
-		right: 0;
-	}
-	.JNodes-image-drawer--bottom-left .flyout-menu,
-	.JNodes-image-drawer--bottom-right .flyout-menu  {
-		transform: scale(1,0);
-		transform-origin: bottom;
-		bottom: 0;
-	}
-	.JNodes-image-drawer--bottom-left .flyout-menu  {
-		left: 0;
-	}
-	.JNodes-image-drawer--bottom-right .flyout-menu  {
-		right: 0;
-	}
-
-	.flyout-menu-imageElement-options {
-		position: absolute;
-		flex-direction: column;
-		align-items: flex-start;
-		z-index: 102;
-		flex: 1 1 100%;
-		padding: 100%;
 		transform: scale(1,0);
 		overflow-x: scroll;
 		overflow-y: scroll;
+		width: fit-content;
 	}
-	.flyout-menu-imageElement-options.top {
-		transform-origin: top;
-		top: 0;
-	}
-	.flyout-menu-imageElement-options.bottom {
-		transform-origin: bottom;
-		bottom: 0;
-	}
-	.flyout-menu-imageElement-options.left {
-		transform-origin: left;
-		left: 0;
-	}
-	.flyout-menu-imageElement-options.right {
-		transform-origin: right;
-		right: 0;
-	}
-	.flyout-handle:hover .flyout-menu-imageElement-options {
-		transform: scale(1, 1);
+	.flyout-handle:hover .flyout-menu {
+		transform: scale(1,1);
 		transition: 100ms linear;
-		transition-delay: 0;
+		transition-delay: 0ms;
+	}
+	
+
+	.flyout-menu.video-menu {
+		align-items: flex-end;
 	}
 	
 	.JNodes-interactive-container:hover {
