@@ -207,13 +207,11 @@ function getOrCreateToolButton(imageElementToUse) {
 			menu.classList.add("top");
 			menu.classList.remove("bottom");
 			menu.style.maxHeight = `${listRect.bottom - handleRect.top - 50}px`;
-			console.log(menu.style.maxHeight);
 		} else {
 			// Menu is in the bottom half of the viewport
 			menu.classList.add("bottom");
 			menu.classList.remove("top");
 			menu.style.maxHeight = `${handleRect.top - listRect.top - 50}px`;
-			console.log(menu.style.maxHeight);
 		}
 
 		const bIsHandleInLeftHalf = handleRect.left < listRect.width / 2;
@@ -221,14 +219,13 @@ function getOrCreateToolButton(imageElementToUse) {
 			// Menu is in the top half of the viewport
 			menu.classList.add("left");
 			menu.classList.remove("right");
-			// menu.style.maxHeight = `${listRect.bottom - handleRect.top - 50}px`;
-			// console.log(menu.style.maxHeight);
+			menu.style.maxWidth = `${listRect.right - handleRect.left - 50}px`;
 		} else {
 			// Menu is in the bottom half of the viewport
 			menu.classList.add("right");
 			menu.classList.remove("left");
-			// menu.style.maxHeight = `${handleRect.top - listRect.top - 50}px`;
-			// console.log(menu.style.maxHeight);
+			menu.style.maxWidth = `${handleRect.left - listRect.left - 50}px`;
+			console.log(menu.style.maxHeight);
 		}
 	});
 

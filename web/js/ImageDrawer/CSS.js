@@ -168,6 +168,7 @@ $el("style", {
 		flex: 1 1 100%;
 		padding: 100%;
 		transform: scale(1,0);
+		overflow-x: scroll;
 		overflow-y: scroll;
 	}
 	.flyout-menu-imageElement-options.top {
