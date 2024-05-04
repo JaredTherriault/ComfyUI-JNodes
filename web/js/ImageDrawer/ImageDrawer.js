@@ -37,10 +37,10 @@ export function getColumnCount() {
 export function setColumnCount(value, setColumnCountSliderValue = true) {
 	setting_ColumnCount.value = value;
 	imageDrawer?.style.setProperty("--column-count", value);
+	columnSlider.title = `Controls the number of columns in the drawer (${value} columns).\nClick label to set custom value.`;
 	if (setColumnCountSliderValue && columnSlider) {
 		columnSlider.max = Math.max(10, value, columnSlider.max);
 		columnSlider.value = value;
-		columnSlider.title = `Controls the number of columns in the drawer (${value} columns).\nClick label to set custom value.`;
 	}
 }
 
@@ -51,9 +51,9 @@ export function getDrawerWidth() {
 export function setDrawerWidth(value, setDrawerWidthSliderValue = true) {
 	setting_DrawerWidth.value = value;
 	imageDrawer?.style.setProperty("--drawer-width", value);
+	drawerWidthSlider.title = `Controls the maximum width of the drawer panel (${value}vw)`;
 	if (setDrawerWidthSliderValue && drawerWidthSlider) {
 		drawerWidthSlider.value = value;
-		drawerWidthSlider.title = `Controls the maximum width of the drawer panel (${value}vw)`;
 	}
 }
 
@@ -64,9 +64,9 @@ export function getDrawerHeight() {
 export function setDrawerHeight(value, setDrawerHeightSliderValue = true) {
 	setting_DrawerHeight.value = value;
 	imageDrawer?.style.setProperty("--drawer-height", value);
+	drawerHeightSlider.title = `Controls the maximum height of the drawer panel (${value}vh)`;
 	if (setDrawerHeightSliderValue && drawerHeightSlider) {
 		drawerHeightSlider.value = value;
-		drawerHeightSlider.title = `Controls the maximum height of the drawer panel (${value}vh)`;
 	}
 }
 
