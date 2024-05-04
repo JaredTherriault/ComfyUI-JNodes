@@ -75,7 +75,8 @@ $el("style", {
 	}
 	
 	.flyout-handle,
-	.flyout-handle .flyout-menu {
+	.flyout-handle .flyout-menu,
+	.flyout-handle .flyout-menu-imageElement-options {
 		background: rgba(0,0,0,0.9);
 		display: flex;
 		gap: 5px;
@@ -157,6 +158,47 @@ $el("style", {
 	}
 	.JNodes-image-drawer--bottom-right .flyout-menu  {
 		right: 0;
+	}
+
+	.flyout-menu-imageElement-options {
+		position: absolute;
+		flex-direction: column;
+		align-items: flex-start;
+		z-index: 102;
+		flex: 1 1 100%;
+		padding: 100%;
+		transform: scale(1,0);
+		overflow-y: scroll;
+	}
+	.flyout-menu-imageElement-options.top {
+		transform-origin: top;
+		top: 0;
+	}
+	.flyout-menu-imageElement-options.bottom {
+		transform-origin: bottom;
+		bottom: 0;
+	}
+	.flyout-menu-imageElement-options.left {
+		transform-origin: left;
+		left: 0;
+	}
+	.flyout-menu-imageElement-options.right {
+		transform-origin: right;
+		right: 0;
+	}
+	.flyout-handle:hover .flyout-menu-imageElement-options {
+		transform: scale(1, 1);
+		transition: 100ms linear;
+		transition-delay: 0;
+	}
+	
+	.JNodes-interactive-container:hover {
+		filter: brightness(2) drop-shadow(-1px -1px blue);
+		cursor: 'pointer';
+    }
+	.JNodes-interactive-container:active {
+		filter: brightness(2) drop-shadow(-1px -1px orange);
+		cursor: 'pointer';
 	}
 
 	.JNodes-image-drawer-list {

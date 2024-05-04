@@ -15,8 +15,8 @@ import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 import { createModal } from "../common/ModalManager.js";
 
 import { setting_FontSize, setting_FontFamily } from "../TextareaFontControl.js"
-import { setting_bKeyListAllowDenyToggle, setting_KeyList, setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
-import { executeSearchWithEnteredSearchText } from "./ImageListAndSearch.js";
+import { createFlyoutHandle, setting_bKeyListAllowDenyToggle, setting_KeyList, setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
+import { executeSearchWithEnteredSearchText, getImageListElement } from "./ImageListAndSearch.js";
 import { onScrollVideo, setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen } from "../common/VideoControl.js";
 
 let toolTip;
@@ -91,65 +91,47 @@ export function hideToolTip() {
 	}
 }
 
-function getOrCreateToolButton() {
+function getOrCreateToolButton(imageElementToUse) {
 
-	// Early out if it exists already
-	if (toolButtonContainer) {
-		return toolButtonContainer;
-	}
-
-	let contextMenu;
-
-	function createButtons() {
-		if (!buttonsRow) { return; }
+	function createButtons(flyout) {
+		if (!flyout) { return; }
 
 		function createButton(foregroundElement, tooltipText, onClickFunction) {
 			const buttonElement = $el("button", {
 				title: tooltipText,
 				style: {
-					background: 'none',
-					border: 'none',
+					background: "none",
+					border: "none",
 					padding: 0,
+					width: "max-content",
+					cursor: "pointer",
 				}
 			}, [
 				foregroundElement
 			]);
 
+			foregroundElement.style.pointerEvents = "none"; 
+			buttonElement.style.pointerEvents = "all";
+
+			buttonElement.classList.add("JNodes-interactive-container"); // Creates highlighting and mouse down color changes for feedback
+
 			buttonElement.addEventListener('click', onClickFunction);
 
-			return buttonElement;
-		}
-
-		function removeOptionsMenu() {
-			if (contextMenu) {
-				const parentElement = contextMenu.parentNode;
-				parentElement.removeChild(contextMenu);
-				contextMenu = null;
-			}
+			return $el("tr", [
+				$el("td", [
+					buttonElement
+				])
+			]);
 		}
 
 		function createOptionsMenu() {
-
-			let imageElementToUse = toolButtonContainer.parentElement;
 
 			if (!imageElementToUse) {
 				return;
 			}
 
-			contextMenu = $el("div", {
-				id: "context-menu-image-elements",
-				style: {
-					width: 'fit-content',
-					display: 'flex',
-					flexDirection: 'column',
-					alignItems: 'flex-start',
-					textAlign: 'left',
-					//						position: 'absolute',
-				}
-			});
-
-			if (imageElementToUse?.metadata?.positive_prompt) {
-				contextMenu.appendChild(
+			if (imageElementToUse?.promptMetadata?.positive_prompt) {
+				flyout.menu.appendChild(
 					createButton(
 						$el("label", {
 							textContent: "📋 Copy Positive Prompt",
@@ -159,27 +141,27 @@ function getOrCreateToolButton() {
 						}),
 						'Copy positive prompt',
 						function (e) {
-							let positive_prompt = imageElementToUse?.metadata?.positive_prompt;
+							let positive_prompt = imageElementToUse?.promptMetadata?.positive_prompt;
 							if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
 							if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
 							copyToClipboard(positive_prompt);
-							removeOptionsMenu();
+							// removeOptionsMenu();
 							e.preventDefault();
 						}
 					)
 				);
 			}
 
-			let metadataKeys = Object.keys(imageElementToUse.metadata);
+			let metadataKeys = Object.keys(imageElementToUse.promptMetadata);
 			metadataKeys.sort();
 			for (const key of metadataKeys) {
 				if (key == "positive_prompt") {
 					continue;
 				}
 
-				let data = imageElementToUse.metadata[key];
+				let data = imageElementToUse.promptMetadata[key];
 
-				contextMenu.appendChild(
+				flyout.menu.appendChild(
 					createButton(
 						$el("label", {
 							textContent: `📋 Copy ${key}`,
@@ -192,57 +174,74 @@ function getOrCreateToolButton() {
 							if (data.startsWith('"')) { data = data.slice(1); }
 							if (data.endsWith('"')) { data = data.slice(0, data.length - 1); }
 							copyToClipboard(data);
-							removeOptionsMenu();
+							// removeOptionsMenu();
 							e.preventDefault();
 						}
 					)
 				);
 			}
-
-			return contextMenu;
 		}
 
-		const optionsContainer = $el("div", [
-			createButton(
-				$el("label", {
-					textContent: "⋮",
-					style: {
-						fontSize: '200%',
-						color: 'rgb(250,250,250)',
-					}
-				}),
-				'Options',
-				function (e) {
-					if (contextMenu) {
-						removeOptionsMenu();
-					} else {
-						optionsContainer.appendChild(createOptionsMenu());
-					}
-					e.preventDefault();
-				}
-			)]
-		);
-
-		// Options button
-		buttonsRow.appendChild(optionsContainer);
+		createOptionsMenu();
 	}
 
-	const buttonsRow = $el("div", {
-		style: {
-			width: '100%',
-			display: 'flex',
-			flexDirection: 'row',
+	if (!toolButtonContainer) {
+		toolButtonContainer = createDarkContainer("imageToolsButton", "0%");
+	}
+
+	const handleClassSuffix = '.imageElement-flyout-handle';
+	const menuClassSuffix = '.imageElement-flyout-menu';
+	const flyout = createFlyoutHandle("⋮", handleClassSuffix, menuClassSuffix);
+
+	flyout.menu.className = "flyout-menu-imageElement-options"; // starting custom flyout class
+
+	flyout.handle.addEventListener('mouseover', function () {
+		const handle = flyout.handle;
+		const menu = flyout.menu;
+		const handleRect = handle.getBoundingClientRect();
+		const listRect = getImageListElement().getBoundingClientRect();
+
+		const bIsHandleInTopHalf = handleRect.top < listRect.height / 2;
+		if (bIsHandleInTopHalf) {
+			// Menu is in the top half of the viewport
+			menu.classList.add("top");
+			menu.classList.remove("bottom");
+			menu.style.maxHeight = `${listRect.bottom - handleRect.top - 50}px`;
+			console.log(menu.style.maxHeight);
+		} else {
+			// Menu is in the bottom half of the viewport
+			menu.classList.add("bottom");
+			menu.classList.remove("top");
+			menu.style.maxHeight = `${handleRect.top - listRect.top - 50}px`;
+			console.log(menu.style.maxHeight);
+		}
+
+		const bIsHandleInLeftHalf = handleRect.left < listRect.width / 2;
+		if (bIsHandleInLeftHalf) {
+			// Menu is in the top half of the viewport
+			menu.classList.add("left");
+			menu.classList.remove("right");
+			// menu.style.maxHeight = `${listRect.bottom - handleRect.top - 50}px`;
+			// console.log(menu.style.maxHeight);
+		} else {
+			// Menu is in the bottom half of the viewport
+			menu.classList.add("right");
+			menu.classList.remove("left");
+			// menu.style.maxHeight = `${handleRect.top - listRect.top - 50}px`;
+			// console.log(menu.style.maxHeight);
 		}
 	});
-
-	toolButtonContainer = createDarkContainer('imageToolsButton');
 
 	toolButtonContainer.style.top = '2%';
 	toolButtonContainer.style.left = '2%';
 	toolButtonContainer.style.visibility = "hidden";
-	toolButtonContainer.appendChild(buttonsRow);
 
-	createButtons();
+	while (toolButtonContainer.firstChild) {
+		toolButtonContainer.removeChild(toolButtonContainer.firstChild);
+	}
+	toolButtonContainer.appendChild(flyout.handle);
+
+	createButtons(flyout);
 
 	return toolButtonContainer;
 }
@@ -253,7 +252,7 @@ function addToolButtonToImageElement(imageElementToUse) {
 		return;
 	}
 
-	const toolButton = getOrCreateToolButton();
+	const toolButton = getOrCreateToolButton(imageElementToUse);
 
 	imageElementToUse.appendChild(toolButton);
 	toolButton.style.visibility = "visible";
@@ -283,7 +282,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	imageElement.mouseOverEvent = function (event) {
 		// Only show tooltip if a mouse button is not being held
-		if (!isPointerDown()) {
+		if (!isPointerDown() && !toolButtonContainer?.contains(event.target)) {
 			updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
 			addToolButtonToImageElement(imageElement);
 		}
@@ -294,7 +293,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		hideToolTip();
 
 		// If the new actively moused over element is not a child of imageElement, then hide the button
-		if (!imageElement.contains(event.toElement)) {
+		if (!imageElement.contains(event.relatedTarget)) {
 			removeAndHideToolButtonFromImageElement(imageElement);
 		}
 	}

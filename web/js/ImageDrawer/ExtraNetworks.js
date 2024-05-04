@@ -265,6 +265,8 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 					});
 				}
 
+				buttonElement.classList.add("JNodes-interactive-container"); // Creates highlighting and mouse down color changes for feedback
+
 				return buttonElement;
 			}
 
