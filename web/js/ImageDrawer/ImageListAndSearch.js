@@ -33,9 +33,10 @@ export function replaceImageListChildren(newChildren) {
 }
 
 export function clearImageListChildren() {
-	const childNodeCount = getImageListChildren().length;
-	for (let childIndex = childNodeCount; childIndex >= 0; childIndex--) {
-		removeElementFromImageList(getImageListChildren()[childIndex], false);
+	let currentChildren = getImageListChildren();
+	const childNodeCount = currentChildren.length;
+	for (let childIndex = childNodeCount - 1; childIndex >= 0; childIndex--) {
+		removeElementFromImageList(currentChildren[childIndex], false);
 	}
 };
 
