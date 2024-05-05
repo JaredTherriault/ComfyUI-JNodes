@@ -6,6 +6,7 @@ import { getVisualElements, setElementVisibility } from "../common/Utilities.js"
 const imageList = $el("div.JNodes-image-drawer-list", {
 	style: {
 		visibility: 'visible',
+		flex: "1 1 auto"
 	}
 });
 

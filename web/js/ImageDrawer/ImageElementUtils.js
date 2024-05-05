@@ -317,13 +317,13 @@ export async function onLoadImageElement(imageElement) {
                     try {
                         metadata = JSON.parse(jsonReadyString);
                     } catch (error) {
-                        console.log(error);
+                        console.log(`${error} (${imageElement.fileInfo.href})`);
                     }
                 }
             }
         } catch (error) {
             if (error.name != "MetadataMissingError") {
-                console.log(error);
+                console.log(`${error} (${imageElement.fileInfo.href})`);
             }
         }
 

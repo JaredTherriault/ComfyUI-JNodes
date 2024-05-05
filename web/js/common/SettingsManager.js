@@ -208,14 +208,14 @@ function createExpandableSettingsArea() {
 
     // Add click event listener to toggle button
     toggleButton.addEventListener('click', function () {
-        const bIsCollapsed = underButtonContent.style.visibility === 'collapse';
+        const bIsCurrentlyCollapsed = underButtonContent.style.visibility === 'collapse';
 
         // Toggle content display
         underButtonContent.style.visibility =
-            bIsCollapsed ? 'visible' : 'collapse';
+            bIsCurrentlyCollapsed ? 'visible' : 'collapse';
 
         // Toggle button arrow orientation
-        toggleButton.textContent = bIsCollapsed ? '▼' : '►';
+        toggleButton.textContent = bIsCurrentlyCollapsed ? '' : '►';
     });
 
     app.ui.settings.addSetting({

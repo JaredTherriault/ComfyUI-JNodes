@@ -13,7 +13,6 @@ $el("style", {
 		flex-direction: column;
 		min-width: min-content;
 		width: calc(var(--drawer-width, 20) * 1vw);
-		min-height: max-content;
 		height: calc(var(--drawer-height, 20) * 1vh);		
 	}
 	.JNodes-image-drawer--bottom-left,
