@@ -46,6 +46,10 @@ async def load_text_wrapper(request):
 @server.PromptServer.instance.routes.post("/jnodes_upload_image")
 async def upload_image_wrapper(request):
     return await upload_image(request)
+
+@server.PromptServer.instance.routes.delete("/jnodes_delete_item")
+async def delete_item_wrapper(request):
+    return await delete_item(request)
     
 WEB_DIRECTORY = "./web"
 

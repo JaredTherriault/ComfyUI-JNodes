@@ -1,0 +1,553 @@
+import { $el } from "/scripts/ui.js";
+
+import * as Sorting from "./Sorting.js";
+
+import { getElementUnderPointer } from "../common/EventManager.js";
+import { getPngMetadata } from "/scripts/pnginfo.js";
+
+import { setting_bKeyListAllowDenyToggle, setting_KeyList, createFlyoutHandle } from "../common/SettingsManager.js";
+import { executeSearchWithEnteredSearchText, getImageListElement, removeElementFromImageList } from "./ImageListAndSearch.js";
+
+import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
+
+import {
+    getMaxZIndex, createDarkContainer, copyToClipboard,
+    SortJsonObjectByKeys, isValid
+} from "../common/Utilities.js";
+
+import { setting_FontSize, setting_FontFamily } from "../TextareaFontControl.js"
+
+const toolTipOffsetX = 10; // Adjust the offset from the mouse pointer
+const toolTipOffsetY = 10;
+
+const bUseWideTooltip = true;
+
+let toolTip;
+export let toolButtonContainer;
+
+export function createToolTip(imageElement) {
+
+    const zIndex = imageElement ? getMaxZIndex(imageElement) : 1001;
+    const fontSize = setting_FontSize.value;
+
+    toolTip = $el("div", {
+        style: {
+            position: "fixed",
+            fontSize: fontSize.toString() + '%',
+            fontFamily: setting_FontFamily.value,
+            lineHeight: "20px",
+            padding: "5px",
+            background: "#444",
+            border: "1px solid #222",
+            visibility: "hidden",
+            opacity: "0",
+            boxShadow: "-2px 2px 5px rgba(0, 0, 0, 0.2)",
+            transition: "opacity 0.3s, visibility 0s",
+            color: "white",
+            maxWidth: bUseWideTooltip ? "40vw" : "20vw",
+            pointerEvents: 'none',
+            zIndex: zIndex > 0 ? zIndex + 1 : 1002,
+        }
+    });
+    toolTip.classList.add('tooltip');
+
+    const x = imageElement && imageElement.hasAttribute('tip-left') ? 'calc(-100% - 5px)' : '16px';
+    const y = imageElement && imageElement.hasAttribute('tip-top') ? '-100%' : '0';
+    toolTip.style.transform = `translate(${x}, ${y})`;
+
+    document.body.appendChild(toolTip);
+
+    return toolTip;
+}
+
+function updateTooltip(newTooltipWidget, imageElement) {
+    if (!newTooltipWidget) { return false; }
+
+    if (!toolTip) {
+        createToolTip(imageElement);
+    }
+
+    // Remove all children
+    while (toolTip.firstChild) {
+        toolTip.removeChild(toolTip.firstChild);
+    }
+
+    // And append the incoming one
+    toolTip.appendChild(newTooltipWidget);
+
+    return true;
+}
+
+export function updateAndShowTooltip(newTooltipWidget, imageElement) {
+    const bTooltipUpdated = updateTooltip(newTooltipWidget, imageElement);
+    if (bTooltipUpdated && toolTip) {
+        toolTip.style.visibility = "visible";
+        toolTip.style.opacity = "1";
+    }
+}
+
+export function hideToolTip() {
+    if (toolTip) {
+        toolTip.style.visibility = "hidden";
+        toolTip.style.opacity = "0";
+    }
+}
+
+export function getOrCreateToolButton(imageElementToUse) {
+
+    function createButtons(flyout) {
+        if (!flyout) { return; }
+
+        function createButton(foregroundElement, tooltipText, onClickFunction, dragText) {
+            const buttonElement = $el("button", {
+                title: tooltipText,
+                style: {
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    width: "max-content",
+                    cursor: "pointer",
+                }
+            }, [
+                foregroundElement
+            ]);
+
+            foregroundElement.style.pointerEvents = "none";
+            buttonElement.style.pointerEvents = "all";
+
+            if (onClickFunction) {
+                buttonElement.addEventListener('click', onClickFunction);
+            }
+
+            if (dragText) {
+                buttonElement.draggable = true;
+                buttonElement.addEventListener("dragstart", function (event) {
+                    // Set data to be transferred during drag
+                    event.dataTransfer.setData('text/plain', dragText);
+                });
+            }
+
+            buttonElement.classList.add("JNodes-interactive-container"); // Creates highlighting and mouse down color changes for feedback
+
+            return $el("tr", [
+                $el("td", [
+                    buttonElement
+                ])
+            ]);
+        }
+
+        function createOptionsMenu() {
+
+            if (!imageElementToUse) {
+                return;
+            }
+
+            // Delete button
+            {
+                const baseLabelText = "♻️ Delete From Disk";
+                const confirmLabelText = "♻️ Click again to confirm";
+                flyout.menu.appendChild(
+                    createButton(
+                        $el("label", {
+                            textContent: baseLabelText,
+                            style: {
+                                color: 'rgb(250,25,25)',
+                            }
+                        }),
+                        "Delete this item from disk. If send2trashv is available, it will be sent to the OS's Recycle Bin or Trash. Otherwise it will be deleted directly.",
+                        function (e) {
+                            const labelElement = e.target.querySelector("label");
+                            if (labelElement.textContent == baseLabelText) {
+                                labelElement.textContent = confirmLabelText;
+                            } else if (labelElement.textContent == confirmLabelText) {
+                                // DELETE api call
+                                if (imageElementToUse.deleteItem) {
+                                    imageElementToUse.deleteItem();
+                                }
+                            }
+                        }
+                    )
+                );
+            }
+
+            if (imageElementToUse.promptMetadata && Object.keys(imageElementToUse.promptMetadata).length > 0) {
+
+                if (imageElementToUse?.promptMetadata?.positive_prompt) {
+                    flyout.menu.appendChild(
+                        createButton(
+                            $el("label", {
+                                textContent: "📋 Copy Positive Prompt",
+                                style: {
+                                    color: 'rgb(250,250,250)',
+                                }
+                            }),
+                            'Copy positive prompt',
+                            function (e) {
+                                let positive_prompt = imageElementToUse?.promptMetadata?.positive_prompt;
+                                if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
+                                if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
+                                copyToClipboard(positive_prompt);
+                                // removeOptionsMenu();
+                                e.preventDefault();
+                            }
+                        )
+                    );
+                }
+
+                let metadataKeys = Object.keys(imageElementToUse.promptMetadata);
+                metadataKeys.sort();
+                for (const key of metadataKeys) {
+                    if (key == "positive_prompt") {
+                        continue;
+                    }
+
+                    let data = imageElementToUse.promptMetadata[key];
+
+                    flyout.menu.appendChild(
+                        createButton(
+                            $el("label", {
+                                textContent: `📋 Copy ${key}`,
+                                style: {
+                                    color: 'rgb(250,250,250)',
+                                }
+                            }),
+                            `Copy ${key}`,
+                            function (e) {
+                                if (data.startsWith('"')) { data = data.slice(1); }
+                                if (data.endsWith('"')) { data = data.slice(0, data.length - 1); }
+                                copyToClipboard(data);
+                                // removeOptionsMenu();
+                                e.preventDefault();
+                            }
+                        )
+                    );
+                }
+            }
+        }
+
+        createOptionsMenu();
+    }
+
+    if (!toolButtonContainer) {
+        toolButtonContainer = createDarkContainer("imageToolsButton", "0%");
+    }
+
+    const handleClassSuffix = '.imageElement-flyout-handle';
+    const menuClassSuffix = '.imageElement-flyout-menu';
+    const parentRect = getImageListElement().getBoundingClientRect();
+    const flyout = createFlyoutHandle("⋮", handleClassSuffix, menuClassSuffix, parentRect);
+
+    toolButtonContainer.style.top = '2%';
+    toolButtonContainer.style.right = '2%';
+    toolButtonContainer.style.visibility = "hidden";
+
+    while (toolButtonContainer.firstChild) {
+        toolButtonContainer.removeChild(toolButtonContainer.firstChild);
+    }
+    toolButtonContainer.appendChild(flyout.handle);
+
+    createButtons(flyout);
+
+    toolButtonContainer.flyout = flyout;
+
+    return toolButtonContainer;
+}
+
+export function addToolButtonToImageElement(imageElementToUse) {
+
+    if (!imageElementToUse) {
+        return;
+    }
+
+    const toolButton = getOrCreateToolButton(imageElementToUse);
+
+    imageElementToUse.appendChild(toolButton);
+    toolButton.style.visibility = "visible";
+
+    toolButton.flyout.handle.determineTransformLayout(); // Call immediately after parenting to avoid first caling being from the center
+}
+
+export function removeAndHideToolButtonFromImageElement(imageElementToUse) {
+    if (toolButtonContainer?.parentElement == imageElementToUse) {
+        document.body.appendChild(toolButtonContainer);
+        toolButtonContainer.style.visibility = "hidden";
+    }
+}
+
+export async function onLoadImageElement(imageElement) {
+    if (imageElement.img.complete || imageElement.bIsVideoFormat) {
+        if (imageElement.bComplete) {
+            //console.log('Image has been completely loaded.');
+            return;
+        }
+
+        const response = await fetch(imageElement.fileInfo.href);
+        const blob = await response.blob();
+
+        // Hover mouse over image to show meta
+        //console.log(imageElement.fileInfo.href);
+        let metadata = null;
+        try {
+            if (imageElement.fileInfo.href.includes(".png")) {
+                metadata = await getPngMetadata(blob);
+            } else if (imageElement.fileInfo.href.includes(".webp")) {
+                const webpArrayBuffer = await blob.arrayBuffer();
+
+                // Use the exif library to extract Exif data
+                const exifData = ExifReader.load(webpArrayBuffer);
+                //console.log("exif: " + JSON.stringify(exifData));
+
+                const exif = exifData['UserComment'];
+
+                if (exif) {
+
+                    // Convert the byte array to a Uint16Array
+                    const uint16Array = new Uint16Array(exif.value);
+
+                    // Create a TextDecoder for UTF-16 little-endian
+                    const textDecoder = new TextDecoder('utf-16le');
+
+                    // Decode the Uint16Array to a string
+                    const decodedString = textDecoder.decode(uint16Array);
+
+                    // Remove null characters
+                    const cleanedString = decodedString.replace(/\u0000/g, '');
+                    const jsonReadyString = cleanedString.replace("UNICODE", "")
+
+                    try {
+                        metadata = JSON.parse(jsonReadyString);
+                    } catch (error) {
+                        console.log(error);
+                    }
+                }
+            }
+        } catch (error) {
+            if (error.name != "MetadataMissingError") {
+                console.log(error);
+            }
+        }
+
+        setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata);
+
+        imageElement.bComplete = true;
+
+        if (imageElement.fileInfo.bShouldSort == true) {
+            Sorting.sortWithCurrentType();
+            imageElement.fileInfo.bShouldSort = false;
+        }
+
+        if (imageElement.fileInfo.bShouldApplySearch == true) {
+            executeSearchWithEnteredSearchText();
+            imageElement.fileInfo.bShouldApplySearch = false;
+        }
+    }
+    else {
+        console.log('Image is still loading.');
+    }
+}
+
+export function getDisplayTextFromMetadata(metadata) {
+
+    if (!metadata) { return ''; }
+
+    const positivePromptKey = 'positive_prompt';
+    const negativePromptKey = 'negative_prompt';
+
+    const allowDenyList = setting_KeyList.value.split(",")?.map(item => item.trim());
+    const bIsAllowList = setting_bKeyListAllowDenyToggle.value;
+
+    let outputString = '';
+
+    if (metadata[positivePromptKey]) {
+        outputString = metadata[positivePromptKey] + "\n";
+    }
+
+    const metaKeys = Object.keys(metadata)?.sort((a, b) => {
+        // 'negative_prompt' comes first
+        if (a === negativePromptKey) { return -1; }
+        if (b === negativePromptKey) { return 1; }
+        return a.localeCompare(b);  // Alphabetical sorting for other keys
+    });
+
+    for (const key of metaKeys) {
+        if (key == positivePromptKey) { continue; }
+
+        const bIsKeySpecified = allowDenyList?.includes(key.trim());
+
+        // Add if no list specified or key is specified in allow list, or key not specified in deny list
+        const bIncludeKey = !allowDenyList ||
+            (bIsAllowList && bIsKeySpecified) || (!bIsAllowList && !bIsKeySpecified);
+
+        if (bIncludeKey) {
+            const formattedValue = metadata[key].replace(/\n/g, '').replace(/\\n/g, '');
+            outputString = outputString + '\n' + `${key}: ${formattedValue}, `;
+        }
+    }
+
+    // Replace all occurrences of "\n" with actual newlines
+    outputString = outputString.replace(/\\n/g, '\n');
+
+    return outputString;
+}
+
+export function makeTooltipWidgetFromMetadata(metadata) {
+    if (isValid(metadata)) {
+        return null;
+    }
+
+    const positivePromptKey = 'positive_prompt';
+    const negativePromptKey = 'negative_prompt';
+
+    const allowDenyList = setting_KeyList.value.split(",")?.map(item => item.trim());
+    const bIsAllowList = setting_bKeyListAllowDenyToggle.value;
+
+    let outputWidget = $el("div", {
+        style: {
+            display: 'column',
+        }
+    });
+
+    if (metadata[positivePromptKey]) {
+        let textContent = metadata[positivePromptKey].replace(/\\n/g, '\n').replace(/,(?=\S)/g, ', ');
+        outputWidget.appendChild(
+            $el('tr', [
+                $el('td', {
+                    colSpan: '2',
+                }, [
+                    $el("div", { textContent: textContent })
+                ])
+            ])
+        );
+    }
+
+    if (metadata[negativePromptKey]) {
+        let textContent = metadata[negativePromptKey].replace(/\\n/g, '\n').replace(/,(?=\S)/g, ', ');
+        // Negative Prompt key and value on separate rows
+        outputWidget.appendChild(
+            $el('tr', [
+                $el('td', {
+                    colSpan: '2',
+                }, [
+                    $el("label", { textContent: `${negativePromptKey}:` })
+                ])
+            ])
+        );
+        outputWidget.appendChild(
+            $el('tr', [
+                $el('td', {
+                    colSpan: '2',
+                }, [
+                    $el("div", { textContent: textContent })
+                ])
+            ])
+        );
+    }
+
+    const metaKeys = Object.keys(metadata)?.sort((a, b) => {
+        return a.localeCompare(b);  // Alphabetical sorting for keys
+    });
+
+    for (const key of metaKeys) {
+        if (key == positivePromptKey || key == negativePromptKey) { continue; }
+
+        const bIsKeySpecified = allowDenyList?.includes(key.trim());
+
+        // Add if no list specified or key is specified in allow list, or key not specified in deny list
+        const bIncludeKey = !allowDenyList ||
+            (bIsAllowList && bIsKeySpecified) || (!bIsAllowList && !bIsKeySpecified);
+
+        if (bIncludeKey) {
+            let formattedValue = metadata[key].replace(/\n/g, '').replace(/\\n/g, '');
+
+            const row =
+                $el('tr', [
+                    $el('td', {
+                        style: {
+                            width: bUseWideTooltip ? '25%' : '50%',
+                        }
+                    }, [
+                        $el('label', {
+                            textContent: `${key}:`,
+                            style: {
+                                wordBreak: bUseWideTooltip ? 'break-all' : 'none', // Break on any character to avoid overflow outside the container
+                            }
+                        })
+                    ]),
+                    $el('td', {
+                        style: {
+                            width: bUseWideTooltip ? '75%' : '50%',
+                        }
+                    }, [
+                        $el('label', {
+                            textContent: `${formattedValue}`,
+                            style: {
+                                wordBreak: bUseWideTooltip ? 'break-all' : 'none',
+                            }
+                        })
+                    ]),
+                ]);
+
+            outputWidget.appendChild(row);
+        }
+    }
+
+    return outputWidget;
+}
+
+export function setTooltipFromWidget(imageElement, widget) {
+    if (widget) {
+
+        imageElement.tooltipWidget = widget;
+
+        imageElement.onpointermove = e => {
+            if (toolTip?.style?.visibility === "visible") {
+
+                // Calculate the maximum allowed positions
+                const maxX = window.innerWidth - toolTip.offsetWidth - toolTipOffsetX;
+                const maxY = window.innerHeight - toolTip.offsetHeight - toolTipOffsetY - 10; //extra offset to avoid link hint label
+
+                // Calculate the adjusted positions
+                const x = Math.min(e.pageX + toolTipOffsetX, maxX);
+                const y = Math.min(e.pageY + toolTipOffsetY, maxY);
+
+                toolTip.style.left = `${x}px`;
+                toolTip.style.top = `${y}px`;
+            }
+        };
+    }
+}
+
+export function setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata) {
+
+    imageElement.promptMetadata = metadata;
+
+    // Set the dimensional display data in the event that it's not found in python meta sweep
+    if (!imageElement.displayData.FileDimensions && imageElement.fileInfo.file?.dimensions) {
+        imageElement.displayData.FileDimensions = imageElement.fileInfo.file.dimensions;
+    }
+
+    if (!imageElement.displayData.AspectRatio && imageElement.displayData.FileDimensions) {
+        imageElement.displayData.AspectRatio = imageElement.displayData.FileDimensions[0] / imageElement.displayData.FileDimensions[1];
+    }
+
+    imageElement.displayData = SortJsonObjectByKeys(imageElement.displayData);
+
+    const toolTipWidget = makeTooltipWidgetFromMetadata(metadata);
+
+    if (toolTipWidget) {
+        setTooltipFromWidget(imageElement, toolTipWidget);
+    }
+
+    const elementUnderMouse = getElementUnderPointer();
+    if (elementUnderMouse && elementUnderMouse == imageElement.img) {
+        imageElement.mouseOverEvent();
+    }
+
+    // Show/Hide tooltip
+    imageElement.addEventListener("mouseover", imageElement.mouseOverEvent);
+
+    imageElement.addEventListener("mouseout", imageElement.mouseOutEvent);
+
+    // Finally, set search terms on the element
+    imageElement.searchTerms += " " + getDisplayTextFromMetadata(metadata);
+}

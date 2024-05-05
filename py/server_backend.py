@@ -488,3 +488,84 @@ async def load_text(request):
     except Exception as e:
         print(f"Error loading text: {e}")
         return web.json_response({"success": False, "text" : ''})
+
+async def delete_item(request):
+    def delete_file(path):
+        try:
+            if os.path.isfile(path):
+                try:
+                    # Try to import send2trash module
+                    from send2trash import send2trash
+                    
+                    # If import successful, use send2trash to send file to trash
+                    send2trash(path)
+                    message = f"File '{path}' sent to trash/recycle bin successfully."
+                    print(message)
+                    return web.json_response({"success": True, "type": "send2trash", "message": message})
+                except ImportError:
+                    # If send2trash module not available, delete file permanently
+                    os.remove(path)
+                    message = f"File '{path}' deleted permanently. If you want to send to trash/recycle, consider installing send2trash (pip install send2trash)."
+                    print(message)
+                    return web.json_response({"success": True, "type": "permanent", "message": message})
+            else:
+                message = f"'{path}' is not a valid file."
+                print(message)
+                return web.json_response({"success": False, "type": "none", "message": message})
+        except Exception as e:
+            message = f"Error occurred while deleting '{path}': {e}"
+            print(message)
+            return web.json_response({"success": False, "type": "none", "message": message})
+
+    type = "loras"
+    if "type" in request.rel_url.query:
+        type = request.rel_url.query["type"]
+        
+    base_dir = None
+    
+    try: # Try to infer base_dir
+        file_list = folder_paths.get_filename_list(type)
+        if file_list:
+            sample_set = []
+            for item_name in file_list:
+                file_path = folder_paths.get_full_path(type, item_name.replace("\\", "/"))
+                sample_set.append(file_path)
+                if len(sample_set) == 2:
+                    break
+            if len(sample_set) == 2:
+                base_dir = highest_common_folder(sample_set[0], sample_set[1])
+    except: # If we can't, most likely because it's not a built-in type, assume type is a subfolder in the ComfyUI directory
+        try:
+            base_dir = convert_relative_comfyui_path_to_full_path(type)
+        except Exception as e:
+            print(f"Error finding folder {type}. Error: {e}")
+            
+    if base_dir is None:
+        logger.warning(f"Unable to get parent directory for {type}")
+        return web.Response(status=400)
+    
+    subfolder = ''
+    if "subfolder" in request.rel_url.query:
+        subfolder = request.rel_url.query["subfolder"]
+        base_dir = os.path.join(base_dir, subfolder)
+    
+    if "filename" in request.rel_url.query:
+        filename = request.rel_url.query["filename"]
+
+        # validation for security: prevent accessing arbitrary path
+        if filename[0] == '/' or filename.startswith('..') or filename.startswith('./'):
+            logger.warning(f"Attempting to access an arbitrary path, aborting. filename: {filename}")
+            return web.Response(status=400)
+
+        #filename = os.path.basename(filename)
+        file = os.path.join(base_dir, filename)
+
+        # Hack for linux/mac/unix
+        if not os.path.isfile(file):
+            file = f"/{file}"
+        
+        if os.path.isfile(file):
+            return delete_file(file)
+
+    logger.warning("File could not be deleted: file not found")
+    return web.Response(status=404)
