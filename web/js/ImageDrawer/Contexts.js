@@ -348,7 +348,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 			'/jnodes_comfyui_subfolder_items' +
 			`?root_folder=${this.rootFolderName}` +
 			`&start_getting_files_from_folder=${path_to_load_images_from}` +
-			`&include_subfolder_files=${this.bIncludeSubfolders}`);
+			`&include_subfolder_files=${this.bIncludeSubfolders}`, { cache: "no-store" });
 
 		let decodedString;
 		try {

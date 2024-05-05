@@ -56,7 +56,8 @@ function mediaUpload(node, inputName, inputData, app) {
 			body.append("filename", file.filename || '');
 			const resp = await api.fetchApi("/jnodes_upload_image", {
 				method: "POST",
-				body,
+				body, 
+				cache: "no-store"
 			});
 
 			if (resp.status === 200) {

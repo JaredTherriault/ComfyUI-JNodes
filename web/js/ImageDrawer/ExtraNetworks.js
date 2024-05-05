@@ -16,7 +16,7 @@ let cachedEmbeddingsObject = undefined;
  */
 export async function getLoras(bForceRefresh = false) {
 	if (bForceRefresh || !cachedLorasObject) {
-		const resp = await api.fetchApi('/jnodes_model_items?type=loras');
+		const resp = await api.fetchApi('/jnodes_model_items?type=loras', { cache: "no-store" });
 		const asJson = await resp.json();
 		//console.log("Size of loras info: " + JSON.stringify(asJson).length)
 		cachedLorasObject = asJson;
@@ -32,7 +32,7 @@ export async function getLoras(bForceRefresh = false) {
  */
 export async function getEmbeddings(bForceRefresh = false) {
 	if (bForceRefresh || !cachedEmbeddingsObject) {
-		const resp = await api.fetchApi('/jnodes_model_items?type=embeddings');
+		const resp = await api.fetchApi('/jnodes_model_items?type=embeddings', { cache: "no-store" });
 		const asJson = await resp.json();
 		//console.log("Size of embeddings info: " + JSON.stringify(asJson).length)
 		cachedLorasObject = asJson;

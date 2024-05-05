@@ -14,26 +14,26 @@ app.registerExtension({
 				{
 					// Load the previous file (because I don't want to write a new api hook to copy)
 					const resp = await api.fetchApi(
-						'/jnodes_load_text', { method: "POST", body: JSON.stringify({ "path": path }) });
+						'/jnodes_load_text', { method: "POST", body: JSON.stringify({ "path": path }), cache: "no-store" });
 					const asJson = await resp?.json();
 
 					// Try to save a backup as .txt.bak but don't worry about verifying it
 					if (asJson?.text) {
 						const resp = await api.fetchApi(
-							'/jnodes_save_text', { method: "POST", body: JSON.stringify({ "path": path + ".bak", "text": asJson.text }) });
+							'/jnodes_save_text', { method: "POST", body: JSON.stringify({ "path": path + ".bak", "text": asJson.text }), cache: "no-store" });
 					}
 				}
 
 				// Then save the new text
 				const resp = await api.fetchApi(
-					'/jnodes_save_text', { method: "POST", body: JSON.stringify({ "path": path, "text": text }) });
+					'/jnodes_save_text', { method: "POST", body: JSON.stringify({ "path": path, "text": text }), cache: "no-store" });
 				const asJson = await resp?.json();
 				return asJson?.success;
 			}
 
 			async function loadText(path, textWidget, bUserRequested) {
 				const resp = await api.fetchApi(
-					'/jnodes_load_text', { method: "POST", body: JSON.stringify({ "path": path }) });
+					'/jnodes_load_text', { method: "POST", body: JSON.stringify({ "path": path }), cache: "no-store" });
 				const asJson = await resp?.json();
 
 				if (asJson?.success && textWidget?.element) {
