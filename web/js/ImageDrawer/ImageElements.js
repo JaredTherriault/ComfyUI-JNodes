@@ -26,7 +26,6 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		$el("div.imageElement", {
 			bComplete: false,
 			style: {
-				width: 'calc(var(--drawer-width) / var(--column-count))',
 				borderRadius: '4px'
 			}
 		});

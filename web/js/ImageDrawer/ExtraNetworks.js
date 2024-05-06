@@ -69,7 +69,6 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			style: {
 				textAlign: 'center',
 				objectFit: 'var(--div-fit, contain)',
-				width: 'calc(var(--drawer-width) / var(--column-count))',
 				borderRadius: '4px',
 				position: "relative",
 				aspectRatio: setting_ModelCardAspectRatio.value,
