@@ -10,7 +10,7 @@ import {
 	setting_bEnabled, setting_bMasterVisibility, setting_DrawerAnchor,
 	createFlyoutHandle, createLabeledSliderRange, options_LabeledSliderRange
 } from "../common/SettingsManager.js";
-import { clearAndExecuteSearch, createSearchBar, executeSearchWithEnteredSearchText, getImageListElement, setSearchTextAndExecute } from "./ImageListAndSearch.js";
+import { clearAndExecuteSearch, createSearchBar, getImageListElement, setSearchTextAndExecute } from "./ImageListAndSearch.js";
 
 // Attribution: pythongsssss's Image Feed. So much brilliance in that original script.
 
@@ -167,6 +167,8 @@ app.registerExtension({
 	name: "JNodes.ImageDrawer",
 	async setup() {
 
+		console.log(app.extensions);
+
 		setupUiSettings((e) => { setDrawerAnchor(e.target.value); });
 
 		// A button shown in the comfy modal to show the drawer after it's been hidden
@@ -208,7 +210,10 @@ app.registerExtension({
 
 		// The main drawer widget
 		imageDrawer = $el("div.JNodes-image-drawer", {
-			parent: document.body
+			parent: document.body,
+			style: {
+
+			}
 		});
 
 		// Initialize Anchor
@@ -250,8 +255,54 @@ app.registerExtension({
 				createSearchBar(), SearchBarClearButton, RandomizeButton
 			]);
 
+		const LeftAffinedControlsGroup = $el("div.JNodes-image-drawer-left-affined-basic-controls-group", {
+			style: {
+				display: "flex",
+				justifycontent: "flex-start",
+			}
+		}, [hideButton, DrawerOptionsFlyout]);
+
+		const CollapseExpandButton = $el("button.JNodes-image-drawer-menu-collapsible-area-toggle-button", {
+			title: "Toggle the visibility of the controls below",
+			textContent: "v",
+			style: {
+				background: "none",
+				border: "none",
+				padding: "0px 6px",
+				color: "white",
+				fontWeight: "bolder",
+				cursor: 'pointer',
+			}
+		});
+		CollapseExpandButton.classList.add("JNodes-interactive-container");
+
+		// Add click event listener to toggle button
+		CollapseExpandButton.addEventListener('click', function () {
+			const bIsCurrentlyCollapsed = CollapseExpandButton.textContent === ">";
+
+			// Toggle content display
+			CollapsibleArea.style.visibility =
+				bIsCurrentlyCollapsed ? 'visible' : 'collapse';
+
+			// Toggle button arrow orientation
+			CollapseExpandButton.textContent = bIsCurrentlyCollapsed ? "v" : ">";
+		});
+
+		const RightAffinedControlsGroup = $el("div.JNodes-image-drawer-left-affined-basic-controls-group", {
+			style: {
+				display: "flex",
+				justifycontent: "flex-start",
+			}
+		}, [CollapseExpandButton]);
+
 		const BasicControlsGroup =
-			$el("div.JNodes-image-drawer-basic-controls-group", [hideButton, DrawerOptionsFlyout]);
+			$el("div.JNodes-image-drawer-basic-controls-group", {
+				style: {
+					display: "flex",
+					justifyContent: "space-between",
+					alignItems: "center",
+				}
+			}, [LeftAffinedControlsGroup, RightAffinedControlsGroup]);
 
 		DrawerOptionsFlyout.determineTransformLayout(); // Call immediately after parenting to avoid first caling being from the center
 
@@ -265,7 +316,7 @@ app.registerExtension({
 			const context = ContextSelector.createContextSelector();
 			context.style.width = '50%';
 
-			const DropDownComboContainer = $el("div", {
+			const DropDownComboContainer = $el("div.JNodes-context-sorting-menu", {
 				style: {
 					display: "flex",
 					flexDirection: "row"
@@ -274,6 +325,17 @@ app.registerExtension({
 
 			return DropDownComboContainer;
 		}
+
+		const CollapsibleArea = $el("div.JNodes-image-drawer-menu-collapsible-area", {
+			style: {
+				transformOrigin: "50% 0%",
+				flex: "0 1 auto"
+			}
+		}, [
+			makeDropDownComboContainer(),
+			SearchBarGroup,
+			ImageDrawerContextToolbar,
+		]);
 
 		const ImageDrawerMenu =
 			$el("div.JNodes-image-drawer-menu", {
@@ -289,9 +351,7 @@ app.registerExtension({
 				},
 			}, [
 				BasicControlsGroup,
-				makeDropDownComboContainer(),
-				SearchBarGroup,
-				ImageDrawerContextToolbar,
+				CollapsibleArea
 			]);
 		imageDrawer.append(ImageDrawerMenu, getImageListElement());
 
