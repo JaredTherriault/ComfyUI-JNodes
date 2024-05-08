@@ -1,5 +1,5 @@
 import { app } from "../../../../scripts/app.js";
-import { pasteToTextArea } from "./Utilities.js";
+import { utilitiesInstance } from "./Utilities.js";
 import * as VideoControl from './VideoControl.js';
 
 // Mouse tracking
@@ -138,7 +138,7 @@ document.addEventListener("drop", (event) => {
 					event.preventDefault();
 					event.stopPropagation();
 
-					pasteToTextArea(itemString.split("=")[1], event.target, event.target.selectionStart, event.target.selectionEnd);
+					utilitiesInstance.pasteToTextArea(itemString.split("=")[1], event.target, event.target.selectionStart, event.target.selectionEnd);
 				}
 			})
 		}

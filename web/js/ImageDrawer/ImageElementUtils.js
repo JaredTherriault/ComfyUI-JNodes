@@ -6,16 +6,14 @@ import { getElementUnderPointer } from "../common/EventManager.js";
 import { getPngMetadata } from "/scripts/pnginfo.js";
 
 import { setting_bKeyListAllowDenyToggle, setting_KeyList, createFlyoutHandle } from "../common/SettingsManager.js";
-import { executeSearchWithEnteredSearchText, getImageListElement, removeElementFromImageList } from "./ImageListAndSearch.js";
 
 import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 
-import {
-    getMaxZIndex, createDarkContainer, copyToClipboard,
-    SortJsonObjectByKeys, isValid
-} from "../common/Utilities.js";
+import { utilitiesInstance } from "../common/Utilities.js";
 
 import { setting_FontSize, setting_FontFamily } from "../TextareaFontControl.js"
+
+import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
 
 const toolTipOffsetX = 10; // Adjust the offset from the mouse pointer
 const toolTipOffsetY = 10;
@@ -27,7 +25,7 @@ export let toolButtonContainer;
 
 export function createToolTip(imageElement) {
 
-    const zIndex = imageElement ? getMaxZIndex(imageElement) : 1001;
+    const zIndex = imageElement ? utilitiesInstance.getMaxZIndex(imageElement) : 1001;
     const fontSize = setting_FontSize.value;
 
     toolTip = $el("div", {
@@ -186,7 +184,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 let positive_prompt = imageElementToUse?.promptMetadata?.positive_prompt;
                                 if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
                                 if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
-                                copyToClipboard(positive_prompt);
+                                utilitiesInstance.copyToClipboard(positive_prompt);
                                 // removeOptionsMenu();
                                 e.preventDefault();
                             }
@@ -215,7 +213,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                             function (e) {
                                 if (data.startsWith('"')) { data = data.slice(1); }
                                 if (data.endsWith('"')) { data = data.slice(0, data.length - 1); }
-                                copyToClipboard(data);
+                                utilitiesInstance.copyToClipboard(data);
                                 // removeOptionsMenu();
                                 e.preventDefault();
                             }
@@ -229,17 +227,17 @@ export function getOrCreateToolButton(imageElementToUse) {
     }
 
     if (!toolButtonContainer) {
-        toolButtonContainer = createDarkContainer("imageToolsButton", "0%");
+        toolButtonContainer = utilitiesInstance.createDarkContainer("imageToolsButton", "0%");
     }
 
     const handleClassSuffix = '.imageElement-flyout-handle';
     const menuClassSuffix = '.imageElement-flyout-menu';
-    const parentRect = getImageListElement().getBoundingClientRect();
+    const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+    const parentRect = imageDrawerListInstance.getImageListElement().getBoundingClientRect();
     const flyout = createFlyoutHandle("⋮", handleClassSuffix, menuClassSuffix, parentRect);
 
     toolButtonContainer.style.top = '2%';
     toolButtonContainer.style.right = '2%';
-    toolButtonContainer.style.visibility = "hidden";
 
     while (toolButtonContainer.firstChild) {
         toolButtonContainer.removeChild(toolButtonContainer.firstChild);
@@ -272,6 +270,64 @@ export function removeAndHideToolButtonFromImageElement(imageElementToUse) {
         document.body.appendChild(toolButtonContainer);
         toolButtonContainer.style.visibility = "hidden";
     }
+}
+
+export function addCheckboxSelectorToImageElement(imageElementToUse) {
+
+    if (!imageElementToUse) {
+        return;
+    }
+
+    if (!imageElementToUse.checkboxSelector) {
+
+        imageElementToUse.bIsCheckboxSelectorChecked = false;
+
+        imageElementToUse.checkboxSelector = $el("input", {
+            type: "checkbox",
+            checked: false,
+            oninput: (e) => {
+                imageElementToUse.setSelected(e.target.checked);
+            },
+            style: {
+                position: 'absolute',
+                top: '2%',
+                left: '2%',
+            }
+        });
+ 
+        imageElementToUse.appendChild(imageElementToUse.checkboxSelector);
+
+        imageElementToUse.setSelected = function (bNewCheckedState, bUpdateBatchSelectionWidget) {
+            imageElementToUse.bIsCheckboxSelectorChecked = bNewCheckedState;
+            if (imageElementToUse.checkboxSelector) {
+                imageElementToUse.checkboxSelector.checked = bNewCheckedState;
+            }
+            imageElementToUse.onSelectionChanged(bUpdateBatchSelectionWidget);
+        };
+
+        imageElementToUse.onSelectionChanged = async function (bUpdateBatchSelectionWidget = true) {
+
+            if (imageElementToUse.img) {
+                imageElementToUse.img.style.filter = imageElementToUse.bIsCheckboxSelectorChecked ? "blur(5px) hue-rotate(310deg)" : "blur(0px) hue-rotate(0deg)";
+            }
+
+            if (bUpdateBatchSelectionWidget) {
+                const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+                batchSelectionManagerInstance.updateWidget();
+            }
+        }
+    }
+
+    imageElementToUse.checkboxSelector.style.visibility = "visible";
+}
+
+export function hideImageElementCheckboxSelector(imageElementToUse) {
+
+    if (!imageElementToUse || !imageElementToUse.checkboxSelector) {
+        return;
+    }
+
+    imageElementToUse.checkboxSelector.style.visibility = "hidden";
 }
 
 export async function onLoadImageElement(imageElement) {
@@ -337,7 +393,8 @@ export async function onLoadImageElement(imageElement) {
         }
 
         if (imageElement.fileInfo.bShouldApplySearch == true) {
-            executeSearchWithEnteredSearchText();
+            const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+            imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
             imageElement.fileInfo.bShouldApplySearch = false;
         }
     }
@@ -391,7 +448,7 @@ export function getDisplayTextFromMetadata(metadata) {
 }
 
 export function makeTooltipWidgetFromMetadata(metadata) {
-    if (isValid(metadata)) {
+    if (utilitiesInstance.isValid(metadata)) {
         return null;
     }
 
@@ -530,7 +587,7 @@ export function setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata
         imageElement.displayData.AspectRatio = imageElement.displayData.FileDimensions[0] / imageElement.displayData.FileDimensions[1];
     }
 
-    imageElement.displayData = SortJsonObjectByKeys(imageElement.displayData);
+    imageElement.displayData = utilitiesInstance.SortJsonObjectByKeys(imageElement.displayData);
 
     const toolTipWidget = makeTooltipWidgetFromMetadata(metadata);
 
@@ -542,11 +599,6 @@ export function setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata
     if (elementUnderMouse && elementUnderMouse == imageElement.img) {
         imageElement.mouseOverEvent();
     }
-
-    // Show/Hide tooltip
-    imageElement.addEventListener("mouseover", imageElement.mouseOverEvent);
-
-    imageElement.addEventListener("mouseout", imageElement.mouseOutEvent);
 
     // Finally, set search terms on the element
     imageElement.searchTerms += " " + getDisplayTextFromMetadata(metadata);

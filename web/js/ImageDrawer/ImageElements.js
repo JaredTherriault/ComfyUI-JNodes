@@ -1,10 +1,7 @@
 import { api } from "/scripts/api.js";
 import { $el } from "/scripts/ui.js";
 
-import {
-	decodeReadableStream,
-	getCurrentSecondsFromEpoch, SortJsonObjectByKeys
-} from "../common/Utilities.js";
+import { utilitiesInstance } from "../common/Utilities.js";
 
 import { isPointerDown } from "../common/EventManager.js";
 import { createModal } from "../common/ModalManager.js";
@@ -13,7 +10,8 @@ import { setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
 import { onScrollVideo, setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen } from "../common/VideoControl.js";
 
 import * as ImageElementUtils from "./ImageElementUtils.js";
-import { removeElementFromImageList } from "./ImageListAndSearch.js";
+
+import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
 
 
 export async function createImageElementFromFileInfo(fileInfo) {
@@ -38,10 +36,12 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 		// Only show tooltip if a mouse button is not being held
 		if (!isPointerDown() && !ImageElementUtils.toolButtonContainer?.contains(event.target)) {
-			ImageElementUtils.updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
+			ImageElementUtils.addCheckboxSelectorToImageElement(imageElement);
 			ImageElementUtils.addToolButtonToImageElement(imageElement);
+			ImageElementUtils.updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
 		}
 	}
+	imageElement.addEventListener("mouseover", imageElement.mouseOverEvent);
 
 	imageElement.mouseOutEvent = function (event) {
 		if (!event) { return; }
@@ -51,22 +51,34 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		// If the new actively moused over element is not a child of imageElement, then hide the button
 		if (!imageElement.contains(event.relatedTarget)) {
 			ImageElementUtils.removeAndHideToolButtonFromImageElement(imageElement);
+			ImageElementUtils.hideImageElementCheckboxSelector(imageElement);
 		}
 	}
+	imageElement.addEventListener("mouseout", imageElement.mouseOutEvent);
 
-	imageElement.deleteItem = async function () {
+	imageElement.deleteItem = async function (bNotifyImageListChanged = true) {
 
 		const deleteCall = imageElement.fileInfo.href.replace("jnodes_view_image", "jnodes_delete_item");
 		const response = await api.fetchApi(deleteCall, { method: "DELETE" });
 
 		let jsonResponse;
-		try { 
-			const decodedString = await decodeReadableStream(response.body);
-			jsonResponse = JSON.parse(decodedString) 
+		try {
+			const decodedString = await utilitiesInstance.decodeReadableStream(response.body);
+			jsonResponse = JSON.parse(decodedString)
 		} catch (error) { console.error("Could not parse json from response."); }
 
 		if (jsonResponse && jsonResponse.success && jsonResponse.success == true) {
-			removeElementFromImageList(imageElement); // If it was deleted, remove it from the list
+			const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+
+			if (bNotifyImageListChanged) {
+				imageDrawerListInstance.notifyStartChangingImageList();
+			}
+
+			imageDrawerListInstance.removeElementFromImageList(imageElement); // If it was deleted, remove it from the list
+			
+			if (bNotifyImageListChanged) {
+				imageDrawerListInstance.notifyFinishChangingImageList();
+			}
 		}
 	}
 
@@ -75,58 +87,11 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		dataSrc: href,
 		preload: "metadata",
 		lastSeekTime: 0.0,
+		style: {
+			transition: "100ms",
+		},
 		onload: () => { ImageElementUtils.onLoadImageElement(imageElement); }, // Still / animated images
-		onloadedmetadata: () => { ImageElementUtils.onLoadImageElement(imageElement); } // Videos
-	});
-
-	imageElement.img = img;
-
-	img.forceLoad = function () {
-		img.src = img.dataSrc;
-
-		if (bIsVideoFormat) {
-			setVideoPlaybackRate(img, setting_VideoPlaybackOptions.value.defaultPlaybackRate); // This gets reset when src is reset
-		}
-	}
-
-	img.initVideo = function () {
-
-		img.type = fileInfo.file?.format || undefined;
-		img.autoplay = false; // Start false, will autoplay via observer
-		img.loop = setting_VideoPlaybackOptions.value.loop;
-		img.controls = setting_VideoPlaybackOptions.value.controls;
-		img.muted = setting_VideoPlaybackOptions.value.muted;
-		setVideoVolume(img, setting_VideoPlaybackOptions.value.defaultVolume);
-		setVideoPlaybackRate(img, setting_VideoPlaybackOptions.value.defaultPlaybackRate);
-	}
-
-	imageElement.forceLoad = function () {
-		img.forceLoad();
-	}
-
-	if (fileInfo.bShouldForceLoad) {
-		imageElement.forceLoad(); // Immediately load img if we don't want to lazy load (like in feed)
-	}
-
-	// Placeholder dimensions
-	if (fileInfo.file?.metadata_read) {
-		if (!imageElement.displayData) {
-			imageElement.displayData = {};
-		}
-		imageElement.displayData.FileDimensions = fileInfo.file.dimensions;
-
-		imageElement.displayData.AspectRatio = imageElement.displayData.FileDimensions[0] / imageElement.displayData.FileDimensions[1];
-		imageElement.style.aspectRatio = imageElement.displayData.AspectRatio;
-	} else {
-		//If we can't properly placehold, load the whole image now instead of later
-		imageElement.forceLoad();
-	}
-
-	const aElement = $el("a", {
-		target: "_blank",
-		href: href,
-		draggable: false,
-		download: fileInfo.filename,
+		onloadedmetadata: () => { ImageElementUtils.onLoadImageElement(imageElement); }, // Videos
 		onclick: async (e) => {
 			e.preventDefault();
 
@@ -179,7 +144,48 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		}
 	});
 
-	imageElement.appendChild(aElement);
+	imageElement.img = img;
+
+	img.forceLoad = function () {
+		img.src = img.dataSrc;
+
+		if (bIsVideoFormat) {
+			setVideoPlaybackRate(img, setting_VideoPlaybackOptions.value.defaultPlaybackRate); // This gets reset when src is reset
+		}
+	}
+
+	img.initVideo = function () {
+
+		img.type = fileInfo.file?.format || undefined;
+		img.autoplay = false; // Start false, will autoplay via observer
+		img.loop = setting_VideoPlaybackOptions.value.loop;
+		img.controls = setting_VideoPlaybackOptions.value.controls;
+		img.muted = setting_VideoPlaybackOptions.value.muted;
+		setVideoVolume(img, setting_VideoPlaybackOptions.value.defaultVolume);
+		setVideoPlaybackRate(img, setting_VideoPlaybackOptions.value.defaultPlaybackRate);
+	}
+
+	imageElement.forceLoad = function () {
+		img.forceLoad();
+	}
+
+	if (fileInfo.bShouldForceLoad) {
+		imageElement.forceLoad(); // Immediately load img if we don't want to lazy load (like in feed)
+	}
+
+	// Placeholder dimensions
+	if (fileInfo.file?.metadata_read) {
+		if (!imageElement.displayData) {
+			imageElement.displayData = {};
+		}
+		imageElement.displayData.FileDimensions = fileInfo.file.dimensions;
+
+		imageElement.displayData.AspectRatio = imageElement.displayData.FileDimensions[0] / imageElement.displayData.FileDimensions[1];
+		imageElement.style.aspectRatio = imageElement.displayData.AspectRatio;
+	} else {
+		//If we can't properly placehold, load the whole image now instead of later
+		imageElement.forceLoad();
+	}
 
 	if (!imageElement.displayData) {
 		imageElement.displayData = {};
@@ -204,15 +210,15 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		imageElement.bIsVideoFormat = bIsVideoFormat;
 	}
 
-	aElement.appendChild(img);
+	imageElement.appendChild(img);
 
 	// Sorting meta information
 	imageElement.filename = fileInfo.filename;
 	imageElement.fileType = imageElement.filename.split(".")[1];
-	imageElement.file_age = fileInfo.file?.file_age || getCurrentSecondsFromEpoch(); // todo: fix for feed images
+	imageElement.file_age = fileInfo.file?.file_age || utilitiesInstance.getCurrentSecondsFromEpoch(); // todo: fix for feed images
 	imageElement.displayData.FileSize = fileInfo.file?.file_size || -1;
 
-	imageElement.displayData = SortJsonObjectByKeys(imageElement.displayData);
+	imageElement.displayData = utilitiesInstance.SortJsonObjectByKeys(imageElement.displayData);
 
 	imageElement.searchTerms = href; // Search terms to start with, onload will add more
 
@@ -223,6 +229,10 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		ImageElementUtils.removeAndHideToolButtonFromImageElement(imageElement);
 		ImageElementUtils.hideToolTip();
 	});
+
+	// Selection
+	ImageElementUtils.addCheckboxSelectorToImageElement(imageElement);
+	ImageElementUtils.hideImageElementCheckboxSelector(imageElement);
 
 	return imageElement;
 }

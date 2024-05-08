@@ -1,6 +1,6 @@
 import { api } from "/scripts/api.js"
 import { app } from "/scripts/app.js";
-import { pasteToTextArea } from "../common/Utilities.js"
+import { utilitiesInstance } from "../common/Utilities.js"
 
 // Node that allows you to tunnel connections for cleaner graphs
 
@@ -47,7 +47,7 @@ app.registerExtension({
 						// Set the selection range to cover the entire content of the textarea
 						textWidget.element.setSelectionRange(0, textWidget.element.textLength);
 
-						pasteToTextArea(asJson.text, textWidget.element, textWidget.element.selectionStart, textWidget.element.selectionEnd);
+						utilitiesInstance.pasteToTextArea(asJson.text, textWidget.element, textWidget.element.selectionStart, textWidget.element.selectionEnd);
 
 					} else {
 						textWidget.value = asJson.text;

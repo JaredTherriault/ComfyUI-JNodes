@@ -5,22 +5,15 @@ import * as ExtraNetworks from "./ExtraNetworks.js";
 import * as ImageElements from "./ImageElements.js";
 import * as Sorting from "./Sorting.js";
 import { getCurrentContextName, getCurrentContextObject } from "./ContextSelector.js";
-import {
-	setColumnCount, setDrawerHeight, setDrawerWidth, setContextToolbarWidget
-} from "./ImageDrawer.js"
 
-import {
-	getImageListChildren, replaceImageListChildren, clearImageListChildren,
-	addElementToImageList, setImageListScrollLevel, setSearchTextAndExecute,
-	clearAndExecuteSearch
-} from "./ImageListAndSearch.js"
-
-import { decodeReadableStream } from "../common/Utilities.js"
+import { utilitiesInstance } from "../common/Utilities.js"
 
 import {
 	createLabeledCheckboxToggle, createLabeledSliderRange, createVideoPlaybackOptionsFlyout,
 	options_LabeledCheckboxToggle, options_LabeledSliderRange, setting_ModelCardAspectRatio
 } from "../common/SettingsManager.js";
+
+import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
 
 let Contexts;
 
@@ -104,10 +97,12 @@ class ImageDrawerContext {
 	async switchToContext(bSkipRestore = false) {
 		const bSuccessfulRestore = bSkipRestore || await this.checkAndRestoreContextCache();
 		if (!bSuccessfulRestore) {
-			clearAndExecuteSearch(); // Reset search if no cache
+			const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+			imageDrawerSearchInstance.clearAndExecuteSearch(); // Reset search if no cache
 		}
 
-		setContextToolbarWidget(await this.makeToolbar());
+		const imageDrawerMainInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerMain");
+		imageDrawerMainInstance.setContextToolbarWidget(await this.makeToolbar());
 
 		return bSuccessfulRestore;
 	}
@@ -127,18 +122,23 @@ class ImageDrawerContext {
 	async checkAndRestoreContextCache() {
 		if (this.hasCache()) {
 			if (this.cache.imageListElements.length > 0) {
+
+				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+				const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+				const imageDrawerMainInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerMain");
+
 				// Replace children
-				replaceImageListChildren(this.cache.imageListElements);
+				imageDrawerListInstance.replaceImageListChildren(this.cache.imageListElements);
 				// Execute Search
-				setSearchTextAndExecute(this.cache.searchBarText);
+				imageDrawerSearchInstance.setSearchTextAndExecute(this.cache.searchBarText);
 				// Drawer column count and size
-				setColumnCount(this.cache.columnCount);
-				setDrawerWidth(this.cache.drawerWidth);
-				setDrawerHeight(this.cache.drawerHeight);
+				imageDrawerMainInstance.setColumnCount(this.cache.columnCount);
+				imageDrawerMainInstance.setDrawerWidth(this.cache.drawerWidth);
+				imageDrawerMainInstance.setDrawerHeight(this.cache.drawerHeight);
 				// Restore sort type
 				Sorting.setOptionSelectedFromOptionName(this.cache.sortType);
 				// Restore scroll level
-				setImageListScrollLevel(this.cache.scrollLevel);
+				imageDrawerListInstance.setImageListScrollLevel(this.cache.scrollLevel);
 
 				return true;
 			}
@@ -230,16 +230,18 @@ class ContextModel extends ContextRefreshable {
 	async getModels(bForceRefresh = false) { }
 
 	async loadModels(bForceRefresh = false) {
-		clearImageListChildren();
-		await addElementToImageList($el("label", { textContent: `Loading ${this.name}...` }));
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		imageDrawerListInstance.clearImageListChildren();
+		await imageDrawerListInstance.addElementToImageList($el("label", { textContent: `Loading ${this.name}...` }));
 		let modelDicts = await this.getModels(bForceRefresh);
 		if (this.shouldCancelAsyncOperation()) { return; }
-		clearImageListChildren(); // Remove loading indicator
+		imageDrawerListInstance.clearImageListChildren(); // Remove loading indicator
 		//console.log("modelDicts: " + JSON.stringify(loraDicts));
 		const modelKeys = Object.keys(modelDicts);
 		if (modelKeys.length > 0) {
 			let count = 0;
 			let maxCount = 0;
+			imageDrawerListInstance.notifyStartChangingImageList();
 			for (const modelKey of modelKeys) {
 				if (this.shouldCancelAsyncOperation()) { break; }
 
@@ -248,13 +250,17 @@ class ContextModel extends ContextRefreshable {
 				if (element == undefined) {
 					console.log("Attempting to add undefined element for model named: " + modelKey + " with dict: " + JSON.stringify(modelDicts[modelKey]));
 				}
-				await addElementToImageList(element);
+				await imageDrawerListInstance.addElementToImageList(element);
 				count++;
 			}
+			imageDrawerListInstance.notifyFinishChangingImageList();
 		}
 		else {
-			await addElementToImageList($el("label", { textContent: "No models were found." }));
+			imageDrawerListInstance.notifyStartChangingImageList();
+			await imageDrawerListInstance.addElementToImageList($el("label", { textContent: "No models were found." }));
+			imageDrawerListInstance.notifyFinishChangingImageList();
 		}
+
 	}
 
 	async switchToContext() {
@@ -276,9 +282,10 @@ class ContextModel extends ContextRefreshable {
 		options.step = 0.01;
 		options.bIncludeValueLabel = true;
 		options.valueLabelFractionalDigits = 2;
-		options.oninput = (e) => {
+		options.oninput = async (e) => {
 			setting_ModelCardAspectRatio.value = e.target.valueAsNumber;
-			for (let element of getImageListChildren()) {
+			const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+			for (let element of imageDrawerListInstance.getImageListChildren()) {
 				if (element.classList.contains('extraNetworksCard')) {
 					element.style.aspectRatio = setting_ModelCardAspectRatio.value;
 				}
@@ -318,7 +325,8 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 	// Get the image paths in the folder or directory specified at this.folderName 
 	// as well as all subfolders then load the images in a given subfolder
 	async fetchFolderItems(path_to_load_images_from = '') {
-		clearImageListChildren();
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		imageDrawerListInstance.clearImageListChildren();
 		const withOrWithout = this.bIncludeSubfolders ? "with" : "without";
 
 		// todo: Python cancellation needs some work
@@ -335,7 +343,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		// 	},
 		// });
 
-		await addElementToImageList(
+		await imageDrawerListInstance.addElementToImageList(
 			$el('div', [
 				$el("label", {
 					textContent:
@@ -353,7 +361,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		let decodedString;
 		try {
 			// Decode into a string
-			decodedString = await decodeReadableStream(allItems.body);
+			decodedString = await utilitiesInstance.decodeReadableStream(allItems.body);
 
 			this.fileMap = JSON.parse(decodedString);
 		} catch (e) {
@@ -420,7 +428,8 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		if (this.shouldCancelAsyncOperation()) { return; }
 
 		const bIsRoot = folder_path === '';
-		clearImageListChildren();
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		imageDrawerListInstance.clearImageListChildren();
 		const values = Object.values(this.fileMap);
 
 		const bUseBatching = false;
@@ -450,7 +459,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 				bShouldApplySearch: false,
 			});
 			if (element !== undefined) {
-				await addElementToImageList(element);
+				await imageDrawerListInstance.addElementToImageList(element);
 			} else {
 				console.log(`Attempted to add undefined image element in ${this.name}`);
 			}
@@ -487,11 +496,13 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 
 				async function processFilesInBatches(files, batchSize, delayBetweenBatches) {
 					const batchPromises = [];
+					imageDrawerListInstance.notifyStartChangingImageList();
 					for (let i = 0; i < files.length; i += batchSize) {
 						const fileBatch = files.slice(i, i + batchSize);
 						batchPromises.push(processBatch(fileBatch));
 						await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
 					}
+					imageDrawerListInstance.notifyFinishChangingImageList();
 					return Promise.all(batchPromises);
 				}
 
@@ -506,6 +517,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 
 			await Promise.all(promises);
 		} else {
+			imageDrawerListInstance.notifyStartChangingImageList();
 			for (let valueIndex = 0; valueIndex < values.length; valueIndex++) {
 				if (this.shouldCancelAsyncOperation()) { break; }
 
@@ -524,6 +536,7 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 					break;
 				}
 			}
+			imageDrawerListInstance.notifyFinishChangingImageList();
 		}
 
 		Sorting.sortWithCurrentType();
@@ -621,8 +634,10 @@ export class ContextFeed extends ContextClearable {
 	}
 
 	async addNewUncachedFeedImages(bShouldSort = true, bShouldApplySearch = true) {
-		const imageListLength = getImageListChildren().length;
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageListLength = imageDrawerListInstance.getImageListChildren().length;
 		if (imageListLength < this.feedImages.length) {
+			imageDrawerListInstance.notifyStartChangingImageList();
 			for (let imageIndex = imageListLength; imageIndex < this.feedImages.length; imageIndex++) {
 				if (this.shouldCancelAsyncOperation()) { break; }
 
@@ -633,21 +648,24 @@ export class ContextFeed extends ContextClearable {
 				const element = await ImageElements.createImageElementFromFileInfo(fileInfo);
 				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
 				const bHandleSearch = false;
-				await addElementToImageList(element, bHandleSearch);
+				await imageDrawerListInstance.addElementToImageList(element, bHandleSearch);
 			}
+			imageDrawerListInstance.notifyFinishChangingImageList();
 		}
 	}
 
 	async switchToContext() {
 		if (!await super.switchToContext()) {
-			clearImageListChildren();
+			const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+			imageDrawerListInstance.clearImageListChildren();
 		}
 
 		await this.addNewUncachedFeedImages(false);
 	}
 
 	async onClearClicked() {
-		clearImageListChildren();
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		imageDrawerListInstance.clearImageListChildren();
 		this.feedImages = [];
 	}
 
@@ -726,7 +744,8 @@ export class ContextCompare extends ContextClearable {
 
 	async switchToContext() {
 		if (!await super.switchToContext()) {
-			clearImageListChildren();
+			const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+			imageDrawerListInstance.clearImageListChildren();
 		}
 
 		//await this.addNewUncachedFeedImages();

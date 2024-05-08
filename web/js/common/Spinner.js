@@ -1,6 +1,6 @@
-import { addStylesheet } from "./Utilities.js";
+import { utilitiesInstance } from "./Utilities.js";
 
-addStylesheet(import.meta.url);
+utilitiesInstance.addStylesheet(import.meta.url);
 
 export function createSpinner() {
 	const div = document.createElement("div");

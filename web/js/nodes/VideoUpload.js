@@ -2,14 +2,14 @@ import { app } from "/scripts/app.js";
 import { api } from '/scripts/api.js';
 import { ComfyWidgets } from "/scripts/widgets.js";
 import { AcceptableFileTypes } from "./VideoPreview.js";
-import { loadFileFromURL } from "../common/Utilities.js";
+import { utilitiesInstance } from "../common/Utilities.js";
 
 function mediaUpload(node, inputName, inputData, app) {
 	const mediaWidget = node.widgets.find((w) => w.name === "media");
 	const typeWidget = node.widgets.find((w) => w.name === "upload_to_directory");
 	let uploadWidget;
 
-	console.log(mediaWidget);
+	//console.log(mediaWidget);
 
 	// Clear widget value if temp since it didn't survive the relaunch
 	if (mediaWidget.value != undefined && mediaWidget.value.startsWith("temp/")) {
@@ -227,7 +227,7 @@ function mediaUpload(node, inputName, inputData, app) {
 					}
 
 					fileUrlItem.getAsString(async (value) => {
-						let file = await loadFileFromURL(value);
+						let file = await utilitiesInstance.loadFileFromURL(value);
 
 						if (!filename) {
 							// Set filename from url maybe

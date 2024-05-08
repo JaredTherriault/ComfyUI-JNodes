@@ -1,5 +1,5 @@
 import { app } from "../../../scripts/app.js";
-import { pasteToTextArea } from "./common/Utilities.js";
+import { utilitiesInstance } from "./common/Utilities.js";
 
 // Allows you to edit the attention weight by holding ctrl (or cmd) and using the up/down arrow keys
 
@@ -143,7 +143,7 @@ app.registerExtension({
 			inputField.selectionStart = start;
 			inputField.selectionEnd = end;
 			
-			pasteToTextArea(updatedText, inputField, start, end);
+			utilitiesInstance.pasteToTextArea(updatedText, inputField, start, end);
 
 			inputField.selectionStart = start;
 			inputField.selectionEnd = start + updatedText.length;

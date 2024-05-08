@@ -1,15 +1,9 @@
 import { $el } from "/scripts/ui.js";
-import { api } from "/scripts/api.js";
 
 import * as Contexts from "./Contexts.js";
 import * as Sorting from "./Sorting.js";
-import {
-	getColumnCount, getDrawerHeight, getDrawerWidth
-} from "./ImageDrawer.js"
 
-import {
-	focusAndSelectSearchText, getSearchText, getImageListChildren, getImageListScrollLevel
-} from "./ImageListAndSearch.js"
+import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
 
 let ContextSelector;
 
@@ -44,13 +38,19 @@ export function setOptionSelected(option) {
 export async function onOptionSelected(selectedValue) {
 	//		console.log("ContextSelector selectedValue:" + selectedValue);
 
+	const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+
 	// Create cache for previously selected option
 	if (lastSelectedContextOption) {
-		const childNodesArray = Array.from(getImageListChildren());
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const childNodesArray = Array.from(imageDrawerListInstance.getImageListChildren());
+
+		const imageDrawerMainInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerMain");
+
 		const newCache =
 			new Contexts.ImageDrawerContextCache(
-				getImageListScrollLevel(), getSearchText(), 
-				getColumnCount(), getDrawerWidth(), getDrawerHeight(), 
+				imageDrawerListInstance.getImageListScrollLevel(), imageDrawerSearchInstance.getSearchText(),
+				imageDrawerMainInstance.getColumnCount(), imageDrawerMainInstance.getDrawerWidth(), imageDrawerMainInstance.getDrawerHeight(),
 				childNodesArray, Sorting.getCurrentSortTypeName());
 		Contexts.getContextObjectFromName(lastSelectedContextOption)?.setCache(newCache);
 	}
@@ -63,7 +63,7 @@ export async function onOptionSelected(selectedValue) {
 
 	// Setup sorting
 	Sorting.setSortingOptionsFromSortTypeArray(NewContext.getSupportedSortTypes());
-	
+
 	const sortType = NewContext.getDesiredSortType();
 	if (sortType && typeof sortType === 'object') {
 		Sorting.setOptionSelectedFromSortType(sortType.type, sortType.bIsAscending);
@@ -71,8 +71,11 @@ export async function onOptionSelected(selectedValue) {
 		Sorting.setOptionSelectedFromOptionName(sortType);
 	}
 
+	const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+	batchSelectionManagerInstance.updateWidget();
+
 	// Automatically focus search bar and select text to save user a click
-	focusAndSelectSearchText();
+	imageDrawerSearchInstance.focusAndSelectSearchText();
 }
 
 export function createContextSelector() {
@@ -93,7 +96,7 @@ export function createContextSelector() {
 	}
 
 	// Add an event listener for the "change" event
-	ContextSelector.addEventListener("change", async function() {
+	ContextSelector.addEventListener("change", async function () {
 		const selectedValue = ContextSelector.value;
 		onOptionSelected(selectedValue);
 		// await api.fetchApi(

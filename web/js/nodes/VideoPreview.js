@@ -2,7 +2,7 @@ import { $el } from "/scripts/ui.js";
 
 import { app } from '/scripts/app.js'
 import { api } from '/scripts/api.js'
-import { SortJsonObjectByKeys } from "../common/Utilities.js";
+import { utilitiesInstance } from "../common/Utilities.js";
 
 const VideoTypes = [
 	"video/webm", "video/mp4", "video/ogg", // Video formats
@@ -191,7 +191,7 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 					return value;
 				};
 
-				inDisplayData = SortJsonObjectByKeys(inDisplayData);
+				inDisplayData = utilitiesInstance.SortJsonObjectByKeys(inDisplayData);
 				const payloadString = JSON.stringify(inDisplayData, FileDimensionStringifier, 4); // Pretty formatting
 
 				if (payloadString) {

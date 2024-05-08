@@ -1,6 +1,6 @@
 import { $el } from "/scripts/ui.js";
 
-import { getImageListChildren, replaceImageListChildren } from "./ImageListAndSearch.js";
+import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
 
 let SortingWidget;
 let SortTypes;
@@ -98,13 +98,16 @@ export class SortType {
 
 		imageListChildren.sort(this.getSortingLambda());
 
-		replaceImageListChildren(imageListChildren);
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		imageDrawerListInstance.replaceImageListChildren(imageListChildren);
 	}
 
 	getSortingLambda() { }
 
 	getSortableChildren() {
-		let imageListChildren = getImageListChildren();
+
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		let imageListChildren = imageDrawerListInstance.getImageListChildren();
 
 		return Array.from(imageListChildren);
 	}

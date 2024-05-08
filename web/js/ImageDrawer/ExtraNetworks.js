@@ -1,9 +1,9 @@
 import { api } from "/scripts/api.js";
 import { $el } from "/scripts/ui.js";
-import { copyToClipboard, createDarkContainer, getDarkColor } from "../common/Utilities.js"
+import { utilitiesInstance } from "../common/Utilities.js"
 
-import { setSearchTextAndExecute } from "./ImageListAndSearch.js";
 import { setting_ModelCardAspectRatio } from "../common/SettingsManager.js";
+import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
 
 const NoImagePlaceholder = new URL(`../assets/NoImage.png`, import.meta.url);
 
@@ -224,7 +224,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			textContent: 'No preview images found',
 		});
 
-		const imageCounterElement = createDarkContainer();
+		const imageCounterElement = utilitiesInstance.createDarkContainer();
 
 		imageCounterElement.style.top = '2%';
 		imageCounterElement.style.right = '2%';
@@ -284,7 +284,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 						}),
 						`Copy lora as a1111-style text + trained words (${copyAllText})`,
 						function (e) {
-							copyToClipboard(copyAllText)
+							utilitiesInstance.copyToClipboard(copyAllText)
 							e.preventDefault();
 						},
 						`modelInsertText=${copyAllText}`
@@ -302,7 +302,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 						}),
 						`Copy trained words (${trainedWords})`,
 						function (e) {
-							copyToClipboard(trainedWords)
+							utilitiesInstance.copyToClipboard(trainedWords)
 							e.preventDefault();
 						},
 						`modelInsertText=${trainedWords}`
@@ -321,7 +321,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 					}),
 					bIsLora ? `Copy lora as a1111-style text (${copyModelText})` : `Copy embedding as comfy-style text (${copyModelText})`,
 					function (e) {
-						copyToClipboard(copyModelText)
+						utilitiesInstance.copyToClipboard(copyModelText)
 						e.preventDefault();
 					},
 					`modelInsertText=${copyModelText}`
@@ -371,7 +371,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			}
 		});
 
-		const buttonToolbarContainerElement = createDarkContainer();
+		const buttonToolbarContainerElement = utilitiesInstance.createDarkContainer();
 
 		buttonToolbarContainerElement.style.top = '2%';
 		buttonToolbarContainerElement.style.left = '2%';
@@ -403,8 +403,9 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				})
 			]);
 
-			buttonElement.addEventListener('click', () => {
-				setSearchTextAndExecute(tagName);
+			buttonElement.addEventListener('click', async () => {
+				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+				imageDrawerListInstance.setSearchTextAndExecute(tagName);
 			});
 
 			return buttonElement;
@@ -428,7 +429,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				bottom: 0,
 				left: 0,
 				width: "100%",
-				backgroundColor: getDarkColor(),
+				backgroundColor: utilitiesInstance.getDarkColor(),
 				minHeight: '15%',
 				maxHeight: '90%',
 				display: 'flex',

@@ -1,3 +1,5 @@
+import { utilitiesInstance } from "./Utilities.js";
+
 export function isElementVideo(element) {
     return element && element.tagName === 'VIDEO';
 }
@@ -19,7 +21,7 @@ export function toggleVideoMute(video) {
 }
 
 export function setVideoVolume(video, percentage) {
-    video.volume = clamp(percentage / 100, 0.0, 1.0); // Slider is 1-100, volume is 0-1
+    video.volume = utilitiesInstance.clamp(percentage / 100, 0.0, 1.0); // Slider is 1-100, volume is 0-1
 }
 
 export function toggleVideoFullscreen(video) {
@@ -31,7 +33,7 @@ export function toggleVideoFullscreen(video) {
 }
 
 export function setVideoPlaybackRate(video, rate) {
-    video.playbackRate = clamp(rate, 0.05, 100.00);
+    video.playbackRate = utilitiesInstance.clamp(rate, 0.05, 100.00);
 }
 
 export function seekVideo(video, delta) {
@@ -39,10 +41,10 @@ export function seekVideo(video, delta) {
 
     const maxTime = video.duration;
     const currentTime = video.currentTime;
-    const seekStep = clamp(maxTime / 100, 1, 10); // Seek multiplier: 1 sec min / 1% of video / 10 sec max
+    const seekStep = utilitiesInstance.clamp(maxTime / 100, 1, 10); // Seek multiplier: 1 sec min / 1% of video / 10 sec max
 
     let newTime = currentTime + (delta * seekStep);
-    newTime = clamp(newTime, 0, maxTime); // Clamp within valid range
+    newTime = utilitiesInstance.clamp(newTime, 0, maxTime); // utilitiesInstance.clamp within valid range
 
     video.currentTime = newTime; // Seek the video to the new time
 };

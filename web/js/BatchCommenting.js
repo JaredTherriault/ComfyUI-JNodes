@@ -1,7 +1,7 @@
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
 import { ConfigSetting, addJNodesSetting } from "./common/SettingsManager.js"
-import { clamp, getKeyList, pasteToTextArea } from "./common/Utilities.js"
+import { utilitiesInstance } from "./common/Utilities.js"
 
 function getModifierKeyCombos() {
 	return [
@@ -112,11 +112,11 @@ function toggleTextAtTheBeginningOfEachSelectedLine(text, textarea) {
 		}
 		const modifiedText = lines.join('\n');
 
-		pasteToTextArea(modifiedText, textarea, selectionStart, selectionEnd);
+		utilitiesInstance.pasteToTextArea(modifiedText, textarea, selectionStart, selectionEnd);
 
 		// Restore original selection + offsets from adding/removing comment text
-		textarea.selectionStart = clamp(originalSelectionStart + selectionStartOffset, 0, textarea.value.length);
-		textarea.selectionEnd = clamp(originalSelectionEnd + selectionEndOffset, textarea.selectionStart, textarea.value.length);
+		textarea.selectionStart = utilitiesInstance.clamp(originalSelectionStart + selectionStartOffset, 0, textarea.value.length);
+		textarea.selectionEnd = utilitiesInstance.clamp(originalSelectionEnd + selectionEndOffset, textarea.selectionStart, textarea.value.length);
 
 		// Restore scroll position, as it can change when commenting or uncommenting a lot of lines
 		textarea.scrollTop = scrollPosition;
@@ -157,7 +157,7 @@ app.registerExtension({
 						setFontOnAllTextAreas();
 					},
 				},
-				getKeyList().map((m) =>
+				utilitiesInstance.getKeyList().map((m) =>
 					$el("option", {
 						value: m,
 						textContent: m,

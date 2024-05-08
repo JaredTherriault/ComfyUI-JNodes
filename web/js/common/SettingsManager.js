@@ -4,8 +4,9 @@ import { $el } from "/scripts/ui.js";
 import { app } from "/scripts/app.js";
 
 import { info_VideoPlaybackOptions, options_VideoPlayback } from "../common/VideoOptions.js";
-import { getVideoElements } from "./Utilities.js";
-import { getImageListChildren } from "../ImageDrawer/ImageListAndSearch.js";
+import { utilitiesInstance } from "./Utilities.js";
+
+import { imageDrawerComponentManagerInstance } from "../ImageDrawer/Core/ImageDrawerModule.js";
 
 export const defaultKeyList = "prompt, workflow";
 
@@ -307,7 +308,9 @@ export function createFlyoutHandle(handleText, handleClassSuffix = '', menuClass
         let transformOriginX = "0%";
         let transformOriginY = "0%";
 
-        const bIsHandleInTopHalf = handleRect.top < (parentRect.innerHeight || parentRect.height) / 2;
+        const halfHeight = (parentRect.innerHeight || parentRect.height) / 2;
+
+        const bIsHandleInTopHalf = handleRect.top < halfHeight;
         if (bIsHandleInTopHalf) {
             // Menu is in the top half of the viewport
             menu.style.top = "0";
@@ -321,14 +324,16 @@ export function createFlyoutHandle(handleText, handleClassSuffix = '', menuClass
             menu.style.maxHeight = `${handleRect.top - parentRect.top - 50}px`;
         }
 
-        const bIsHandleInLeftHalf = handleRect.left < (parentRect.innerWidth || parentRect.width) / 2;
+        const halfWidth = (parentRect.innerWidth || parentRect.width) / 2;
+
+        const bIsHandleInLeftHalf = handleRect.left < halfWidth;
         if (bIsHandleInLeftHalf) {
-            // Menu is in the top half of the viewport
+            // Menu is in the left half of the viewport
             menu.style.left = "0";
             menu.style.right = "auto";
             menu.style.maxWidth = `${parentRect.right - handleRect.left - 50}px`;
         } else {
-            // Menu is in the bottom half of the viewport
+            // Menu is in the right half of the viewport
             transformOriginX = "100%";
             menu.style.right = "0";
             menu.style.left = "auto";
@@ -347,9 +352,10 @@ export function createVideoPlaybackOptionsMenuWidgets(menu) {
 
     const infos = new info_VideoPlaybackOptions();
 
-    function callForEachCallbackOnEachElementInImageList(propertyName, propertyValue, info) {
-        for (let child of getImageListChildren()) {
-            for (let element of getVideoElements(child)) {
+    async function callForEachCallbackOnEachElementInImageList(propertyName, propertyValue, info) {
+        const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+        for (let child of imageDrawerListInstance.getImageListChildren()) {
+            for (let element of utilitiesInstance.getVideoElements(child)) {
                 info.forEachElement(element, propertyName, propertyValue);
             }
         }
@@ -434,6 +440,7 @@ class options_BaseLabeledWidget {
     labelTextContent = undefined;
     oninput = undefined;
     onchange = undefined;
+    bPlaceLabelAfterMainElement = false;
 
     bindEvents(widget) {
         if (this.oninput) {
@@ -458,7 +465,11 @@ export class options_LabeledSliderRange extends options_BaseLabeledWidget {
     step = 1;
 }
 
-export function createLabeledSliderRange(options = new options_LabeledSliderRange()) {
+export function createLabeledSliderRange(options = null) {
+
+    if (!options) {
+        options = new options_LabeledSliderRange();
+    }
 
     let valueLabelElement;
 
@@ -505,15 +516,25 @@ export function createLabeledSliderRange(options = new options_LabeledSliderRang
         }
     });
 
+    const LabelWidget = $el('label', { textContent: options.labelTextContent });
+
+    if (!options.bPlaceLabelAfterMainElement) {
+
+        OuterElement.appendChild(LabelWidget);
+    }
+
     if (options.bPrependValueLabel && valueLabelElement) {
         OuterElement.appendChild(valueLabelElement);
     }
-
-    OuterElement.appendChild($el('label', { textContent: options.labelTextContent }));
     OuterElement.appendChild(MainElement);
 
     if (!options.bPrependValueLabel && valueLabelElement) { //append otherwise
         OuterElement.appendChild(valueLabelElement);
+    }
+
+    if (options.bPlaceLabelAfterMainElement) {
+
+        OuterElement.appendChild(LabelWidget);
     }
 
     OuterElement.getMainElement = function () {
@@ -530,7 +551,11 @@ export class options_LabeledNumberInput extends options_BaseLabeledWidget {
     step = 1;
 }
 
-export function createLabeledNumberInput(options = new options_LabeledNumberInput()) {
+export function createLabeledNumberInput(options = null) {
+
+    if (!options) {
+        options = new options_LabeledNumberInput();
+    }
 
     let MainElement = $el('input', {
         id: options.id,
@@ -575,8 +600,19 @@ export function createLabeledNumberInput(options = new options_LabeledNumberInpu
         }
     });
 
-    OuterElement.appendChild($el('label', { textContent: options.labelTextContent }));
+    const LabelWidget = $el('label', { textContent: options.labelTextContent });
+
+    if (!options.bPlaceLabelAfterMainElement) {
+
+        OuterElement.appendChild(LabelWidget);
+    }
+
     OuterElement.appendChild(MainElement);
+
+    if (options.bPlaceLabelAfterMainElement) {
+
+        OuterElement.appendChild(LabelWidget);
+    }
 
     OuterElement.getMainElement = function () {
         return MainElement;
@@ -589,7 +625,11 @@ export class options_LabeledCheckboxToggle extends options_BaseLabeledWidget {
     checked = false;
 }
 
-export function createLabeledCheckboxToggle(options = new options_LabeledCheckboxToggle()) {
+export function createLabeledCheckboxToggle(options = null) {
+
+    if (!options) {
+        options = new options_LabeledCheckboxToggle();
+    }
 
     let MainElement = $el('input', {
         id: options.id,
@@ -604,10 +644,21 @@ export function createLabeledCheckboxToggle(options = new options_LabeledCheckbo
             display: 'flex',
             alignItems: 'center'
         }
-    }, [
-        $el('label', { textContent: options.labelTextContent }),
-        MainElement
-    ]);
+    });
+
+    const LabelWidget = $el('label', { textContent: options.labelTextContent });
+
+    if (!options.bPlaceLabelAfterMainElement) {
+
+        OuterElement.appendChild(LabelWidget);
+    }
+
+    OuterElement.appendChild(MainElement);
+
+    if (options.bPlaceLabelAfterMainElement) {
+
+        OuterElement.appendChild(LabelWidget);
+    }
 
     OuterElement.getMainElement = function () {
         return MainElement;
