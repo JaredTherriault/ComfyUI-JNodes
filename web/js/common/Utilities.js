@@ -32,7 +32,7 @@ class JNodesUtilities {
 		});
 	}
 
-	setElementVisible = (element, bNewVisible) => {
+	setElementVisible(element, bNewVisible) {
 		if (!element) { return; }
 		element.style.display = bNewVisible ? "unset" : "none";
 	}

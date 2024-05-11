@@ -13,6 +13,8 @@ import {
 
 import { ImageDrawerComponent, ClassInstanceFactory, imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
 
+import { utilitiesInstance } from "../common/Utilities.js";
+
 // Attribution: pythongsssss's Image Feed. So much brilliance in that original script.
 
 class ImageDrawerMain extends ImageDrawerComponent {
@@ -186,9 +188,9 @@ class ImageDrawerMain extends ImageDrawerComponent {
 				display: setting_bMasterVisibility.value == true ? "none" : "unset",
 			},
 		});
-		showButton.addEventListener("click", function () {
-			this.imageDrawer.style.display = "block";
-			showButton.style.display = "none";
+		showButton.addEventListener("click", () => {
+			utilitiesInstance.setElementVisible(this.imageDrawer, true);
+			utilitiesInstance.setElementVisible(showButton, false);
 			setting_bMasterVisibility.value = true;
 		});
 		document.querySelector(".comfy-settings-btn").after(showButton); // insert Show after Settings
@@ -201,8 +203,8 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		const hideButton = $el("button.JNodes-image-drawer-btn.hide-btn", {
 			textContent: "❌",
 			onclick: () => {
-				this.imageDrawer.style.display = "none";
-				showButton.style.display = "unset";
+				utilitiesInstance.setElementVisible(this.imageDrawer, false);
+				utilitiesInstance.setElementVisible(showButton, true);
 				setting_bMasterVisibility.value = false;
 			},
 			style: {
