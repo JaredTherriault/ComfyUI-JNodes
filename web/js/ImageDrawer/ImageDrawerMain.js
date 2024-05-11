@@ -179,25 +179,25 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 		setupUiSettings((e) => { this.setDrawerAnchor(e.target.value); });
 
+		if (!setting_bEnabled.value) {
+			return;
+		}
+
 		// A button shown in the comfy modal to show the drawer after it's been hidden
 		const showButton = $el("button.comfy-settings-btn", {
 			textContent: "🖼️",
 			style: {
 				right: "16px",
 				cursor: "pointer",
-				display: setting_bMasterVisibility.value == true ? "none" : "unset",
 			},
 		});
+		utilitiesInstance.setElementVisible(showButton, !setting_bMasterVisibility.value);
 		showButton.addEventListener("click", () => {
-			utilitiesInstance.setElementVisible(this.imageDrawer, true);
+			utilitiesInstance.setElementVisible(this.imageDrawer, true, "flex");
 			utilitiesInstance.setElementVisible(showButton, false);
 			setting_bMasterVisibility.value = true;
 		});
 		document.querySelector(".comfy-settings-btn").after(showButton); // insert Show after Settings
-
-		if (!setting_bEnabled.value) {
-			return;
-		}
 
 		// Remove the drawer widget from view, can be re-opened with showButton
 		const hideButton = $el("button.JNodes-image-drawer-btn.hide-btn", {
@@ -229,26 +229,6 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		// Resizing / View options
 		this.createDrawerOptionsFlyout();
 
-		// Search bar
-		const SearchBarClearButton = $el("button.JNodes-search-bar-clear-btn", {
-			textContent: "❌",
-			title: "Clear Search",
-			onclick: imageDrawerListInstance.clearAndExecuteSearch
-		});
-
-		async function onClickSearchRandomizeButton() {
-			let loraDicts = await ExtraNetworks.getLoras();
-			const loraKeys = Object.keys(loraDicts);
-			const randomIndex = Math.floor(Math.random() * loraKeys.length);
-			imageDrawerSearchInstance.setSearchTextAndExecute(loraKeys[randomIndex]);
-		}
-
-		const RandomizeButton = $el("button.JNodes-search-randomize-btn", {
-			textContent: "🎲",
-			title: "Random Suggestion",
-			onclick: onClickSearchRandomizeButton
-		});
-
 		const SearchBarGroup =
 			$el("div.JNodes-search-bar-group", {
 				style: {
@@ -257,7 +237,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 					flexDirection: 'row',
 				}
 			}, [
-				imageDrawerSearchInstance.createSearchBar(), SearchBarClearButton, RandomizeButton
+				imageDrawerSearchInstance.createSearchBar(), imageDrawerSearchInstance.createSearchBarClearButton(), imageDrawerSearchInstance.createSearchRandomizeButton()
 			]);
 
 		const LeftAffinedControlsGroup = $el("div.JNodes-image-drawer-left-affined-basic-controls-group", {

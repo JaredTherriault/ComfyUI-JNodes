@@ -14,6 +14,7 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 	}
 
 	createSearchBar() {
+		
 		this.searchBarElement = $el("input", {
 			type: "text",
 			id: "SearchInput",
@@ -28,6 +29,29 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 		this.searchBarElement?.addEventListener('input', () => { this.executeSearchWithEnteredSearchText(); });
 
 		return this.searchBarElement;
+	}
+
+	createSearchBarClearButton() {
+
+		return $el("button.JNodes-search-bar-clear-btn", {
+			textContent: "❌",
+			title: "Clear Search",
+			onclick: () => { this.clearAndExecuteSearch(); }
+		});
+	}
+
+	createSearchRandomizeButton() {
+
+		return $el("button.JNodes-search-randomize-btn", {
+			textContent: "🎲",
+			title: "Random Suggestion",
+			onclick: async () => {
+				let loraDicts = await ExtraNetworks.getLoras();
+				const loraKeys = Object.keys(loraDicts);
+				const randomIndex = Math.floor(Math.random() * loraKeys.length);
+				imageDrawerSearchInstance.setSearchTextAndExecute(loraKeys[randomIndex]);
+			}
+		});
 	}
 
 	clearSearch() {

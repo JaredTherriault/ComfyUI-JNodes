@@ -32,9 +32,9 @@ class JNodesUtilities {
 		});
 	}
 
-	setElementVisible(element, bNewVisible) {
+	setElementVisible(element, bNewVisible, customVisibleType = "unset") {
 		if (!element) { return; }
-		element.style.display = bNewVisible ? "unset" : "none";
+		element.style.display = bNewVisible ? customVisibleType : "none";
 	}
 
 	getVideoElements(parentElement) {
