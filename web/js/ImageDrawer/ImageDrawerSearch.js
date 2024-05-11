@@ -25,7 +25,7 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 		});
 
 		// Attach the handleSearch function to the input's 'input' event
-		this.searchBarElement?.addEventListener('input', this.executeSearchWithEnteredSearchText);
+		this.searchBarElement?.addEventListener('input', () => { this.executeSearchWithEnteredSearchText(); });
 
 		return this.searchBarElement;
 	}
@@ -64,7 +64,7 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 	}
 
 	// Function to execute seach with an explicit searchTerm
-	async executeSearch(searchTerm) {
+	executeSearch(searchTerm) {
 
 		// Provision search string
 		const sanitizedSearchTerm = searchTerm.toLowerCase().trim();
