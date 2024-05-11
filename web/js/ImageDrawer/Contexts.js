@@ -311,23 +311,80 @@ class ContextModel extends ContextRefreshable {
 	}
 }
 
-class ContextSubFolderExplorer extends ContextRefreshable {
-	constructor(name, description, folderName, bShouldForceLoad = false) {
+class ContextSubdirectoryExplorer extends ContextRefreshable {
+	constructor(name, description, directoryName, bShouldForceLoad = false) {
 		super(name, description);
-		this.rootFolderName = folderName;
-		this.rootFolderDisplayName = '/root';
-		this.bIncludeSubfolders = false;
-		this.fileMap = null;
-		this.subfolderSelector = null;
+		this.rootDirectoryName = directoryName;
+		this.rootDirectoryDisplayName = '/root';
+		this.bIncludeSubdirectories = false;
+		this.fileList = null;
+		this.subdirectorySelector = null;
 		this.bShouldForceLoad = bShouldForceLoad; // Whether or not to lazy load. Lazy load = !bShouldForceLoad
 	}
 
+	async updateSubdirectorySelectorOptions() {
+
+		// Fill out combo box options based on paths
+		const lastSelectedValue = this.subdirectorySelector.value; // Cache last selection
+		this.subdirectorySelector.innerHTML = ""; // Clear combo box
+
+		// Indicate loading
+		const loadingIndicator = document.createElement("option");
+		loadingIndicator.value = "Loading...";
+		loadingIndicator.textContent = "Loading...";
+		loadingIndicator.title = "Loading...";
+		this.subdirectorySelector.appendChild(loadingIndicator);
+		this.subdirectorySelector.value = loadingIndicator.value;
+
+		const subdirectoriesResponse = await api.fetchApi(
+			`/jnodes_list_comfyui_subdirectories?root_directory=${this.rootDirectoryName}`, { method: "GET", cache: "no-store" });
+
+		let subdirectories;
+		try {
+			// Decode into a string
+			const decodedString = await utilitiesInstance.decodeReadableStream(subdirectoriesResponse.body);
+
+			const asJson = JSON.parse(decodedString);
+
+			if (asJson.success && asJson.payload) {
+				subdirectories = asJson.payload;
+			}
+		} catch (e) {
+			console.error(`Could not get list of files when loading "${this.rootDirectoryName}": ${e}`)
+		}
+
+		this.subdirectorySelector.innerHTML = ""; // Clear combo box
+
+		for (let directoryIndex = 0; directoryIndex < subdirectories.length; directoryIndex++) {
+			const bIsRoot = directoryIndex == 0;
+			const result = subdirectories[directoryIndex];
+
+			const option = document.createElement("option");
+			const path = bIsRoot ? this.rootDirectoryDisplayName : result;
+			option.value = bIsRoot ? '' : path;
+			option.textContent = path;
+			option.title = path;
+			this.subdirectorySelector.appendChild(option);
+		}
+
+		// Restore last selected value if it exists in the new combo options
+		for (let option of this.subdirectorySelector.options) {
+			// Check if the option's value is equal to the specific value
+			if (option.value === lastSelectedValue) {
+				// If found, set the flag to true and break out of the loop
+				this.subdirectorySelector.value = lastSelectedValue;
+				break;
+			}
+		}
+	}
+
 	// Get the image paths in the folder or directory specified at this.folderName 
-	// as well as all subfolders then load the images in a given subfolder
-	async fetchFolderItems(path_to_load_images_from = '') {
+	// as well as all subdirectories then load the images in a given subdirectory
+	async fetchFolderItems(selectedSubdirectory = "") {
+
 		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
 		imageDrawerListInstance.clearImageListChildren();
-		const withOrWithout = this.bIncludeSubfolders ? "with" : "without";
+		const withOrWithout = this.bIncludeSubdirectories ? "with" : "without";
 
 		// todo: Python cancellation needs some work
 		// const cancelButton = $el("button.JNodes-image-drawer-btn", {
@@ -347,113 +404,73 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 			$el('div', [
 				$el("label", {
 					textContent:
-						`Loading folder '${path_to_load_images_from || this.rootFolderName}' ${withOrWithout} subfolders...`
+						`Loading directory '${selectedSubdirectory || this.rootDirectoryName}' ${withOrWithout} subdirectories...`
 				}),
 				//cancelButton
 			])
 		);
+
+		await this.updateSubdirectorySelectorOptions();
+
 		const allItems = await api.fetchApi(
-			'/jnodes_comfyui_subfolder_items' +
-			`?root_folder=${this.rootFolderName}` +
-			`&start_getting_files_from_folder=${path_to_load_images_from}` +
-			`&include_subfolder_files=${this.bIncludeSubfolders}`, { cache: "no-store" });
+			'/jnodes_get_comfyui_subdirectory_images' +
+			`?root_directory=${this.rootDirectoryName}` +
+			`&selected_subdirectory=${selectedSubdirectory}` +
+			`&recursive=${this.bIncludeSubdirectories}`, { cache: "no-store" });
+
+		imageDrawerListInstance.clearImageListChildren();
 
 		let decodedString;
 		try {
 			// Decode into a string
 			decodedString = await utilitiesInstance.decodeReadableStream(allItems.body);
 
-			this.fileMap = JSON.parse(decodedString);
+			const asJson = JSON.parse(decodedString);
+
+			this.fileList = asJson.payload;
 		} catch (e) {
-			console.error(`Could not get list of files when loading "${this.rootFolderName}": ${e}`)
-			this.fileMap.clear(); // Set an empty map on failure. This allows the function to complete without further failures.
-		}
-
-		// Fill out combo box options based on folder paths
-		const lastSelectedValue = this.subfolderSelector.value; // Cache last selection
-		this.subfolderSelector.innerHTML = ''; // Clear combo box
-		for (let folderIndex = 0; folderIndex < this.fileMap.length; folderIndex++) {
-			const bIsRoot = folderIndex == 0;
-			const result = this.fileMap[folderIndex];
-
-			const option = document.createElement("option");
-			const folder_path = bIsRoot ? this.rootFolderDisplayName : result.folder_path;
-			option.value = bIsRoot ? '' : folder_path;
-			option.textContent = folder_path;
-			option.title = folder_path;
-			this.subfolderSelector.appendChild(option);
-		}
-
-		// Restore last selected value if it exists in the new combo options
-		for (let option of this.subfolderSelector.options) {
-			// Check if the option's value is equal to the specific value
-			if (option.value === lastSelectedValue) {
-				// If found, set the flag to true and break out of the loop
-				this.subfolderSelector.value = lastSelectedValue;
-				break;
-			}
+			console.error(`Could not get list of images when loading "${this.rootDirectoryName}": ${e}`)
+			this.fileList = []; // Set an empty list on failure. This allows the function to complete without further failures.
 		}
 
 		// Load root folder if no path is specified (even if there are no images within)
-		await this.loadImagesInFolder(path_to_load_images_from);
+		await this.loadImagesInFolder(selectedSubdirectory);
 	}
 
-	findFileMapByFolderPath(folder_path) {
+	async loadImagesInFolder(selectedSubdirectory) {
 
-		if (folder_path == '') {
-			return this.fileMap[0];
-		}
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
 
-		const values = Object.values(this.fileMap);
+		if (!this.fileList || this.fileList.length == 0) {
 
-		let foundValue;
-
-		for (const value of values) {
-			if (value.folder_path.includes(folder_path)) {
-				foundValue = value;
-				break;
+			let directory = this.rootDirectoryDisplayName;
+			if (selectedSubdirectory) {
+				directory += `/${selectedSubdirectory}`;
 			}
-		}
+			if (file.subdirectory) {
+				directory += `/${file.subdirectory}`;
+			}
 
-		if (foundValue) {
-			return foundValue;
-		} else {
-			console.error(`fileMap with name '${foundValue}' not found.`);
-			return null;
-		}
-	}
-
-	async loadImagesInFolder(folder_path) {
-		if (!this.fileMap) { return; }
+			await imageDrawerListInstance.addElementToImageList(
+				$el('div', [
+					$el("label", {
+						textContent:
+							`No images or videos found in '${directory}'`
+					}),
+					//cancelButton
+				])
+			);
+			return; }
+			
 		if (this.shouldCancelAsyncOperation()) { return; }
 
-		const bIsRoot = folder_path === '';
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
-		imageDrawerListInstance.clearImageListChildren();
-		const values = Object.values(this.fileMap);
 
-		const bUseBatching = false;
-
-		const evaluateGuardClauses = (value) => {
-			if (this.bIncludeSubfolders) {
-				if (!bIsRoot && !value.folder_path.startsWith(folder_path)) {
-					// If we want to include subfolders and we're not starting from root, require that value.folder_path starts with folder_path
-					return true;
-				}
-			} else {
-				if (!bIsRoot && value.folder_path != folder_path) {
-					// Require an exact match when not including subfolders
-					return true;
-				}
-			}
-		}
-
-		const createElementFromFile = async (file, value) => {
+		const createElementFromFile = async (file) => {
 			let element = await ImageElements.createImageElementFromFileInfo({
 				filename: file.item,
 				file: file,
-				type: this.rootFolderName,
-				subfolder: value.folder_path,
+				type: this.rootDirectoryName,
+				subdirectory: file.subdirectory ? `${selectedSubdirectory}/${file.subdirectory}` : selectedSubdirectory,
 				bShouldForceLoad: this.bShouldForceLoad,
 				bShouldSort: false,
 				bShouldApplySearch: false,
@@ -465,16 +482,13 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 			}
 		};
 
+		const bUseBatching = false;
 		if (bUseBatching) {
 			const promises = [];
-			for (let valueIndex = 0; valueIndex < values.length; valueIndex++) {
+			for (let valueIndex = 0; valueIndex < this.fileList.length; valueIndex++) {
 				if (this.shouldCancelAsyncOperation()) { break; }
 
-				const value = values[valueIndex];
-
-				if (evaluateGuardClauses(value)) {
-					continue;
-				}
+				const value = this.fileList[valueIndex];
 
 				const processBatch = async (fileBatch) => {
 					let processedElements = [];
@@ -509,32 +523,17 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 				const batchSize = 4;
 				const delayBetweenBatches = 0.1;
 				promises.push(processFilesInBatches(value.files, batchSize, delayBetweenBatches));
-
-				if (!this.bIncludeSubfolders) {
-					break;
-				}
 			}
 
 			await Promise.all(promises);
 		} else {
 			imageDrawerListInstance.notifyStartChangingImageList();
-			for (let valueIndex = 0; valueIndex < values.length; valueIndex++) {
+			for (let fileIndex = 0; fileIndex < this.fileList.length; fileIndex++) {
 				if (this.shouldCancelAsyncOperation()) { break; }
 
-				const value = values[valueIndex];
+				const file = this.fileList[fileIndex];
 
-				if (evaluateGuardClauses(value)) {
-					continue;
-				}
-
-				for (const file of value.files) {
-					await createElementFromFile(file, value);
-				}
-
-				// We only need one match if we're not including subfolders
-				if (!this.bIncludeSubfolders) {
-					break;
-				}
+				await createElementFromFile(file);
 			}
 			imageDrawerListInstance.notifyFinishChangingImageList();
 		}
@@ -552,50 +551,52 @@ class ContextSubFolderExplorer extends ContextRefreshable {
 		container.insertBefore(flyoutHandle, container.firstChild);
 		flyoutHandle.determineTransformLayout(); // Call immediately after parenting to avoid first caling being from the center
 
-		let includeSubfoldersToggleOptions = new options_LabeledCheckboxToggle();
-		includeSubfoldersToggleOptions.labelTextContent = 'Include Subfolders';
-		includeSubfoldersToggleOptions.id = 'IncludeSubfoldersToggle';
-		includeSubfoldersToggleOptions.checked = self.bIncludeSubfolders;
-		includeSubfoldersToggleOptions.oninput = async (e) => {
-			self.bIncludeSubfolders = e.target.checked;
-			await self.fetchFolderItems(self.subfolderSelector.value);
+		let includeSubdirectoriesToggleOptions = new options_LabeledCheckboxToggle();
+		includeSubdirectoriesToggleOptions.labelTextContent = 'Include Subdirectories';
+		includeSubdirectoriesToggleOptions.id = 'IncludeSubdirectoriesToggle';
+		includeSubdirectoriesToggleOptions.checked = self.bIncludeSubdirectories;
+		includeSubdirectoriesToggleOptions.oninput = async (e) => {
+			self.bIncludeSubdirectories = e.target.checked;
+			await self.fetchFolderItems(self.subdirectorySelector.value);
 		}
 
-		const IncludeSubfoldersToggle = createLabeledCheckboxToggle(includeSubfoldersToggleOptions);
+		const IncludeSubdirectoriesToggle = createLabeledCheckboxToggle(includeSubdirectoriesToggleOptions);
 
-		container.insertBefore(IncludeSubfoldersToggle, container.firstChild);
+		container.insertBefore(IncludeSubdirectoriesToggle, container.firstChild);
 
-		if (!this.subfolderSelector) {
-			this.subfolderSelector = $el("select", { //Inner container so it can maintain 'flex' display attribute
+		if (!this.subdirectorySelector) {
+			this.subdirectorySelector = $el("select", { //Inner container so it can maintain 'flex' display attribute
 				style: {
 					width: '100%',
 				}
 			});
 		}
 
-		this.subfolderSelector.addEventListener("change", async function () {
-			// Force subfolder inclusion off to avoid OOM - user must opt-in explicitly each time
-			self.bIncludeSubfolders = false;
-			IncludeSubfoldersToggle.getMainElement().checked = false;
+		this.subdirectorySelector.addEventListener("change", async function () {
+			// Force subdirectory inclusion off to avoid OOM - user must opt-in explicitly each time
+			self.bIncludeSubdirectories = false;
+			IncludeSubdirectoriesToggle.getMainElement().checked = false;
 			const selectedValue = this.value;
 			// await api.fetchApi(
 			// '/jnodes_request_task_cancellation', { method: "POST" }); // Cancel any outstanding python task
 			await self.fetchFolderItems(selectedValue);
 		});
 
-		container.insertBefore(this.subfolderSelector, container.firstChild);
+		container.insertBefore(this.subdirectorySelector, container.firstChild);
 
 		return container;
 	}
 
 	async switchToContext() {
 		if (!await super.switchToContext()) {
-			await this.fetchFolderItems();
+			await this.fetchFolderItems(); // updateSubdirectorySelector is called in fetchFolderItems
+			return;
 		}
+		await this.updateSubdirectorySelectorOptions(); //  If we're not calling fetchFolderItems because we're restoring a cache, call updateSubdirectorySelector
 	}
 
 	async onRefreshClicked() {
-		await this.fetchFolderItems(this.subfolderSelector.value);
+		await this.fetchFolderItems(this.subdirectorySelector.value);
 		await super.onRefreshClicked();
 	}
 
@@ -674,7 +675,7 @@ export class ContextFeed extends ContextClearable {
 	}
 }
 
-export class ContextTemp extends ContextSubFolderExplorer {
+export class ContextTemp extends ContextSubdirectoryExplorer {
 	constructor() {
 		const bShouldForceLoad = true; // These need to be searchable by meta data
 		super("Temp / History", "The generations you've created since the last comfyUI server restart", "temp", bShouldForceLoad);
@@ -685,13 +686,13 @@ export class ContextTemp extends ContextSubFolderExplorer {
 	}
 }
 
-export class ContextInput extends ContextSubFolderExplorer {
+export class ContextInput extends ContextSubdirectoryExplorer {
 	constructor() {
 		super("Input", "Images and videos found in your input folder", "input");
 	}
 }
 
-export class ContextOutput extends ContextSubFolderExplorer {
+export class ContextOutput extends ContextSubdirectoryExplorer {
 	constructor() {
 		const bShouldForceLoad = true; // These need to be searchable by meta data
 		super("Output", "Images and videos found in your output folder", "output", bShouldForceLoad);
@@ -718,11 +719,11 @@ export class ContextEmbeddings extends ContextModel {
 	}
 }
 
-export class ContextSavedPrompts extends ContextSubFolderExplorer {
+export class ContextSavedPrompts extends ContextSubdirectoryExplorer {
 	constructor() {
 		super(
 			"Saved Prompts",
-			"Images and videos found in the JNodes/saved_prompts folder and its subfolders. Title comes from filename",
+			"Images and videos found in the JNodes/saved_prompts folder and its subdirectories. Title comes from filename",
 			"JNodes/saved_prompts");
 	}
 }

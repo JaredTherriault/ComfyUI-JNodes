@@ -119,59 +119,96 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
     familiars.sort()
     return familiars
 
-def list_files_and_folders(root_folder, start_getting_files_from_folder, include_subfolder_files):
+def list_comfyui_subdirectories(root_directory):
+    results = []
+
+    def walk_through_subdirectories(in_directory):
+        """
+        Recursively list subdirectories within the specified directory.
+
+        Args:
+            in_directory (str): The directory to process.
+        """
+        if should_cancel_task():
+            return
+
+        full_directory = os.path.join(root_directory, in_directory)
+        if not os.path.isdir(full_directory):
+            return
+
+        results.append(in_directory)
+            
+        items = os.listdir(full_directory)
+                
+        for item in items:
+            if os.path.isdir(os.path.join(full_directory, item)):
+                walk_through_subdirectories(os.path.join(in_directory, item))
+
+    walk_through_subdirectories("")
+
+    results = sorted(results)
+
+    return results
+
+def list_comfyui_subdirectories_request(request):
+    CANCELLATION_REQUESTED = False
+    try:        
+
+        root_directory = convert_relative_comfyui_path_to_full_path(request.rel_url.query["root_directory"])
+
+        results = list_comfyui_subdirectories(root_directory)
+
+        return web.json_response({"success": True, "payload": results })
+    except Exception as e:
+        print(f"Error listing subdirectories: {e}")
+        return web.json_response({"success": False, "error": str(e)})
+
+def get_subdirectory_images(in_directory, recursive):
     
     """
-    List files and folders in the specified root folder, optionally including files from subfolders.
+    List images and directories in the specified root directory, optionally including files from subdirectories.
 
     Args:
-        root_folder (str): The root folder from which to start listing files and folders.
-        start_getting_files_from_folder (str): The folder from which to start including files.
-        include_subfolder_files (bool): Whether to include files from subfolders.
+        root_directory (str): The root directory from which to start listing files and directories.
+        recursive (bool): Whether to include images from subdirectories.
 
     Returns:
-        list: A list of dictionaries containing information about files and folders.
+        list: A list of dictionaries containing information about images.
     """
 
     from concurrent.futures import ThreadPoolExecutor
 
     results = []
 
-    def recurse(in_folder):
+    def walk_through_subdirectories_and_files(in_subdirectory):
         """
-        Recursively list files and folders within the specified folder.
+        Recursively list files and directories within the specified directory.
 
         Args:
-            in_folder (str): The folder to process.
+            in_subdirectory (str): The directory to process.
         """
         if should_cancel_task():
             return
 
-        full_folder = os.path.join(root_folder, in_folder)
-        if not os.path.isdir(full_folder):
+        full_directory = os.path.join(in_directory, in_subdirectory)
+        if not os.path.isdir(full_directory):
             return
             
-        items = os.listdir(full_folder)
-
-        include_files = (
-            in_folder == start_getting_files_from_folder or (
-                include_subfolder_files and f"{start_getting_files_from_folder}/" in in_folder))
+        items = os.listdir(full_directory)
     
-        # Separate files and folders
-        files = []
         def process_item(item):
             """
-            Process a single file or folder item.
+            Process a single file or directory item.
 
             Args:
-                item (str): The name of the file or folder.
+                item (str): The name of the file or directory.
             """
             if should_cancel_task():
                 return
 
-            file_path = os.path.join(full_folder, item)
-            if include_files and os.path.isfile(file_path) and is_acceptable_image_or_video_for_browser_display(item):
-                file_size = os.path.getsize(file_path)
+            full_path = os.path.join(full_directory, item)
+            if os.path.isfile(full_path) and is_acceptable_image_or_video_for_browser_display(item):
+                file_size = os.path.getsize(full_path)
                 dimensions = [0, 0]
                 frame_count = -1
                 fps = -1
@@ -181,7 +218,7 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
 
                 try:
                     if is_video_item:
-                        cap = cv2.VideoCapture(file_path)
+                        cap = cv2.VideoCapture(full_path)
                         if cap.isOpened():
                             width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -192,46 +229,46 @@ def list_files_and_folders(root_folder, start_getting_files_from_folder, include
 
                             cap.release()
                     else:
-                        with Image.open(file_path) as img:
+                        with Image.open(full_path) as img:
                             dimensions = img.size
                 except Exception as e:
                     metadata_read = False
-                    logger.warning(f"Unable to get meta for '{file_path}': {e}")
+                    logger.warning(f"Unable to get meta for '{full_path}': {e}")
 
-                file_age = os.path.getctime(file_path)
+                file_age = os.path.getctime(full_path)
                 file_format = f"{'video' if is_video_item else 'image'}/{get_file_extension_without_dot(item)}"
                 
-                files.append(
+                results.append(
                     {
                         'item': item, 'file_age': file_age, 'format': file_format, 'file_size': file_size, 'dimensions': dimensions,
-                        'is_video': is_video_item, 'metadata_read': metadata_read,
+                        'is_video': is_video_item, 'metadata_read': metadata_read, "subdirectory": in_subdirectory,
                         'frame_count': frame_count, 'fps': fps, 
                         'duration_in_seconds': frame_count / fps if frame_count > 1 and fps > 1 else -1
                     }
                 )
                  
-            elif os.path.isdir(os.path.join(full_folder, item)):
-                recurse(os.path.join(in_folder, item))
+            elif recursive and os.path.isdir(full_path):
+                walk_through_subdirectories_and_files(os.path.join(in_subdirectory, item))
 
         with ThreadPoolExecutor(max_workers=4) as executor:
             executor.map(process_item, items)
-    
-        results.append({'folder_path': f'{in_folder}', 'files': files})
         
-    recurse("")
-    
-    results.sort(key = lambda result: result['folder_path'])
+    walk_through_subdirectories_and_files("")
 
     return results
 
-def get_comfyui_subfolder_items(request):
+def get_comfyui_subdirectory_images_request(request):
     CANCELLATION_REQUESTED = False
-    root_folder = request.rel_url.query["root_folder"] or ""
-    start_getting_files_from_folder = request.rel_url.query["start_getting_files_from_folder"] or ""
-    include_subfolder_files = request.rel_url.query["include_subfolder_files"] == "true"
-    return web.json_response(
-        list_files_and_folders(
-            convert_relative_comfyui_path_to_full_path(root_folder), start_getting_files_from_folder, include_subfolder_files))
+    try:
+        root_directory = request.rel_url.query["root_directory"] or ""
+        selected_subdirectory = request.rel_url.query["selected_subdirectory"] or ""
+        recursive = request.rel_url.query["recursive"] == "true"
+        results = get_subdirectory_images(
+            os.path.join(convert_relative_comfyui_path_to_full_path(root_directory), selected_subdirectory), recursive)
+        return web.json_response({"success": True, "payload": results })
+    except Exception as e:
+        print(f"Error listing subdirectory images: {e}")
+        return web.json_response({"success": False, "error": str(e)})
 
 def view_image(request):
     type = "loras"
@@ -387,7 +424,7 @@ async def upload_image(request):
             return web.Response(status=400)
     except Exception as e:
         print(f"Error uploading image: {e}")
-        return web.json_response({"success": False})
+        return web.json_response({"success": False, "error": str(e)})
 
 async def save_model_config(request):
     type = "loras"
@@ -450,10 +487,10 @@ def load_info(request):
             try:
                 with open(file, 'r', encoding='utf-8') as opened_file:
                     loaded_text = opened_file.read()
-                return web.json_response({"success": True, "text" : loaded_text})
+                return web.json_response({"success": True, "payload" : loaded_text})
             except Exception as e:
                 print(f"Error loading text: {e}")
-                return web.json_response({"success": False, "text" : ''})
+                return web.json_response({"success": False, "error": str(e)})
 
     return web.Response(status=404)
 
@@ -473,7 +510,7 @@ async def save_text(request):
             return web.json_response({"success": True})
     except Exception as e:
         print(f"Error saving text: {e}")
-        return web.json_response({"success": False})
+        return web.json_response({"success": False, "error": str(e)})
 
 async def load_text(request):
     try:
@@ -484,10 +521,10 @@ async def load_text(request):
             with open(path, 'r', encoding='utf-8') as file:
                 loaded_text = file.read()
     
-            return web.json_response({"success": True, "text" : loaded_text})
+            return web.json_response({"success": True, "payload" : loaded_text})
     except Exception as e:
         print(f"Error loading text: {e}")
-        return web.json_response({"success": False, "text" : ''})
+        return web.json_response({"success": False, "error": str(e)})
 
 async def delete_item(request):
     def delete_file(path):
@@ -511,11 +548,11 @@ async def delete_item(request):
             else:
                 message = f"'{path}' is not a valid file."
                 print(message)
-                return web.json_response({"success": False, "type": "none", "message": message})
+                return web.json_response({"success": False, "message": message})
         except Exception as e:
             message = f"Error occurred while deleting '{path}': {e}"
             print(message)
-            return web.json_response({"success": False, "type": "none", "message": message})
+            return web.json_response({"success": False, "message": message})
 
     type = "loras"
     if "type" in request.rel_url.query:

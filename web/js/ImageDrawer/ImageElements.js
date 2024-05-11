@@ -16,7 +16,7 @@ import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js
 
 export async function createImageElementFromFileInfo(fileInfo) {
 	if (!fileInfo) { return; }
-	const href = `/jnodes_view_image?filename=${encodeURIComponent(fileInfo.filename)}&type=${fileInfo.type}&subfolder=${encodeURIComponent(fileInfo.subfolder)}&t=${+new Date()}`;
+	const href = `/jnodes_view_image?filename=${encodeURIComponent(fileInfo.filename)}&type=${fileInfo.type}&subfolder=${encodeURIComponent(fileInfo.subdirectory)}&t=${+new Date()}`;
 	fileInfo.href = href;
 	const bIsVideoFormat = fileInfo.file?.is_video || fileInfo.filename.endsWith(".mp4"); // todo: fetch acceptable video types from python
 
@@ -216,6 +216,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	imageElement.filename = fileInfo.filename;
 	imageElement.fileType = imageElement.filename.split(".")[1];
 	imageElement.file_age = fileInfo.file?.file_age || utilitiesInstance.getCurrentSecondsFromEpoch(); // todo: fix for feed images
+	imageElement.subdirectory = fileInfo.subdirectory || null;
 	imageElement.displayData.FileSize = fileInfo.file?.file_size || -1;
 
 	imageElement.displayData = utilitiesInstance.SortJsonObjectByKeys(imageElement.displayData);

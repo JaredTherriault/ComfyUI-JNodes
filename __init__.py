@@ -11,9 +11,13 @@ from .py.deprecated_nodes import *
 from aiohttp import web
 import server
 
-@server.PromptServer.instance.routes.get('/jnodes_comfyui_subfolder_items')
-async def get_comfyui_subfolder_items_wrapper(request):
-    return get_comfyui_subfolder_items(request)
+@server.PromptServer.instance.routes.get('/jnodes_list_comfyui_subdirectories')
+async def list_comfyui_subdirectories_wrapper(request):
+    return list_comfyui_subdirectories_request(request)
+
+@server.PromptServer.instance.routes.get('/jnodes_get_comfyui_subdirectory_images')
+async def get_comfyui_subdirectory_images_wrapper(request):
+    return get_comfyui_subdirectory_images_request(request)
 
 @server.PromptServer.instance.routes.get('/jnodes_model_items')
 async def get_model_items_wrapper(request):

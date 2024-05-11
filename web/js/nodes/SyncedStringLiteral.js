@@ -18,9 +18,9 @@ app.registerExtension({
 					const asJson = await resp?.json();
 
 					// Try to save a backup as .txt.bak but don't worry about verifying it
-					if (asJson?.text) {
+					if (asJson?.payload) {
 						const resp = await api.fetchApi(
-							'/jnodes_save_text', { method: "POST", body: JSON.stringify({ "path": path + ".bak", "text": asJson.text }), cache: "no-store" });
+							'/jnodes_save_text', { method: "POST", body: JSON.stringify({ "path": path + ".bak", "text": asJson.payload }), cache: "no-store" });
 					}
 				}
 
@@ -47,10 +47,10 @@ app.registerExtension({
 						// Set the selection range to cover the entire content of the textarea
 						textWidget.element.setSelectionRange(0, textWidget.element.textLength);
 
-						utilitiesInstance.pasteToTextArea(asJson.text, textWidget.element, textWidget.element.selectionStart, textWidget.element.selectionEnd);
+						utilitiesInstance.pasteToTextArea(asJson.payload, textWidget.element, textWidget.element.selectionStart, textWidget.element.selectionEnd);
 
 					} else {
-						textWidget.value = asJson.text;
+						textWidget.value = asJson.payload;
 					}
 
 					// Restore scroll position, as it can change
