@@ -16,7 +16,19 @@ import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js
 
 export async function createImageElementFromFileInfo(fileInfo) {
 	if (!fileInfo) { return; }
-	const href = `/jnodes_view_image?filename=${encodeURIComponent(fileInfo.filename)}&type=${fileInfo.type}&subfolder=${encodeURIComponent(fileInfo.subdirectory)}&t=${+new Date()}`;
+	let href = `/jnodes_view_image?`;
+	if (fileInfo.filename) {
+		href += `filename=${encodeURIComponent(fileInfo.filename)}&`;
+	}
+	if (fileInfo.type) {
+		href += `type=${fileInfo.type}&`;
+	}
+	if (fileInfo.subdirectory || fileInfo.subfolder) {
+		href += `subfolder=${encodeURIComponent(fileInfo.subdirectory || fileInfo.subfolder || "")}&`;
+	}
+
+	href += `t=${+new Date()}`; // Add Timestamp
+
 	fileInfo.href = href;
 	const bIsVideoFormat = fileInfo.file?.is_video || fileInfo.filename.endsWith(".mp4"); // todo: fetch acceptable video types from python
 
@@ -75,7 +87,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 			}
 
 			imageDrawerListInstance.removeElementFromImageList(imageElement); // If it was deleted, remove it from the list
-			
+
 			if (bNotifyImageListChanged) {
 				imageDrawerListInstance.notifyFinishChangingImageList();
 			}
