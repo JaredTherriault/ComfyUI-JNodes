@@ -102,6 +102,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		lastSeekTime: 0.0,
 		style: {
 			transition: "100ms",
+			cursor: bIsVideoFormat ? "default" : "pointer"
 		},
 		onload: () => { ImageElementUtils.onLoadImageElement(imageElement); }, // Still / animated images
 		onloadedmetadata: () => { ImageElementUtils.onLoadImageElement(imageElement); }, // Videos
@@ -116,8 +117,6 @@ export async function createImageElementFromFileInfo(fileInfo) {
 				function createModalContent() {
 					const modalImg = $el("img", {
 						src: href,
-						// Store the image source as a data attribute for easy access
-						'data-src': href,
 						style: {
 							position: 'relative',
 							width: '99vw',
