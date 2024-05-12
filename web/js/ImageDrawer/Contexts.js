@@ -14,6 +14,7 @@ import {
 } from "../common/SettingsManager.js";
 
 import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
+import { SearchableDropDown } from "../common/SearchableDropDown.js";
 
 let Contexts;
 
@@ -325,16 +326,13 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 	async updateSubdirectorySelectorOptions() {
 
 		// Fill out combo box options based on paths
-		const lastSelectedValue = this.subdirectorySelector.value; // Cache last selection
-		this.subdirectorySelector.innerHTML = ""; // Clear combo box
+		const lastSelectedValue = this.subdirectorySelector.data.getSelectedOptionName(); // Cache last selection
+		this.subdirectorySelector.data.clearOptions();
 
 		// Indicate loading
-		const loadingIndicator = document.createElement("option");
-		loadingIndicator.value = "Loading...";
-		loadingIndicator.textContent = "Loading...";
-		loadingIndicator.title = "Loading...";
-		this.subdirectorySelector.appendChild(loadingIndicator);
-		this.subdirectorySelector.value = loadingIndicator.value;
+		const loadingIndicatorText = "Loading...";
+		this.subdirectorySelector.data.addOptionUnique(loadingIndicatorText, loadingIndicatorText);
+		this.subdirectorySelector.data.setOptionSelected(loadingIndicatorText);
 
 		const subdirectoriesResponse = await api.fetchApi(
 			`/jnodes_list_comfyui_subdirectories?root_directory=${this.rootDirectoryName}`, { method: "GET", cache: "no-store" });
@@ -353,27 +351,27 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 			console.error(`Could not get list of files when loading "${this.rootDirectoryName}": ${e}`)
 		}
 
-		this.subdirectorySelector.innerHTML = ""; // Clear combo box
+		this.subdirectorySelector.data.clearOptions();
 
 		for (let directoryIndex = 0; directoryIndex < subdirectories.length; directoryIndex++) {
 			const bIsRoot = directoryIndex == 0;
 			const result = subdirectories[directoryIndex];
 
-			const option = document.createElement("option");
 			const path = bIsRoot ? this.rootDirectoryDisplayName : result;
-			option.value = bIsRoot ? '' : path;
-			option.textContent = path;
-			option.title = path;
-			this.subdirectorySelector.appendChild(option);
+
+			this.subdirectorySelector.data.addOptionUnique(path, bIsRoot ? '' : path);
 		}
 
 		// Restore last selected value if it exists in the new combo options
-		for (let option of this.subdirectorySelector.options) {
-			// Check if the option's value is equal to the specific value
-			if (option.value === lastSelectedValue) {
-				// If found, set the flag to true and break out of the loop
-				this.subdirectorySelector.value = lastSelectedValue;
-				break;
+		if (this.subdirectorySelector.data.hasOption(lastSelectedValue)) {
+
+			this.subdirectorySelector.data.setOptionSelected(lastSelectedValue);
+		} else {
+
+			// Otherwise just set it to the first option
+			const newOptionNames = this.subdirectorySelector.data.getOptionNames();
+			if (newOptionNames.length > 0) {
+				this.subdirectorySelector.data.setOptionSelected(newOptionNames[0]);
 			}
 		}
 	}
@@ -443,25 +441,18 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 
 		if (!this.fileList || this.fileList.length == 0) {
 
-			let directory = this.rootDirectoryDisplayName;
-			if (selectedSubdirectory) {
-				directory += `/${selectedSubdirectory}`;
-			}
-			if (file.subdirectory) {
-				directory += `/${file.subdirectory}`;
-			}
-
 			await imageDrawerListInstance.addElementToImageList(
 				$el('div', [
 					$el("label", {
 						textContent:
-							`No images or videos found in '${directory}'`
+							`No images or videos found in '${selectedSubdirectory}'`
 					}),
 					//cancelButton
 				])
 			);
-			return; }
-			
+			return;
+		}
+
 		if (this.shouldCancelAsyncOperation()) { return; }
 
 
@@ -544,7 +535,6 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 	async makeToolbar() {
 
 		const container = await super.makeToolbar();
-		const self = this;
 
 		const flyoutHandle = createVideoPlaybackOptionsFlyout().handle;
 
@@ -554,32 +544,35 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 		let includeSubdirectoriesToggleOptions = new options_LabeledCheckboxToggle();
 		includeSubdirectoriesToggleOptions.labelTextContent = 'Include Subdirectories';
 		includeSubdirectoriesToggleOptions.id = 'IncludeSubdirectoriesToggle';
-		includeSubdirectoriesToggleOptions.checked = self.bIncludeSubdirectories;
+		includeSubdirectoriesToggleOptions.checked = this.bIncludeSubdirectories;
 		includeSubdirectoriesToggleOptions.oninput = async (e) => {
-			self.bIncludeSubdirectories = e.target.checked;
-			await self.fetchFolderItems(self.subdirectorySelector.value);
+			this.bIncludeSubdirectories = e.target.checked;
+
+			const selectedOption = this.subdirectorySelector.data.getSelectedOptionElement();
+			const selectedValue = selectedOption.value;
+
+			await this.fetchFolderItems(selectedValue);
 		}
 
 		const IncludeSubdirectoriesToggle = createLabeledCheckboxToggle(includeSubdirectoriesToggleOptions);
 
 		container.insertBefore(IncludeSubdirectoriesToggle, container.firstChild);
 
-		if (!this.subdirectorySelector) {
-			this.subdirectorySelector = $el("select", { //Inner container so it can maintain 'flex' display attribute
-				style: {
-					width: '100%',
-				}
-			});
-		}
+		const searchableDropDown = new SearchableDropDown();
+		this.subdirectorySelector = searchableDropDown.createSearchableDropDown();
+		this.subdirectorySelector.style.width = "100%";
 
-		this.subdirectorySelector.addEventListener("change", async function () {
+		this.subdirectorySelector.addEventListener("select", async () => {
+
 			// Force subdirectory inclusion off to avoid OOM - user must opt-in explicitly each time
-			self.bIncludeSubdirectories = false;
+			this.bIncludeSubdirectories = false;
 			IncludeSubdirectoriesToggle.getMainElement().checked = false;
-			const selectedValue = this.value;
+
+			const selectedOption = this.subdirectorySelector.data.getSelectedOptionElement();
+			const selectedValue = selectedOption.value;
 			// await api.fetchApi(
 			// '/jnodes_request_task_cancellation', { method: "POST" }); // Cancel any outstanding python task
-			await self.fetchFolderItems(selectedValue);
+			await this.fetchFolderItems(selectedValue);
 		});
 
 		container.insertBefore(this.subdirectorySelector, container.firstChild);
@@ -596,7 +589,7 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 	}
 
 	async onRefreshClicked() {
-		await this.fetchFolderItems(this.subdirectorySelector.value);
+		await this.fetchFolderItems(this.subdirectorySelector.data.getSelectedOptionName());
 		await super.onRefreshClicked();
 	}
 

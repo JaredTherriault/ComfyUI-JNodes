@@ -152,7 +152,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 color: 'rgb(250,25,25)',
                             }
                         }),
-                        "Delete this item from disk. If send2trashv is available, it will be sent to the OS's Recycle Bin or Trash. Otherwise it will be deleted directly.",
+                        "Delete this item from disk. If send2trash is available, it will be sent to the OS's Recycle Bin or Trash. Otherwise it will be deleted directly.",
                         function (e) {
                             const labelElement = e.target.querySelector("label");
                             if (labelElement.textContent == baseLabelText) {
