@@ -36,7 +36,8 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		$el("div.imageElement", {
 			bComplete: false,
 			style: {
-				borderRadius: '4px'
+				borderRadius: '4px',
+				transition: "100ms",
 			}
 		});
 

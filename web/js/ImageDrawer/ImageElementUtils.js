@@ -307,8 +307,10 @@ export function addCheckboxSelectorToImageElement(imageElementToUse) {
 
         imageElementToUse.onSelectionChanged = async function (bUpdateBatchSelectionWidget = true) {
 
-            if (imageElementToUse.img) {
-                imageElementToUse.img.style.filter = imageElementToUse.bIsCheckboxSelectorChecked ? "blur(5px) hue-rotate(310deg)" : "blur(0px) hue-rotate(0deg)";
+            if (imageElementToUse && imageElementToUse.img) {
+                imageElementToUse.img.style.transform = imageElementToUse.bIsCheckboxSelectorChecked ? "scale(0.93)" : "";
+                imageElementToUse.style.backgroundImage= imageElementToUse.bIsCheckboxSelectorChecked ? 
+                    "linear-gradient(to bottom right, red, steelblue)" : "linear-gradient(to bottom right, rgba(0,0,0,0), rgba(0,0,0,0))";
             }
 
             if (bUpdateBatchSelectionWidget) {
