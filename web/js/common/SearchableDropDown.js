@@ -9,10 +9,11 @@ export class SearchableDropDown {
     constructor() {
         // Initialize instance variables
         this._container = null;
-        this._button = null;
+        this._mainButton = null;
         this._buttonText = null;
         this._dropDownContent = null;
         this._searchInput = null;
+        this._clearSearchButton = null;
         this._labelPanel = null;
         this._selectedOption = "";
         this._bIsContentShown = false;
@@ -26,29 +27,29 @@ export class SearchableDropDown {
      */
     createSearchableDropDown() {
 
-        this._container = $el("div", { 
+        this._container = $el("div", {
             className: "dropdown",
         });
         this._container.data = this;
 
         // Dropdown button setup
-        this._button = $el("button", {
+        this._mainButton = $el("button", {
             className: "dropbtn",
             onclick: () => {
-                this.toggleContent(); 
+                this.toggleContent();
             }
         });
-        this._container.appendChild(this._button);
+        this._container.appendChild(this._mainButton);
 
         this._buttonText = $el("label");
 
         const buttonInnerContainer = $el("div", {
             className: "dropbtn-inner"
         }, [
-            this._buttonText, 
+            this._buttonText,
             $el("label", { textContent: "▼" })
         ]);
-        this._button.appendChild(buttonInnerContainer);
+        this._mainButton.appendChild(buttonInnerContainer);
 
         // Dropdown content setup
         this._dropDownContent = $el("div", {
@@ -107,7 +108,7 @@ export class SearchableDropDown {
         }
 
         // Execute search
-        this.filterFunction(this.getfilterText());
+        this.filterOptions(this.getFilterText());
     }
 
     /**
@@ -223,16 +224,35 @@ export class SearchableDropDown {
         this._selectOption(optionName, bInvokeCallbacks);
     }
 
-    getfilterText() {
+    getFilterText() {
 
         return this._searchInput ? this._searchInput.value : "";
+    }
+
+    setFilterText(inText) {
+        if (this._searchInput) {
+            this._searchInput.value = inText;
+        }
+    }
+
+    setFilterTextAndExecuteSearch(inText) {
+        if (this._searchInput) {
+            this.setFilterText(inText);
+            this.filterOptions(inText);
+        }
+    }
+
+    clearFilterText() {
+        if (this._searchInput) {
+            this.setFilterTextAndExecuteSearch("");
+        }
     }
 
     /**
      * Filters the dropdown options based on the input text.
      * @param {string} inFilterText - The text to check against the option names
      */
-    filterFunction(inFilterText) {
+    filterOptions(inFilterText) {
 
         const filterText = inFilterText.toUpperCase();
         const options = this.getOptionElements();
@@ -260,7 +280,7 @@ export class SearchableDropDown {
         this._bIsContentShown = true;
 
         this._dropDownContent.classList.add("dropdown-show");
-        this.filterFunction(this.getfilterText());
+        this.filterOptions(this.getFilterText());
         this._searchInput.focus();
     }
 
@@ -297,12 +317,37 @@ export class SearchableDropDown {
 
         if (!this._dropDownContent) { return; }
 
-        this._searchInput = $el("input", {
-            id: "input",
-            placeholder: "Search...",
-            onkeyup: () => { this.filterFunction(this.getfilterText()); }
+        const searchContainer = $el("div", {
+            className: "search-controls",
+            style: {
+                display: "flex",
+                flexDirection: "row"
+            }
         });
-        this._dropDownContent.appendChild(this._searchInput);
+        this._dropDownContent.appendChild(searchContainer);
+
+        this._searchInput = $el("input", {
+            placeholder: "Search...",
+            onkeyup: () => { this.filterOptions(this.getFilterText()); },
+            style: {
+                padding: "4px 16px",
+                width: "100%"
+            }
+        });
+        searchContainer.appendChild(this._searchInput);
+
+        // Dropdown button setup
+        this._clearSearchButton = $el("button", {
+            textContent: "X",
+            onclick: () => {
+                this.clearFilterText();
+                this._searchInput.focus();
+            },
+            style : {
+                fontWeight: "bold"
+            }
+        });
+        searchContainer.appendChild(this._clearSearchButton);
     }
 
     /**
@@ -342,15 +387,14 @@ export class SearchableDropDown {
                     z-index: 1;
                 }
                 
-                #input {
+                .search-controls {
                     box-sizing: border-box;
-                    padding: 4px 16px;
                     border: none;
                     border-bottom: 1px solid var(--bg-color);
-                    width: 100%;
+		            border-radius: 5px;
                 }
                 
-                #input:focus {
+                .search-controls:focus {
                     outline: 2px solid var(--bg-color);
                 }
 
