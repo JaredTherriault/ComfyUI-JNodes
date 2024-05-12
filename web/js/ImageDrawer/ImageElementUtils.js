@@ -308,7 +308,7 @@ export function addCheckboxSelectorToImageElement(imageElementToUse) {
         imageElementToUse.onSelectionChanged = async function (bUpdateBatchSelectionWidget = true) {
 
             if (imageElementToUse && imageElementToUse.img) {
-                imageElementToUse.img.style.transform = imageElementToUse.bIsCheckboxSelectorChecked ? "scale(0.93)" : "";
+                imageElementToUse.img.style.transform = imageElementToUse.bIsCheckboxSelectorChecked ? "scale(0.85)" : "";
                 imageElementToUse.style.backgroundImage= imageElementToUse.bIsCheckboxSelectorChecked ? 
                     "linear-gradient(to bottom right, red, steelblue)" : "linear-gradient(to bottom right, rgba(0,0,0,0), rgba(0,0,0,0))";
             }
