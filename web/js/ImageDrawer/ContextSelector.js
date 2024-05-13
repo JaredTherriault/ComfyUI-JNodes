@@ -18,16 +18,7 @@ export function getCurrentContextObject() {
 }
 
 export function getCacheForContext(contextName) {
-	return Contexts.getContextObjectFromName(contextName).cache;
-}
-
-export function reverseItemsInCaches() {
-	for (const context in Contexts.getContexts()) {
-		Contexts.getContexts()[context]?.reverseItemsInCache();
-	}
-
-	const bSkipRestore = true;
-	getCurrentContextObject()?.switchToContext(bSkipRestore);
+	return Contexts.getContextObjectFromName(contextName)?.cache;
 }
 
 export function setOptionSelected(option) {
@@ -42,17 +33,11 @@ export async function onOptionSelected(selectedValue) {
 
 	// Create cache for previously selected option
 	if (lastSelectedContextOption) {
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
-		const childNodesArray = Array.from(imageDrawerListInstance.getImageListChildren());
 
-		const imageDrawerMainInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerMain");
-
-		const newCache =
-			new Contexts.ImageDrawerContextCache(
-				imageDrawerListInstance.getImageListScrollLevel(), imageDrawerSearchInstance.getSearchText(),
-				imageDrawerMainInstance.getColumnCount(), imageDrawerMainInstance.getDrawerWidth(), imageDrawerMainInstance.getDrawerHeight(),
-				childNodesArray, Sorting.getCurrentSortTypeName());
-		Contexts.getContextObjectFromName(lastSelectedContextOption)?.setCache(newCache);
+		const lastContextObject = Contexts.getContextObjectFromName(lastSelectedContextOption);
+		if (lastContextObject) {
+			lastContextObject.makeCache();
+		}
 	}
 
 	const NewContext = Contexts.getContextObjectFromName(selectedValue);

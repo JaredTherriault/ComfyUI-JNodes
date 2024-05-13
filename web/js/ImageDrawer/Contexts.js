@@ -59,7 +59,7 @@ export function getContextObjectFromName(contextName) {
 }
 
 export class ImageDrawerContextCache {
-	constructor(scrollLevel, searchBarText, columnCount, drawerWidth, drawerHeight, imageListElements, sortType) {
+	constructor(scrollLevel, searchBarText, columnCount, drawerWidth, drawerHeight, imageListElements, sortType, customContextCacheData = null) {
 		this.scrollLevel = scrollLevel;
 		this.searchBarText = searchBarText;
 		this.columnCount = columnCount;
@@ -67,6 +67,7 @@ export class ImageDrawerContextCache {
 		this.drawerHeight = drawerHeight;
 		this.imageListElements = imageListElements;
 		this.sortType = sortType;
+		this.customContextCacheData = customContextCacheData;
 	}
 };
 
@@ -89,10 +90,19 @@ class ImageDrawerContext {
 		this.cache = newCache;
 	}
 
-	reverseItemsInCache() {
-		if (this.cache && this.cache.imageListElements.length > 1) {
-			this.cache.imageListElements.reverse();
-		}
+	makeCache() {
+
+		const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+		const imageDrawerMainInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerMain");
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");		
+		const childNodesArray = Array.from(imageDrawerListInstance.getImageListChildren());
+
+		const newCache =
+			new ImageDrawerContextCache(
+				imageDrawerListInstance.getImageListScrollLevel(), imageDrawerSearchInstance.getSearchText(),
+				imageDrawerMainInstance.getColumnCount(), imageDrawerMainInstance.getDrawerWidth(), imageDrawerMainInstance.getDrawerHeight(),
+				childNodesArray, Sorting.getCurrentSortTypeName());
+		this.setCache(newCache);
 	}
 
 	async switchToContext(bSkipRestore = false) {
@@ -626,12 +636,20 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 		return container;
 	}
 
+	makeCache() {
+		super.makeCache();
+		this.cache.customContextCacheData = { selectedSubdirectory: this.subdirectorySelector?.data?.getSelectedOptionName() };
+	}
+
 	async switchToContext() {
 		if (!await super.switchToContext()) {
 			await this.fetchFolderItems(); // updateSubdirectorySelector is called in fetchFolderItems
 			return;
 		}
 		await this.updateSubdirectorySelectorOptions(); //  If we're not calling fetchFolderItems because we're restoring a cache, call updateSubdirectorySelector
+		if (this.cache?.customContextCacheData?.selectedSubdirectory) { // Restore subdirectory selection from custom cache data
+			this.subdirectorySelector.data.setOptionSelected(this.cache.customContextCacheData.selectedSubdirectory);
+		}
 	}
 
 	async onRefreshClicked() {
@@ -710,7 +728,7 @@ export class ContextFeed extends ContextClearable {
 	}
 
 	onRequestSingleDeletion(item) {
-		
+
 		this.removeItemFromFeed(item);
 
 		if (item && item.deleteItem) {
@@ -727,7 +745,7 @@ export class ContextFeed extends ContextClearable {
 	}
 
 	onRequestSingleRemoval(item) {
-		
+
 		this.removeItemFromFeed(item);
 	}
 
