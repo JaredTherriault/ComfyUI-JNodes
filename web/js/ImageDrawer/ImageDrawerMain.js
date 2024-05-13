@@ -229,17 +229,6 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		// Resizing / View options
 		this.createDrawerOptionsFlyout();
 
-		const SearchBarGroup =
-			$el("div.JNodes-search-bar-group", {
-				style: {
-					width: '100%',
-					display: 'flex',
-					flexDirection: 'row',
-				}
-			}, [
-				imageDrawerSearchInstance.createSearchBar(), imageDrawerSearchInstance.createSearchBarClearButton(), imageDrawerSearchInstance.createSearchRandomizeButton()
-			]);
-
 		const LeftAffinedControlsGroup = $el("div.JNodes-image-drawer-left-affined-basic-controls-group", {
 			style: {
 				display: "flex",
@@ -275,6 +264,8 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 		const batchDeletionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchDeletionManager", this.drawerInstanceIndex);
 		const batchDeletionManagerWidget = batchDeletionManagerInstance.makeWidget()
+		const batchRemovalManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchRemovalManager", this.drawerInstanceIndex);
+		const batchRemovalManagerWidget = batchRemovalManagerInstance.makeWidget()
 		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager", this.drawerInstanceIndex);
 		const batchSelectionManagerWidget = batchSelectionManagerInstance.makeWidget()
 		const RightAffinedControlsGroup = $el("div.JNodes-image-drawer-right-affined-basic-controls-group", {
@@ -282,7 +273,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 				display: "flex",
 				justifycontent: "flex-end",
 			}
-		}, [batchDeletionManagerWidget.container, batchSelectionManagerWidget.container, CollapseExpandButton]);
+		}, [batchDeletionManagerWidget.container, batchRemovalManagerWidget.container, batchSelectionManagerWidget.container, CollapseExpandButton]);
 
 		const BasicControlsGroup =
 			$el("div.JNodes-image-drawer-basic-controls-group", {
@@ -314,6 +305,17 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 			return DropDownComboContainer;
 		}
+
+		const SearchBarGroup =
+			$el("div.JNodes-search-bar-group", {
+				style: {
+					width: '100%',
+					display: 'flex',
+					flexDirection: 'row',
+				}
+			}, [
+				imageDrawerSearchInstance.createSearchBar(), imageDrawerSearchInstance.createSearchBarClearButton(), imageDrawerSearchInstance.createSearchRandomizeButton()
+			]);
 
 		const CollapsibleArea = $el("div.JNodes-image-drawer-menu-collapsible-area", {
 			style: {

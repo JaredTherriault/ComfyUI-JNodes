@@ -147,6 +147,36 @@ class ImageDrawerContext {
 		return false;
 	}
 
+	onRequestSingleDeletion(item) {
+		if (item && item.deleteItem) {
+			item.deleteItem();
+		}
+	}
+
+	onRequestBatchDeletion() {
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		for (const child of imageDrawerListInstance.getImageListChildren()) {
+			if (child.bIsCheckboxSelectorChecked && child.bIsCheckboxSelectorChecked == true && child.deleteItem) {
+				child.deleteItem();
+			}
+		}
+	}
+
+	onRequestSingleRemoval(item) {
+		if (item && item.removeItemFromImageList) {
+			item.removeItemFromImageList();
+		}
+	}
+
+	onRequestBatchRemoval() {
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		for (const child of imageDrawerListInstance.getImageListChildren()) {
+			if (child.bIsCheckboxSelectorChecked && child.bIsCheckboxSelectorChecked == true && child.removeItemFromImageList) {
+				child.removeItemFromImageList();
+			}
+		}
+	}
+
 	getSupportedSortTypes() {
 		return [Sorting.SortTypeFilename, Sorting.SortTypeDate];
 	}
@@ -301,6 +331,22 @@ class ContextModel extends ContextRefreshable {
 	async onRefreshClicked() {
 		await this.loadModels(true);
 		super.onRefreshClicked();
+	}
+
+	onRequestSingleDeletion(item) {
+		// Unimplemented
+	}
+
+	onRequestBatchDeletion() {
+		// Unimplemented
+	}
+
+	onRequestSingleRemoval(item) {
+		// Unimplemented
+	}
+
+	onRequestBatchRemoval() {
+		// Unimplemented
 	}
 
 	getSupportedSortTypes() {
@@ -589,7 +635,7 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 	}
 
 	async onRefreshClicked() {
-		await this.fetchFolderItems(this.subdirectorySelector.data.getSelectedOptionName());
+		await this.fetchFolderItems(this.subdirectorySelector.data.getSelectedOptionElement().value);
 		await super.onRefreshClicked();
 	}
 
@@ -663,8 +709,46 @@ export class ContextFeed extends ContextClearable {
 		this.feedImages = [];
 	}
 
+	onRequestSingleDeletion(item) {
+		
+		this.removeItemFromFeed(item);
+
+		if (item && item.deleteItem) {
+			const bRemoveFromImageList = false; // Don't do it again, that was handled above
+			item.deleteItem(bRemoveFromImageList);
+		}
+	}
+
+	onRequestBatchDeletion() {
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		for (const child of imageDrawerListInstance.getImageListChildren()) {
+			this.onRequestSingleDeletion(child);
+		}
+	}
+
+	onRequestSingleRemoval(item) {
+		
+		this.removeItemFromFeed(item);
+	}
+
+	onRequestBatchRemoval() {
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		for (const child of imageDrawerListInstance.getImageListChildren()) {
+			this.onRequestSingleRemoval(child);
+		}
+	}
+
 	getDefaultSortType() {
 		return { type: Sorting.SortTypeDate, bIsAscending: false };
+	}
+
+	removeItemFromFeed(item) {
+
+		if (item.img?.src) {
+			this.feedImages = this.feedImages.filter(src => src == item.img.src); // Remove matching feed sources
+		}
+
+		super.onRequestSingleRemoval(item);
 	}
 }
 

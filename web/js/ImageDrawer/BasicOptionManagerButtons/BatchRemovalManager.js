@@ -7,7 +7,7 @@ import { utilitiesInstance } from "../../common/Utilities.js";
 import { ClassInstanceFactory, imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
 import { getCurrentContextObject } from "../ContextSelector.js";
 
-class BatchDeletionManager extends BatchOptionManagerButton {
+class BatchRemovalManager extends BatchOptionManagerButton {
 
     constructor(args) {
 
@@ -24,7 +24,7 @@ class BatchDeletionManager extends BatchOptionManagerButton {
 
         {
             const recycleIcon = $el("label", {
-                textContent: "♻️",
+                textContent: "❌",
                 style: {
                     color: "white",
                     fontWeight: "bolder",
@@ -75,7 +75,7 @@ class BatchDeletionManager extends BatchOptionManagerButton {
 
             const currentContextObject = getCurrentContextObject();
             if (currentContextObject) {
-                currentContextObject.onRequestBatchDeletion();
+                currentContextObject.onRequestBatchRemoval();
             }
 
             const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
@@ -96,6 +96,7 @@ class BatchDeletionManager extends BatchOptionManagerButton {
     }
 }
 
-const factoryInstance = new ClassInstanceFactory(BatchDeletionManager, {
-    tooltipText: "Trash, recycle or delete all selected items", buttonClass: "JNodes-image-drawer-menu-delete-selected-button"
+const factoryInstance = new ClassInstanceFactory(BatchRemovalManager, {
+    tooltipText: "Remove all selected items from the current context's list. The items will not be deleted from disk. Upon reloading this context's list, they may reappear.", 
+    buttonClass: "JNodes-image-drawer-menu-delete-selected-button"
 });

@@ -69,7 +69,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	}
 	imageElement.addEventListener("mouseout", imageElement.mouseOutEvent);
 
-	imageElement.deleteItem = async function (bNotifyImageListChanged = true) {
+	imageElement.deleteItem = async function (bAlsoRemoveFromImageList = true, bNotifyImageListChanged = true) {
 
 		const deleteCall = imageElement.fileInfo.href.replace("jnodes_view_image", "jnodes_delete_item");
 		const response = await api.fetchApi(deleteCall, { method: "DELETE" });
@@ -80,18 +80,27 @@ export async function createImageElementFromFileInfo(fileInfo) {
 			jsonResponse = JSON.parse(decodedString)
 		} catch (error) { console.error("Could not parse json from response."); }
 
-		if (jsonResponse && jsonResponse.success && jsonResponse.success == true) {
-			const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		let bSuccess = jsonResponse && jsonResponse.success && jsonResponse.success == true;
 
-			if (bNotifyImageListChanged) {
-				imageDrawerListInstance.notifyStartChangingImageList();
-			}
+		if (bAlsoRemoveFromImageList) {
+			imageElement.removeItemFromImageList(bNotifyImageListChanged);
+		}
 
-			imageDrawerListInstance.removeElementFromImageList(imageElement); // If it was deleted, remove it from the list
+		return bSuccess;
+	}
 
-			if (bNotifyImageListChanged) {
-				imageDrawerListInstance.notifyFinishChangingImageList();
-			}
+	imageElement.removeItemFromImageList = async function (bNotifyImageListChanged = true) {
+
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+
+		if (bNotifyImageListChanged) {
+			imageDrawerListInstance.notifyStartChangingImageList();
+		}
+
+		imageDrawerListInstance.removeElementFromImageList(imageElement); // If it was deleted, remove it from the list
+
+		if (bNotifyImageListChanged) {
+			imageDrawerListInstance.notifyFinishChangingImageList();
 		}
 	}
 

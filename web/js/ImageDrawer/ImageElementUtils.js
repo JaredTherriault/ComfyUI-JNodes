@@ -14,6 +14,7 @@ import { utilitiesInstance } from "../common/Utilities.js";
 import { setting_FontSize, setting_FontFamily } from "../TextareaFontControl.js"
 
 import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
+import { getCurrentContextObject } from "./ContextSelector.js";
 
 const toolTipOffsetX = 10; // Adjust the offset from the mouse pointer
 const toolTipOffsetY = 10;
@@ -149,7 +150,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                         $el("label", {
                             textContent: baseLabelText,
                             style: {
-                                color: 'rgb(250,25,25)',
+                                color: "rgb(250,25,25)",
                             }
                         }),
                         "Delete this item from disk. If send2trash is available, it will be sent to the OS's Recycle Bin or Trash. Otherwise it will be deleted directly.",
@@ -158,9 +159,39 @@ export function getOrCreateToolButton(imageElementToUse) {
                             if (labelElement.textContent == baseLabelText) {
                                 labelElement.textContent = confirmLabelText;
                             } else if (labelElement.textContent == confirmLabelText) {
-                                // DELETE api call
-                                if (imageElementToUse.deleteItem) {
-                                    imageElementToUse.deleteItem();
+
+                                const currentContextObject = getCurrentContextObject();
+                                if (currentContextObject) {
+                                    currentContextObject.onRequestSingleDeletion(imageElementToUse);
+                                }
+                            }
+                        }
+                    )
+                );
+            }
+
+            // Remove button
+            {
+                const baseLabelText = "❌ Remove From List";
+                const confirmLabelText = "❌ Click again to confirm";
+                flyout.menu.appendChild(
+                    createButton(
+                        $el("label", {
+                            textContent: baseLabelText,
+                            style: {
+                                color: "rgb(200, 150, 15)",
+                            }
+                        }),
+                        "Remove this item from the current list. The item will not be deleted from disk. Upon reloading this context's list, the item may reappear.",
+                        function (e) {
+                            const labelElement = e.target.querySelector("label");
+                            if (labelElement.textContent == baseLabelText) {
+                                labelElement.textContent = confirmLabelText;
+                            } else if (labelElement.textContent == confirmLabelText) {
+                                
+                                const currentContextObject = getCurrentContextObject();
+                                if (currentContextObject) {
+                                    currentContextObject.onRequestSingleRemoval(imageElementToUse);
                                 }
                             }
                         }
@@ -294,7 +325,7 @@ export function addCheckboxSelectorToImageElement(imageElementToUse) {
                 left: '2%',
             }
         });
- 
+
         imageElementToUse.appendChild(imageElementToUse.checkboxSelector);
 
         imageElementToUse.setSelected = function (bNewCheckedState, bUpdateBatchSelectionWidget) {
@@ -309,7 +340,7 @@ export function addCheckboxSelectorToImageElement(imageElementToUse) {
 
             if (imageElementToUse && imageElementToUse.img) {
                 imageElementToUse.img.style.transform = imageElementToUse.bIsCheckboxSelectorChecked ? "scale(0.85)" : "";
-                imageElementToUse.style.backgroundImage= imageElementToUse.bIsCheckboxSelectorChecked ? 
+                imageElementToUse.style.backgroundImage = imageElementToUse.bIsCheckboxSelectorChecked ?
                     "linear-gradient(to bottom right, red, steelblue)" : "linear-gradient(to bottom right, rgba(0,0,0,0), rgba(0,0,0,0))";
             }
 
