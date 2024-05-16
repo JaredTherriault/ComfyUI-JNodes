@@ -29,6 +29,7 @@
  * Lora Picker: a context option in ImageDrawer that displays your loras in a grid something like in a1111 and allows you to search for and copy the lora command in a1111 format (use [Coziness](https://github.com/skfoo/ComfyUI-Coziness) or something similar to support text loras) as well as the trained words. Click tag words to automatically search for similar local loras. Works best with loras downloaded with [Civit Downloader](https://www.ayamaru.com/more).
 
    ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/141ea856-e9b7-4ece-825d-be0aa1ceedf0)
+ * Drag and drop from lora picker to canvas to add lora loaders (for people who don't want to use text loras)
  * EditAttention improvements (undo/redo support, remove spacing)
  * Status (progress) indicators (percentage in title, custom favicon, progress bar on floating menu)
 
@@ -44,16 +45,11 @@
  
  The python nodes will all still work fine, but if you don't delete the files above you won't be able to use many web features.
  
-# Known Issues
- * Mouse Over a lora card with no preview images near the scroll bar results 
-in a graphical overlay issue
- 
 # Future updates
  * Implementation of more contexts in ImageDrawer
  * Slideshow for images
  * Squashing UI bugs
  * Improving general UX
- * Drag and drop from lora picker to canvas to add lora loaders (for people who don't want to use text loras)
  * Civit.ai integration (maybe)
  * Plugin support (maybe)
  
