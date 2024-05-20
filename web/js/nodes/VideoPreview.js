@@ -187,6 +187,10 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 						// Serialize the value of 'FileDimensions' as a single line string
 						return JSON.stringify(value);
 					}
+
+					if (typeof value == "number") {
+						return value.toFixed(3);
+					}
 					// Return the original value for other keys
 					return value;
 				};
