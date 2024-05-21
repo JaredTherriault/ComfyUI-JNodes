@@ -11,10 +11,11 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 		super(args);
 
 		this.searchBarElement;
+		this.bMatchAny = true;
 	}
 
 	createSearchBar() {
-		
+
 		this.searchBarElement = $el("input", {
 			type: "text",
 			id: "SearchInput",
@@ -93,14 +94,36 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 		// Provision search string
 		const sanitizedSearchTerm = searchTerm.toLowerCase().trim();
 
+		// Split into multiple terms on space
+		const splitSearchTerms = sanitizedSearchTerm.split(" ");
+		const bSearchTermsGiven = splitSearchTerms.length > 0;
+
 		// Loop through items and check for a match
 		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
 		const children = imageDrawerListInstance.getImageListChildren();
 		for (let i = 0; i < children.length; i++) {
-			let itemText = children[i]?.searchTerms?.toLowerCase().trim();
-			//console.log(itemText + " matched against " + searchTerm + ": " + itemText.includes(searchTerm));
 
-			utilitiesInstance.setElementVisible(children[i], itemText ? itemText.includes(sanitizedSearchTerm) : true)
+			const itemsSearchTerms = children[i]?.searchTerms?.toLowerCase().trim();
+
+			const bShouldEvaluateSearch = bSearchTermsGiven && itemsSearchTerms;
+
+			let bDoesItemTextIncludeSearchTerm = false;
+			if (bShouldEvaluateSearch) {
+				//console.log(itemText + " matched against " + searchTerm + ": " + itemText.includes(searchTerm));
+
+				if (this.bMatchAny) {
+
+					bDoesItemTextIncludeSearchTerm = splitSearchTerms.some(term => itemsSearchTerms.includes(term));
+
+				} else { // Match All terms
+
+					bDoesItemTextIncludeSearchTerm = splitSearchTerms.every(term => itemsSearchTerms.includes(term));
+
+				}
+			}
+
+			// If we don't want to evaluate search, just return true
+			utilitiesInstance.setElementVisible(children[i], bShouldEvaluateSearch ? bDoesItemTextIncludeSearchTerm : true);
 		}
 	}
 
