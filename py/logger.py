@@ -1,6 +1,7 @@
 import sys
 import copy
 import logging
+import traceback
 
 
 class ColoredFormatter(logging.Formatter):
@@ -34,3 +35,7 @@ if not logger.handlers:
 # Configure logger
 loglevel = logging.INFO
 logger.setLevel(loglevel)
+
+def log_exception(message, exception):
+    logger.error(f"{message} {exception}")
+    logger.error(traceback.format_exc())
