@@ -63,7 +63,7 @@ class GetSubdirectoryImages:
 
         def do_multiprocess(in_items): 
             proc_count = multiprocessing.cpu_count()
-            proc_count_recursive = int(proc_count / 2)
+            proc_count_recursive = int(proc_count / 2) # To ensure we don't overflow in recursive multiprocess loads
             args = [(item, full_directory, current_subdirectory) for item in in_items]
             with multiprocessing.Pool(processes= proc_count_recursive if self.recursive else proc_count) as pool:
                 results_from_pool = pool.starmap(process_item, args)
@@ -108,29 +108,28 @@ class GetSubdirectoryImages:
                 else:
                     self.results.append(result[1])
 
+        def prefer_multithreading(items):
+            try: 
+                do_multithreading(items)
+
+            except Exception as e2: 
+
+                log_exception("Error:", e2)
+
+                do_sequential(items)
+
+        def prefer_multiprocess(items):
+            try: 
+                do_multiprocess(items)
+
+            except Exception as e1:
+
+                log_exception("Error:", e1)
+
+                prefer_multithreading(items)
+
         def do_auto(items):
 
-            def prefer_multithreading(in_items):
-                try: 
-                    do_multithreading(in_items)
-
-                except Exception as e2: 
-
-                    log_exception("Error:", e2)
-
-                    do_sequential(in_items)
-
-            def prefer_multiprocess(in_items):
-                try: 
-                    do_multiprocess(in_items)
-
-                except Exception as e1:
-
-                    log_exception("Error:", e1)
-
-                    prefer_multithreading(in_items)
-
-            
             videos = [item for item in items if is_video(item)]
             others = [item for item in items if not is_video(item)]
 
