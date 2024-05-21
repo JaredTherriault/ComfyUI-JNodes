@@ -19,7 +19,7 @@ export class SearchableDropDown {
         this._bIsContentShown = false;
 
         // Events
-        this._ON_SELECT_EVENT_NAME = 'select';
+        this._ON_SELECT_EVENT_NAME = "selectoption";
     }
 
     /**
@@ -282,6 +282,7 @@ export class SearchableDropDown {
         this._dropDownContent.classList.add("dropdown-show");
         this.filterOptions(this.getFilterText());
         this._searchInput.focus();
+        this._searchInput.select();
     }
 
     closeContent() {

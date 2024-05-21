@@ -618,7 +618,7 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 		this.subdirectorySelector = searchableDropDown.createSearchableDropDown();
 		this.subdirectorySelector.style.width = "100%";
 
-		this.subdirectorySelector.addEventListener("select", async () => {
+		this.subdirectorySelector.addEventListener("selectoption", async () => {
 
 			// Force subdirectory inclusion off to avoid OOM - user must opt-in explicitly each time
 			this.bIncludeSubdirectories = false;
