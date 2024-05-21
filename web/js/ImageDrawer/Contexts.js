@@ -501,7 +501,7 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 				$el('div', [
 					$el("label", {
 						textContent:
-							`No images or videos found in '${selectedSubdirectory}'`
+							`No images or videos found in '${selectedSubdirectory == "" ? this.rootDirectoryDisplayName : selectedSubdirectory}'`
 					}),
 					//cancelButton
 				])
