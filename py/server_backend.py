@@ -1,17 +1,16 @@
 import os 
 import re 
 
-from .logger import logger
+from .logger import *
 from .utils import *
+from .server_backend_get_subdirectory_images import GetSubdirectoryImages
 
 import folder_paths
-from pathlib import Path
 from aiohttp import web
 import server
 
 from PIL import Image
 
-import cv2
 import json
 
 CANCELLATION_REQUESTED = False
@@ -113,7 +112,7 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
                         familiars.append(loaded_text)
                         continue
                 except Exception as e:
-                    print(f"Error loading text, will append familiar file name. Error: {e}")
+                    log_exception("Error loading text, will append familiar file name. Error:", e)
             familiars.append(containing_directory + "/" + file_name if containing_directory is not None else file_name)
 
     familiars.sort()
@@ -160,102 +159,8 @@ def list_comfyui_subdirectories_request(request):
 
         return web.json_response({"success": True, "payload": results })
     except Exception as e:
-        print(f"Error listing subdirectories: {e}")
+        log_exception("Error listing subdirectories:", e)
         return web.json_response({"success": False, "error": str(e)})
-
-def get_subdirectory_images(in_directory, recursive):
-    
-    """
-    List images and directories in the specified root directory, optionally including files from subdirectories.
-
-    Args:
-        root_directory (str): The root directory from which to start listing files and directories.
-        recursive (bool): Whether to include images from subdirectories.
-
-    Returns:
-        list: A list of dictionaries containing information about images.
-    """
-
-    from concurrent.futures import ThreadPoolExecutor
-
-    results = []
-
-    def walk_through_subdirectories_and_files(in_subdirectory):
-        """
-        Recursively list files and directories within the specified directory.
-
-        Args:
-            in_subdirectory (str): The directory to process.
-        """
-        if should_cancel_task():
-            return
-
-        full_directory = os.path.join(in_directory, in_subdirectory)
-        if not os.path.isdir(full_directory):
-            return
-            
-        items = os.listdir(full_directory)
-    
-        def process_item(item):
-            """
-            Process a single file or directory item.
-
-            Args:
-                item (str): The name of the file or directory.
-            """
-            if should_cancel_task():
-                return
-
-            full_path = os.path.join(full_directory, item)
-            if os.path.isfile(full_path) and is_acceptable_image_or_video_for_browser_display(item):
-                file_size = os.path.getsize(full_path)
-                dimensions = [0, 0]
-                frame_count = -1
-                fps = -1
-                is_video_item = is_video(item)
-
-                metadata_read = True
-
-                try:
-                    if is_video_item:
-                        cap = cv2.VideoCapture(full_path)
-                        if cap.isOpened():
-                            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                            dimensions = [width, height]
-
-                            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                            fps = cap.get(cv2.CAP_PROP_FPS)
-
-                            cap.release()
-                    else:
-                        with Image.open(full_path) as img:
-                            dimensions = img.size
-                except Exception as e:
-                    metadata_read = False
-                    logger.warning(f"Unable to get meta for '{full_path}': {e}")
-
-                file_age = os.path.getctime(full_path)
-                file_format = f"{'video' if is_video_item else 'image'}/{get_file_extension_without_dot(item)}"
-                
-                results.append(
-                    {
-                        'item': item, 'file_age': file_age, 'format': file_format, 'file_size': file_size, 'dimensions': dimensions,
-                        'is_video': is_video_item, 'metadata_read': metadata_read, "subdirectory": in_subdirectory,
-                        'frame_count': frame_count, 'fps': fps, 
-                        'duration_in_seconds': frame_count / fps if frame_count > 1 and fps > 1 else -1
-                    }
-                )
-                 
-            elif recursive and os.path.isdir(full_path):
-                walk_through_subdirectories_and_files(os.path.join(in_subdirectory, item))
-
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            executor.map(process_item, items)
-        
-    walk_through_subdirectories_and_files("")
-
-    return results
 
 def get_comfyui_subdirectory_images_request(request):
     CANCELLATION_REQUESTED = False
@@ -263,11 +168,11 @@ def get_comfyui_subdirectory_images_request(request):
         root_directory = request.rel_url.query["root_directory"] or ""
         selected_subdirectory = request.rel_url.query["selected_subdirectory"] or ""
         recursive = request.rel_url.query["recursive"] == "true"
-        results = get_subdirectory_images(
-            os.path.join(convert_relative_comfyui_path_to_full_path(root_directory), selected_subdirectory), recursive)
+        results = GetSubdirectoryImages(
+            os.path.join(convert_relative_comfyui_path_to_full_path(root_directory), selected_subdirectory), recursive).get_subdirectory_images()
         return web.json_response({"success": True, "payload": results })
     except Exception as e:
-        print(f"Error listing subdirectory images: {e}")
+        log_exception("Error listing subdirectory images:", e)
         return web.json_response({"success": False, "error": str(e)})
 
 def view_image(request):
@@ -292,7 +197,7 @@ def view_image(request):
         try:
             base_dir = convert_relative_comfyui_path_to_full_path(type)
         except Exception as e:
-            print(f"Error finding folder {type}. Error: {e}")
+            log_exception(f"Error finding folder {type}. Error:", e)
             
     if base_dir is None:
         logger.warning(f"Unable to get parent directory for {type}")
@@ -423,7 +328,7 @@ async def upload_image(request):
         else:
             return web.Response(status=400)
     except Exception as e:
-        print(f"Error uploading image: {e}")
+        log_exception("Error uploading image:", e)
         return web.json_response({"success": False, "error": str(e)})
 
 async def save_model_config(request):
@@ -489,7 +394,7 @@ def load_info(request):
                     loaded_text = opened_file.read()
                 return web.json_response({"success": True, "payload" : loaded_text})
             except Exception as e:
-                print(f"Error loading text: {e}")
+                log_exception("Error loading text:", e)
                 return web.json_response({"success": False, "error": str(e)})
 
     return web.Response(status=404)
@@ -509,7 +414,7 @@ async def save_text(request):
     
             return web.json_response({"success": True})
     except Exception as e:
-        print(f"Error saving text: {e}")
+        log_exception("Error saving text:", e)
         return web.json_response({"success": False, "error": str(e)})
 
 async def load_text(request):
@@ -523,7 +428,7 @@ async def load_text(request):
     
             return web.json_response({"success": True, "payload" : loaded_text})
     except Exception as e:
-        print(f"Error loading text: {e}")
+        log_exception("Error loading text:", e)
         return web.json_response({"success": False, "error": str(e)})
 
 async def delete_item(request):
@@ -550,8 +455,7 @@ async def delete_item(request):
                 print(message)
                 return web.json_response({"success": False, "message": message})
         except Exception as e:
-            message = f"Error occurred while deleting '{path}': {e}"
-            print(message)
+            log_exception(f"Error occurred while deleting '{path}':", e)
             return web.json_response({"success": False, "message": message})
 
     type = "loras"
@@ -575,7 +479,7 @@ async def delete_item(request):
         try:
             base_dir = convert_relative_comfyui_path_to_full_path(type)
         except Exception as e:
-            print(f"Error finding folder {type}. Error: {e}")
+            log_exception(f"Error finding folder {type}. Error:", e)
             
     if base_dir is None:
         logger.warning(f"Unable to get parent directory for {type}")
