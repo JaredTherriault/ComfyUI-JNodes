@@ -61,22 +61,25 @@ class GetSubdirectoryImages:
         if not os.path.isdir(full_directory):
             return   
 
+        def evaulate_result(result):
+            if result[0] == False:
+                full_path = result[1]
+                if self.recursive and os.path.isdir(full_path):
+
+                    new_subd = os.path.join(current_subdirectory, item)
+                    self.walk_through_subdirectories_and_files(new_subd)
+
+            else:
+                self.results.append(result[1])
+
         def do_multiprocess(in_items): 
             proc_count = multiprocessing.cpu_count()
-            proc_count_recursive = int(proc_count / 2) # To ensure we don't overflow in recursive multiprocess loads
+            proc_count_recursive = max(1, int(proc_count / 2)) # To ensure we don't overflow in recursive multiprocess loads
             args = [(item, full_directory, current_subdirectory) for item in in_items]
             with multiprocessing.Pool(processes= proc_count_recursive if self.recursive else proc_count) as pool:
                 results_from_pool = pool.starmap(process_item, args)
                 for result in results_from_pool:
-                    if result[0] == False:
-                        full_path = result[1]
-                        if self.recursive and os.path.isdir(full_path):
-
-                            new_subd = os.path.join(current_subdirectory, result[2])
-                            self.walk_through_subdirectories_and_files(new_subd)
-
-                    else:
-                        self.results.append(result[1])  
+                    evaulate_result(result)
 
         def do_multithreading(in_items):
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
@@ -84,29 +87,12 @@ class GetSubdirectoryImages:
 
                 for future in concurrent.futures.as_completed(futures):
                     result = future.result()
-
-                    if result[0] == False:
-                        full_path = result[1]
-                        if self.recursive and os.path.isdir(full_path):
-
-                            new_subd = os.path.join(current_subdirectory, result[2])
-                            self.walk_through_subdirectories_and_files(new_subd)
-
-                    else:
-                        self.results.append(result[1])
+                    evaulate_result(result)
 
         def do_sequential(in_items): 
             for item in in_items:
                 result = process_item(item, full_directory, current_subdirectory)
-                if result[0] == False:
-                    full_path = result[1]
-                    if self.recursive and os.path.isdir(full_path):
-
-                        new_subd = os.path.join(current_subdirectory, item)
-                        self.walk_through_subdirectories_and_files(new_subd)
-
-                else:
-                    self.results.append(result[1])
+                evaluate_result(result)
 
         def prefer_multithreading(items):
             try: 
@@ -130,11 +116,21 @@ class GetSubdirectoryImages:
 
         def do_auto(items):
 
-            videos = [item for item in items if is_video(item)]
-            others = [item for item in items if not is_video(item)]
+            # Sort out items by type
+            videos = []
+            others = []
+
+            for item in items:
+                if is_video(item):
+                    videos.append(item)
+                else:
+                    others.append(item)
 
             # At 5000+ images or 60+ videos multiprocess becomes faster, 
             # but multithreaded performance is better in recursion
+            # At small numbers of items, sequential is much faster than multithreading
+            # in terms of percentage, but the end user won't feel a difference
+            # And in recursive workloads sequential performs worse when multiple subfolders are present
             if len(videos) > 0:
                 if len(videos) > (200 if self.recursive else 60):
                     prefer_multiprocess(videos)
