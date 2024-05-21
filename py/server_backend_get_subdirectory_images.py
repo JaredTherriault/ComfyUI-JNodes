@@ -134,15 +134,16 @@ class GetSubdirectoryImages:
             videos = [item for item in items if is_video(item)]
             others = [item for item in items if not is_video(item)]
 
-            # At 5000+ images or 60+ videos multiprocess becomes faster 
+            # At 5000+ images or 60+ videos multiprocess becomes faster, 
+            # but multithreaded performance is better in recursion
             if len(videos) > 0:
-                if len(videos) > 60:
+                if len(videos) > (200 if self.recursive else 60):
                     prefer_multiprocess(videos)
                 else:
                     prefer_multithreading(videos)
 
             if len(others) > 0:
-                if len(others) > 5000:
+                if len(others) > (10000 if self.recursive else 5000):
                     prefer_multiprocess(others)
                 else:
                     prefer_multithreading(others)
