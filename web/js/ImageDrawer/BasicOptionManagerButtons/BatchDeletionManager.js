@@ -52,11 +52,11 @@ class BatchDeletionManager extends BatchOptionManagerButton {
 
             const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
             let lastCheckedItemCount = batchSelectionManagerInstance.lastCheckedItemCount;
-    
+
             if (Object.keys(lastCheckedItemCount).length == 0) {
                 lastCheckedItemCount = batchSelectionManagerInstance.countCheckedItems();
             }
-    
+
             this.setWidgetVisible(lastCheckedItemCount.selectedCount > 0);
         });
 
@@ -76,10 +76,10 @@ class BatchDeletionManager extends BatchOptionManagerButton {
             const currentContextObject = getCurrentContextObject();
             if (currentContextObject) {
                 currentContextObject.onRequestBatchDeletion();
-            }
 
-            const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
-            batchSelectionManagerInstance.updateWidget();
+                const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+                batchSelectionManagerInstance.updateWidget();
+            }
         }
     }
 
