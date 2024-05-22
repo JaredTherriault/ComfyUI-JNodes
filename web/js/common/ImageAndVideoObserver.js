@@ -76,7 +76,7 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 			}
 
 			if (setting_VideoPlaybackOptions.value.autoplay) {
-				await tryPlayVideo(element);
+				tryPlayVideo(element);
 			}
 		} else {
 			if (element.tagName === 'VIDEO') {
