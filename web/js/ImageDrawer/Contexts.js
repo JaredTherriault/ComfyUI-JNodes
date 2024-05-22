@@ -94,7 +94,7 @@ class ImageDrawerContext {
 
 		const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
 		const imageDrawerMainInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerMain");
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");		
+		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
 		const childNodesArray = Array.from(imageDrawerListInstance.getImageListChildren());
 
 		const newCache =
@@ -454,7 +454,7 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 		// 	},
 		// });
 
-		await imageDrawerListInstance.addElementToImageList(
+		imageDrawerListInstance.addElementToImageList(
 			$el('div', [
 				$el("label", {
 					textContent:
@@ -463,8 +463,6 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 				//cancelButton
 			])
 		);
-
-		await this.updateSubdirectorySelectorOptions();
 
 		const allItems = await api.fetchApi(
 			'/jnodes_get_comfyui_subdirectory_images' +
@@ -489,6 +487,9 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 
 		// Load root folder if no path is specified (even if there are no images within)
 		await this.loadImagesInFolder(selectedSubdirectory);
+
+		this.updateSubdirectorySelectorOptions();
+
 	}
 
 	async loadImagesInFolder(selectedSubdirectory) {
@@ -523,69 +524,32 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 				bShouldApplySearch: false,
 			});
 			if (element !== undefined) {
-				await imageDrawerListInstance.addElementToImageList(element);
+				imageDrawerListInstance.addElementToImageList(element);
 			} else {
 				console.log(`Attempted to add undefined image element in ${this.name}`);
 			}
 		};
 
-		const bUseBatching = false;
-		if (bUseBatching) {
-			const promises = [];
-			for (let valueIndex = 0; valueIndex < this.fileList.length; valueIndex++) {
-				if (this.shouldCancelAsyncOperation()) { break; }
+		imageDrawerListInstance.notifyStartChangingImageList();
 
-				const value = this.fileList[valueIndex];
+		const promises = [];
+		for (let fileIndex = 0; fileIndex < this.fileList.length; fileIndex++) {
+			if (this.shouldCancelAsyncOperation()) { break; }
 
-				const processBatch = async (fileBatch) => {
-					let processedElements = [];
-					const promises = fileBatch.map(async (file) => {
-						const element = await createElementFromFile(file, value);
-						if (element) {
-							processedElements.push(element);
-						}
-					});
-					await Promise.all(promises);
-					await Promise.all(processedElements.map(img => new Promise(resolve => {
-						if (img.complete) {
-							resolve();
-						} else {
-							img.onload = resolve;
-						}
-					})));
-				}
-
-				async function processFilesInBatches(files, batchSize, delayBetweenBatches) {
-					const batchPromises = [];
-					imageDrawerListInstance.notifyStartChangingImageList();
-					for (let i = 0; i < files.length; i += batchSize) {
-						const fileBatch = files.slice(i, i + batchSize);
-						batchPromises.push(processBatch(fileBatch));
-						await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
-					}
-					imageDrawerListInstance.notifyFinishChangingImageList();
-					return Promise.all(batchPromises);
-				}
-
-				const batchSize = 4;
-				const delayBetweenBatches = 0.1;
-				promises.push(processFilesInBatches(value.files, batchSize, delayBetweenBatches));
-			}
-
-			await Promise.all(promises);
-		} else {
-			imageDrawerListInstance.notifyStartChangingImageList();
-			for (let fileIndex = 0; fileIndex < this.fileList.length; fileIndex++) {
-				if (this.shouldCancelAsyncOperation()) { break; }
-
-				const file = this.fileList[fileIndex];
-
-				await createElementFromFile(file);
-			}
-			imageDrawerListInstance.notifyFinishChangingImageList();
+			const file = this.fileList[fileIndex];
+			// Push the promise to the array
+			promises.push(createElementFromFile(file));
 		}
 
-		Sorting.sortWithCurrentType();
+		// Wait for all promises to resolve
+		Promise.all(promises).then(() => {
+			imageDrawerListInstance.notifyFinishChangingImageList();
+
+			Sorting.sortWithCurrentType();
+
+		});
+
+
 	}
 
 	async makeToolbar() {
