@@ -61,12 +61,12 @@ class GetSubdirectoryImages:
         if not os.path.isdir(full_directory):
             return   
 
-        def evaulate_result(result):
+        def evaluate_result(result):
             if result[0] == False:
                 full_path = result[1]
                 if self.recursive and os.path.isdir(full_path):
 
-                    new_subd = os.path.join(current_subdirectory, item)
+                    new_subd = os.path.join(current_subdirectory, os.path.basename(os.path.normpath(full_path)))
                     self.walk_through_subdirectories_and_files(new_subd)
 
             else:
@@ -79,7 +79,7 @@ class GetSubdirectoryImages:
             with multiprocessing.Pool(processes= proc_count_recursive if self.recursive else proc_count) as pool:
                 results_from_pool = pool.starmap(process_item, args)
                 for result in results_from_pool:
-                    evaulate_result(result)
+                    evaluate_result(result)
 
         def do_multithreading(in_items):
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
@@ -87,7 +87,7 @@ class GetSubdirectoryImages:
 
                 for future in concurrent.futures.as_completed(futures):
                     result = future.result()
-                    evaulate_result(result)
+                    evaluate_result(result)
 
         def do_sequential(in_items): 
             for item in in_items:
