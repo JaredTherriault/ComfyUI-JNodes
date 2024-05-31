@@ -414,7 +414,7 @@ const mediaPreview = {
 						);
 
 						const extSplit = name.split('.');
-						const extension = extSplit[extSplit.length - 1];
+						const extension = extSplit[extSplit.length - 1].toLowerCase();
 
 						let format = 'video/mp4';
 						for (const fileType of AcceptableFileTypes) {

@@ -122,16 +122,7 @@ def map_to_range(value, input_min, input_max, output_min, output_max):
 
 
 def convert_relative_comfyui_path_to_full_path(relative_path="output"):
-    # Get the directory containing this file
-    directory = os.path.dirname(os.path.realpath(__file__))
-
-    # Find the position of base ComfyUI path
-    index = directory.find("custom_nodes")
-
-    # Chop off everything after "ComfyUI"
-    comfy_path = os.path.join(directory[:index])
-
-    return os.path.join(comfy_path, relative_path)
+    return os.path.join(folder_paths.base_path, relative_path)
 
 
 def resolve_file_path(in_file_path):
@@ -170,12 +161,12 @@ def make_exclusive_list(original_list, items_to_remove):
 
 def get_file_extension(filename):
     _, extension = os.path.splitext(filename)
-    return extension
+    return extension.lower()
 
 
 def get_file_extension_without_dot(filename):
     _, extension = os.path.splitext(filename)
-    return extension[1:]
+    return extension[1:].lower()
 
 
 def is_webp(filename):
