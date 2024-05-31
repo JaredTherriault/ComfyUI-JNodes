@@ -42,9 +42,9 @@ export class ConfigSetting {
         const val = localStorage.getItem("JNodes.Settings." + name);
         //console.log("localstorage (" + name + " : " + val + ")");
         if (val !== null) {
-            try { // Try to parse the value automatically, and if we can't then just return the string
+            try { // Try to parse the value automatically, and if we can"t then just return the string
                 const loadedValue = JSON.parse(val);
-                if (typeof loadedValue === 'object') { // If it's an object, get the default first then assign loaded values on top
+                if (typeof loadedValue === "object") { // If it's an object, get the default first then assign loaded values on top
                     let fullValue = defaultValue;
                     Object.assign(fullValue, loadedValue);
                     return fullValue;
@@ -192,31 +192,31 @@ function createExpandableSettingsArea() {
         textContent: "JNodes Settings ",
     });
 
-    const toggleButton = document.createElement('button');
-    toggleButton.textContent = '►';
-    toggleButton.classList.add('toggle-btn');
+    const toggleButton = document.createElement("button");
+    toggleButton.textContent = "▶";
+    toggleButton.classList.add("toggle-btn");
 
-    underButtonContent = $el('div', {
+    underButtonContent = $el("div", {
         style: {
-            id: 'under-button-content',
-            textAlign: 'center',
-            margin: 'auto',
-            width: '100%',
-            display: 'table',
-            visibility: 'collapse'
+            id: "under-button-content",
+            textAlign: "center",
+            margin: "auto",
+            width: "100%",
+            display: "table",
+            visibility: "collapse"
         }
     });
 
     // Add click event listener to toggle button
-    toggleButton.addEventListener('click', function () {
-        const bIsCurrentlyCollapsed = underButtonContent.style.visibility === 'collapse';
+    toggleButton.addEventListener("click", function () {
+        const bIsCurrentlyCollapsed = underButtonContent.style.visibility === "collapse";
 
         // Toggle content display
         underButtonContent.style.visibility =
-            bIsCurrentlyCollapsed ? 'visible' : 'collapse';
+            bIsCurrentlyCollapsed ? "visible" : "collapse";
 
         // Toggle button arrow orientation
-        toggleButton.textContent = bIsCurrentlyCollapsed ? '' : '►';
+        toggleButton.textContent = bIsCurrentlyCollapsed ? "▼" : "▶";
     });
 
     app.ui.settings.addSetting({
@@ -229,13 +229,13 @@ function createExpandableSettingsArea() {
                 }
             }, [
                 $el("td", {
-                    colSpan: '2',
+                    colSpan: "2",
                 }, [
                     $el("div", {
                         style: {
-                            textAlign: 'center',
-                            margin: 'auto',
-                            width: '100%',
+                            textAlign: "center",
+                            margin: "auto",
+                            width: "100%",
                         },
                     }, [nameWidget, toggleButton]), underButtonContent
                 ]),
@@ -259,13 +259,13 @@ export function addJNodesSetting(nameWidget, settingWidget, tooltip) {
             return textA.localeCompare(textB);
         });
 
-        underButtonContent.innerHTML = '';
+        underButtonContent.innerHTML = "";
 
         // Update the table with the sorted rows
         rows.forEach(row => underButtonContent.appendChild(row));
     }
 
-    let title = tooltip ? tooltip.toString() : '';
+    let title = tooltip ? tooltip.toString() : "";
     nameWidget.title = nameWidget.title ? nameWidget.title : title;
     settingWidget.title = settingWidget.title ? settingWidget.title : title;
 
@@ -292,7 +292,7 @@ export function addJNodesSetting(nameWidget, settingWidget, tooltip) {
     sortTable();
 }
 
-export function createFlyoutHandle(handleText, handleClassSuffix = '', menuClassSuffix = '', parentRect = window) {
+export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClassSuffix = "", parentRect = window) {
     let handle = $el(`section.flyout-handle${handleClassSuffix}`, [
         $el("label.flyout-handle-label", { textContent: handleText })
     ]);
@@ -343,7 +343,7 @@ export function createFlyoutHandle(handleText, handleClassSuffix = '', menuClass
         menu.style.transformOrigin = `${transformOriginX} ${transformOriginY}`;
     };
 
-    handle.addEventListener('mouseover', handle.determineTransformLayout);
+    handle.addEventListener("mouseover", handle.determineTransformLayout);
 
     return { handle: handle, menu: menu };
 }
@@ -379,7 +379,7 @@ export function createVideoPlaybackOptionsMenuWidgets(menu) {
         const propertyValueToUse = propertyName in setting_VideoPlaybackOptions.value ? setting_VideoPlaybackOptions.value[propertyName] : propertyValue;
         const info = infos[propertyName];
         let widget;
-        if (info.widgetType === 'checkbox') {
+        if (info.widgetType === "checkbox") {
             let options = new options_LabeledCheckboxToggle();
             options.id = `VideoPlaybackOptions.${propertyName}`
             options.checked = propertyValueToUse;
@@ -390,7 +390,7 @@ export function createVideoPlaybackOptionsMenuWidgets(menu) {
                 oninput(propertyName, newValue);
             }
             widget = createLabeledCheckboxToggle(options);
-        } else if (info.widgetType === 'range') {
+        } else if (info.widgetType === "range") {
             let options = new options_LabeledSliderRange();
             options.id = `VideoPlaybackOptions.${propertyName}`
             options.value = propertyValueToUse;
@@ -405,7 +405,7 @@ export function createVideoPlaybackOptionsMenuWidgets(menu) {
                 oninput(propertyName, newValue);
             }
             widget = createLabeledSliderRange(options);
-        } else if (info.widgetType === 'number') {
+        } else if (info.widgetType === "number") {
             let options = new options_LabeledNumberInput();
             options.id = `VideoPlaybackOptions.${propertyName}`
             options.value = propertyValueToUse;
@@ -420,14 +420,14 @@ export function createVideoPlaybackOptionsMenuWidgets(menu) {
             }
             widget = createLabeledNumberInput(options);
         }
-        widget.title = infos[propertyName]?.tooltip || '';
+        widget.title = infos[propertyName]?.tooltip || "";
         menu.appendChild(widget);
     });
 }
 
 export function createVideoPlaybackOptionsFlyout() {
-    const handleClassSuffix = '.video-handle';
-    const menuClassSuffix = '.video-menu';
+    const handleClassSuffix = ".video-handle";
+    const menuClassSuffix = ".video-menu";
     let flyout = createFlyoutHandle("📽️", handleClassSuffix, menuClassSuffix);
 
     createVideoPlaybackOptionsMenuWidgets(flyout.menu);
@@ -474,7 +474,7 @@ export function createLabeledSliderRange(options = null) {
     let valueLabelElement;
 
     if (options.bIncludeValueLabel) {
-        valueLabelElement = $el('label', {
+        valueLabelElement = $el("label", {
             textContent: options.value?.toFixed(options.valueLabelFractionalDigits) || 0
         });
 
@@ -484,7 +484,7 @@ export function createLabeledSliderRange(options = null) {
         // Update the options.oninput callback
         options.oninput = (e) => {
             // Call the original oninput callback if available
-            if (originalOnInput && typeof originalOnInput === 'function') {
+            if (originalOnInput && typeof originalOnInput === "function") {
                 originalOnInput(e);
             }
 
@@ -497,9 +497,9 @@ export function createLabeledSliderRange(options = null) {
         };
     }
 
-    let MainElement = $el('input', {
+    let MainElement = $el("input", {
         id: options.id,
-        type: 'range',
+        type: "range",
         value: options.value,
         min: options.min,
         max: options.max,
@@ -508,15 +508,15 @@ export function createLabeledSliderRange(options = null) {
 
     options.bindEvents(MainElement);
 
-    let OuterElement = $el('div', {
+    let OuterElement = $el("div", {
         style: {
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5%'
+            display: "flex",
+            alignItems: "center",
+            gap: "5%"
         }
     });
 
-    const LabelWidget = $el('label', { textContent: options.labelTextContent });
+    const LabelWidget = $el("label", { textContent: options.labelTextContent });
 
     if (!options.bPlaceLabelAfterMainElement) {
 
@@ -557,9 +557,9 @@ export function createLabeledNumberInput(options = null) {
         options = new options_LabeledNumberInput();
     }
 
-    let MainElement = $el('input', {
+    let MainElement = $el("input", {
         id: options.id,
-        type: 'number',
+        type: "number",
         value: options.value,
         min: options.min,
         max: options.max,
@@ -583,7 +583,7 @@ export function createLabeledNumberInput(options = null) {
         // Update the labelElement text content with the rounded value
 
         // Call the original oninput callback if available
-        if (originalOnInput && typeof originalOnInput === 'function') {
+        if (originalOnInput && typeof originalOnInput === "function") {
             originalOnInput(e);
         }
 
@@ -592,15 +592,15 @@ export function createLabeledNumberInput(options = null) {
 
     options.bindEvents(MainElement);
 
-    let OuterElement = $el('div', {
+    let OuterElement = $el("div", {
         style: {
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5%'
+            display: "flex",
+            alignItems: "center",
+            gap: "5%"
         }
     });
 
-    const LabelWidget = $el('label', { textContent: options.labelTextContent });
+    const LabelWidget = $el("label", { textContent: options.labelTextContent });
 
     if (!options.bPlaceLabelAfterMainElement) {
 
@@ -631,22 +631,22 @@ export function createLabeledCheckboxToggle(options = null) {
         options = new options_LabeledCheckboxToggle();
     }
 
-    let MainElement = $el('input', {
+    let MainElement = $el("input", {
         id: options.id,
-        type: 'checkbox',
+        type: "checkbox",
         checked: options.checked
     });
 
     options.bindEvents(MainElement);
 
-    let OuterElement = $el('div', {
+    let OuterElement = $el("div", {
         style: {
-            display: 'flex',
-            alignItems: 'center'
+            display: "flex",
+            alignItems: "center"
         }
     });
 
-    const LabelWidget = $el('label', { textContent: options.labelTextContent });
+    const LabelWidget = $el("label", { textContent: options.labelTextContent });
 
     if (!options.bPlaceLabelAfterMainElement) {
 

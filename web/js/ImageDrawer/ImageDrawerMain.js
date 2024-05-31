@@ -238,7 +238,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 		const CollapseExpandButton = $el("button.JNodes-image-drawer-menu-collapsible-area-toggle-button", {
 			title: "Toggle the visibility of the controls below",
-			textContent: "v",
+			textContent: "▼",
 			style: {
 				background: "none",
 				border: "none",
@@ -252,14 +252,14 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 		// Add click event listener to toggle button
 		CollapseExpandButton.addEventListener('click', function () {
-			const bIsCurrentlyCollapsed = CollapseExpandButton.textContent === ">";
+			const bIsCurrentlyCollapsed = CollapsibleArea.style.visibility === "collapse";
 
 			// Toggle content display
 			CollapsibleArea.style.visibility =
 				bIsCurrentlyCollapsed ? 'visible' : 'collapse';
 
 			// Toggle button arrow orientation
-			CollapseExpandButton.textContent = bIsCurrentlyCollapsed ? "v" : ">";
+			CollapseExpandButton.textContent = bIsCurrentlyCollapsed ? "▼" : "▶";
 		});
 
 		const batchDeletionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchDeletionManager", this.drawerInstanceIndex);
