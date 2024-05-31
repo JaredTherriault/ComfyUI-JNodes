@@ -11,7 +11,7 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 		super(args);
 
 		this.searchBarElement;
-		this.bMatchAny = true;
+		this.bMatchAny = false; // Whether to return results with any of the given tokens or only results that match all tokens
 	}
 
 	createSearchBar() {
@@ -125,6 +125,9 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 			// If we don't want to evaluate search, just return true
 			utilitiesInstance.setElementVisible(children[i], bShouldEvaluateSearch ? bDoesItemTextIncludeSearchTerm : true);
 		}
+
+		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+		batchSelectionManagerInstance.updateWidget();
 	}
 
 	// Function to execute search using the term entered in the SearchBar
