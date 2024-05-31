@@ -98,6 +98,7 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_SamplerSelectorWithString": SamplerSelector,
     "JNodes_SchedulerSelectorWithString": SchedulerSelector,
     "JNodes_ImageFormatSelector": ImageFormatSelector,
+    "JNodes_SelectRandomFileFromDirectory": SelectRandomFileFromDirectory,
     
     # video_nodes
     "JNodes_MediaInfoToString": MediaInfoToString,
@@ -157,6 +158,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_SamplerSelectorWithString": "Sampler Selector + String",
     "JNodes_SchedulerSelectorWithString": "Scheduler Selector + String",
     "JNodes_ImageFormatSelector": "Image Format Selector",
+    "JNodes_SelectRandomFileFromDirectory": "Select Random File From Directory",
     
     # video_nodes
     "JNodes_MediaInfoToString": "Media Info To String",

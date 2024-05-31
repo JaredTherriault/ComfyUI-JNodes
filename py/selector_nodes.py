@@ -205,4 +205,48 @@ class ImageFormatSelector(BaseListSelector):
         else:
             return self.return_array_element_by_index_or_seed(
                 mode, seed, JNODES_IMAGE_FORMAT_TYPES)
-            
+
+class SelectRandomFileFromDirectory:
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("PATH",)
+    FUNCTION = "get_random_file"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "base_directory": ("STRING", {"multiline": False}),
+                "include_subdirectories": ("BOOLEAN", {"default": True}),
+                "optional_file_type": ("STRING", {"multiline": False}),
+                "seed": ("INT", {"default": 0, "max": 0xffffffffffffffff}),
+                }
+            }
+
+    def get_random_file(self, base_directory, include_subdirectories, optional_file_type, seed):   
+        # List to store the paths of all the files
+        file_paths = []
+
+        # Walk through the directory
+        for root, dirs, files in os.walk(resolve_file_path(base_directory)):
+            for file in files:
+                if optional_file_type:
+                    if file.lower().endswith(optional_file_type.lower()):
+                        file_paths.append(os.path.join(root, file))
+                else:
+                    file_paths.append(os.path.join(root, file))
+
+            # If not including subdirectories, break after the first iteration
+            if not include_subdirectories:
+                break
+
+        # If no files were found, return None or handle as needed
+        if not file_paths:
+            return ("")
+
+        # Select a random file from the list
+        # Initialize the random seed
+        random.seed(seed)
+        selected_file = random.choice(file_paths)
+        
+        return (selected_file,)
