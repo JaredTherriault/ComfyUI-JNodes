@@ -23,6 +23,7 @@ function setExtensionToDummy(extensionName) {
     }
 }
 
+// This function does not use the ConfigSetting class because it may or may not be initialized when this runs
 function loadExtensionBlockList() {
 
     let currentBlockList = [];
