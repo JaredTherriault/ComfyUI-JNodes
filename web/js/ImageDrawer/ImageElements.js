@@ -3,7 +3,6 @@ import { $el } from "/scripts/ui.js";
 
 import { utilitiesInstance } from "../common/Utilities.js";
 
-import { isPointerDown } from "../common/EventManager.js";
 import { createModal } from "../common/ModalManager.js";
 
 import { setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
@@ -44,30 +43,15 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	imageElement.fileInfo = fileInfo;
 	imageElement.bIsVideoFormat = bIsVideoFormat;
 
-	imageElement.mouseOverEvent = function (event) {
-		if (!event) { return; }
+	// Mouse Events
+	imageElement.addEventListener("mouseover", (event) => {
 
-		// Only show tooltip if a mouse button is not being held
-		if (!isPointerDown() && !ImageElementUtils.toolButtonContainer?.contains(event.target)) {
-			ImageElementUtils.addCheckboxSelectorToImageElement(imageElement);
-			ImageElementUtils.addToolButtonToImageElement(imageElement);
-			ImageElementUtils.updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
-		}
-	}
-	imageElement.addEventListener("mouseover", imageElement.mouseOverEvent);
+		ImageElementUtils.imageElementMouseOverEvent(event, imageElement);
+	});
+	imageElement.addEventListener("mouseout", (event) => {
 
-	imageElement.mouseOutEvent = function (event) {
-		if (!event) { return; }
-
-		ImageElementUtils.hideToolTip();
-
-		// If the new actively moused over element is not a child of imageElement, then hide the button
-		if (!imageElement.contains(event.relatedTarget)) {
-			ImageElementUtils.removeAndHideToolButtonFromImageElement(imageElement);
-			ImageElementUtils.hideImageElementCheckboxSelector(imageElement);
-		}
-	}
-	imageElement.addEventListener("mouseout", imageElement.mouseOutEvent);
+		ImageElementUtils.imageElementMouseOutEvent(event, imageElement);
+	});
 
 	imageElement.deleteItem = async function (bAlsoRemoveFromImageList = true, bNotifyImageListChanged = true) {
 

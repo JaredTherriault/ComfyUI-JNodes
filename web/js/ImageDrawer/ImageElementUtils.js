@@ -10,6 +10,7 @@ import { setting_bKeyListAllowDenyToggle, setting_KeyList, createFlyoutHandle } 
 import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 
 import { utilitiesInstance } from "../common/Utilities.js";
+import { isPointerDown } from "../common/EventManager.js";
 
 import { setting_FontSize, setting_FontFamily } from "../TextareaFontControl.js"
 
@@ -23,6 +24,8 @@ const bUseWideTooltip = true;
 
 let toolTip;
 export let toolButtonContainer;
+
+let currentMousedOverImageElement = null;
 
 export function createToolTip(imageElement) {
 
@@ -89,6 +92,39 @@ export function hideToolTip() {
     if (toolTip) {
         toolTip.style.visibility = "hidden";
         toolTip.style.opacity = "0";
+    }
+}
+
+export function imageElementMouseOverEvent(event, imageElement) {
+    if (!event) { return; }
+
+    // If mouseOver was called without the previous imageElement having mouseOut called on it, manually call it
+    if (currentMousedOverImageElement && currentMousedOverImageElement != imageElement) {
+
+        imageElementMouseOutEvent(event, currentMousedOverImageElement);
+    }
+
+    // Only show tooltip if a mouse button is not being held
+    if (!isPointerDown() && !toolButtonContainer?.contains(event.target)) {
+
+        currentMousedOverImageElement = imageElement;
+        addCheckboxSelectorToImageElement(imageElement);
+        addToolButtonToImageElement(imageElement);
+        updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
+    }
+}
+
+export function imageElementMouseOutEvent(event, imageElement) {
+    if (!event) { return; }
+
+    hideToolTip();
+
+    // If the new actively moused over element is not a child of imageElement, then hide the button
+    if (!imageElement.contains(event.relatedTarget)) {
+        
+        removeAndHideToolButtonFromImageElement(imageElement);
+        hideImageElementCheckboxSelector(imageElement);
+        currentMousedOverImageElement = null;
     }
 }
 
@@ -188,7 +224,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                             if (labelElement.textContent == baseLabelText) {
                                 labelElement.textContent = confirmLabelText;
                             } else if (labelElement.textContent == confirmLabelText) {
-                                
+
                                 const currentContextObject = getCurrentContextObject();
                                 if (currentContextObject) {
                                     currentContextObject.onRequestSingleRemoval(imageElementToUse);
