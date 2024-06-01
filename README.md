@@ -38,13 +38,17 @@
  * Mouse over images in feed and history to see exif/png_info
  
 # Caveats
- * Not compatible with pythongosssss ImageFeed, you'll need to manually delete it
- * Not compatible with pythongosssss favicon.js, you'll need to manually delete it
- * Not compatible with ComfyUI DynamicPrompts.js, you'll need to manually delete it
- * Not compatible with ComfyUI EditAttention.js, you'll need to manually delete it
- 
- The python nodes will all still work fine, but if you don't delete the files above you won't be able to use many web features.
- 
+ There are some incompatibilities with some Comfy extensions and some popular extensions. They can be optionally disabled with this suite.
+ Please use the JNodes Extension Management setting in Settings > JNodes > Extension Management to disable the following extensions by unchecking them:
+ * pysssss.ImageFeed should be disabled as ImageDrawer relaces it entirely.
+ * mtb.ImageFeed can be disabled if you don't want to see it in addition to ImageDrawer. mtb.ImageFeed is designed to only load if pysssss.ImageFeed is not loaded.
+ * pysssss.FaviconStatus can be disabled if you'd like to use your own custom favicons or see the progress percentage in the title or tab. This is optional.
+ * Comfy.DynamicPrompts can be disabled if you're using another dynamic prompts solution, such as the one included with this suite. If this is enabled, the included solution can't operate.
+ * Comfy.EditAttention can be disabled if you would prefer to use a similar system included in this suite (which supports undo/redo).
+
+   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/c1dbefaa-d6aa-4b94-9ff8-d10c8e55273a)
+
+  
 # Future updates
  * Implementation of more contexts in ImageDrawer
  * Slideshow for images
