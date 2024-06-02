@@ -47,10 +47,38 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 			textContent: "🎲",
 			title: "Random Suggestion",
 			onclick: async () => {
-				let loraDicts = await ExtraNetworks.getLoras();
-				const loraKeys = Object.keys(loraDicts);
-				const randomIndex = Math.floor(Math.random() * loraKeys.length);
-				imageDrawerSearchInstance.setSearchTextAndExecute(loraKeys[randomIndex]);
+
+				// Basically, we get a child element from the current list randomly
+				// Then if it has searchTerms, which all items should, we parse them out into an array
+				// Then we get a random term, clean it up a little, and if it's valid we execute search with it
+				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+				const children = imageDrawerListInstance.getImageListChildren();
+
+				let selectedChildElement = null;
+
+				do {
+					const randomIndex = Math.floor(Math.random() * children.length);
+					selectedChildElement = children[randomIndex];
+				} while (!selectedChildElement || !selectedChildElement.searchTerms);
+
+				if (selectedChildElement?.searchTerms) {
+
+					const splitTerms = selectedChildElement.searchTerms.split(" ");
+					let chosenTerm = "";
+					do {
+						// New random
+						const randomIndex = Math.floor(Math.random() * splitTerms.length);
+						chosenTerm = splitTerms[randomIndex];
+
+						// Clean up the string
+						while (chosenTerm.includes(",")) {
+							chosenTerm = chosenTerm.replace(",", " ");
+						}
+
+					} while (!chosenTerm.trim());
+
+					this.setSearchTextAndExecute(chosenTerm);
+				}
 			}
 		});
 	}
