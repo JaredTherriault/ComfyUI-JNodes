@@ -206,12 +206,6 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 		img.initVideo();
 
-		imageElement.displayData.DurationInSeconds = fileInfo.file?.duration_in_seconds;
-		imageElement.displayData.FramesPerSecond = fileInfo.file?.fps;
-		imageElement.displayData.FrameCount = fileInfo.file?.frame_count;
-		imageElement.displayData.FramesPerSecond = fileInfo.file?.fps;
-		imageElement.displayData.FramesPerSecond = fileInfo.file?.fps;
-
 		imageElement.bIsVideoFormat = bIsVideoFormat;
 	}
 
@@ -223,6 +217,16 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	imageElement.file_age = fileInfo.file?.file_age || utilitiesInstance.getCurrentSecondsFromEpoch(); // todo: fix for feed images
 	imageElement.subdirectory = fileInfo.subdirectory || null;
 	imageElement.displayData.FileSize = fileInfo.file?.file_size || -1;
+
+	if (fileInfo?.file?.duration_in_seconds && fileInfo.file.duration_in_seconds > 0) {
+		imageElement.displayData.DurationInSeconds = fileInfo.file.duration_in_seconds;
+	}
+	if (fileInfo?.file?.fps && fileInfo.file.fps > 0) {
+		imageElement.displayData.FramesPerSecond = fileInfo.file.fps;
+	}
+	if (fileInfo?.file?.frame_count && fileInfo.file.frame_count > 0) {
+		imageElement.displayData.FrameCount = fileInfo.file.frame_count;
+	}
 
 	imageElement.displayData = utilitiesInstance.SortJsonObjectByKeys(imageElement.displayData);
 
