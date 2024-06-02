@@ -164,9 +164,9 @@ class ImageDrawerContext {
 	}
 
 	onRequestBatchDeletion() {
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
-		for (const child of imageDrawerListInstance.getImageListChildren()) {
-			if (child.bIsCheckboxSelectorChecked && child.bIsCheckboxSelectorChecked == true && child.deleteItem) {
+		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+		for (const child of batchSelectionManagerInstance.getValidSelectedItems()) {
+			if (child.deleteItem) {
 				child.deleteItem();
 			}
 		}
@@ -179,9 +179,9 @@ class ImageDrawerContext {
 	}
 
 	onRequestBatchRemoval() {
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
-		for (const child of imageDrawerListInstance.getImageListChildren()) {
-			if (child.bIsCheckboxSelectorChecked && child.bIsCheckboxSelectorChecked == true && child.removeItemFromImageList) {
+		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+		for (const child of batchSelectionManagerInstance.getValidSelectedItems()) {
+			if (child.removeItemFromImageList) {
 				child.removeItemFromImageList();
 			}
 		}

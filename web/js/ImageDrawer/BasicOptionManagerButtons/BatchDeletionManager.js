@@ -97,5 +97,5 @@ class BatchDeletionManager extends BatchOptionManagerButton {
 }
 
 const factoryInstance = new ClassInstanceFactory(BatchDeletionManager, {
-    tooltipText: "Trash, recycle or delete all selected items", buttonClass: "JNodes-image-drawer-menu-delete-selected-button"
+    tooltipText: "Trash, recycle or delete all visible selected items", buttonClass: "JNodes-image-drawer-menu-delete-selected-button"
 });

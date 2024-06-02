@@ -97,6 +97,6 @@ class BatchRemovalManager extends BatchOptionManagerButton {
 }
 
 const factoryInstance = new ClassInstanceFactory(BatchRemovalManager, {
-    tooltipText: "Remove all selected items from the current context's list. The items will not be deleted from disk. Upon reloading this context's list, they may reappear.", 
+    tooltipText: "Remove all visible selected items from the current context's list. The items will not be deleted from disk. Upon reloading this context's list, they may reappear.", 
     buttonClass: "JNodes-image-drawer-menu-delete-selected-button"
 });

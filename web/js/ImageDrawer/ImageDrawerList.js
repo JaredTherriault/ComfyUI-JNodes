@@ -63,6 +63,17 @@ class ImageDrawerList extends ImageDrawerComponent {
 		return this.imageList.childNodes;
 	}
 
+	getVisibleImageListChildren() {
+		let visibleChildren = [];
+		for (const child of this.getImageListChildren()) {
+			if (child.style.display != "none") {
+				visibleChildren.push(child);
+			}
+		}
+
+		return visibleChildren;
+	}
+
 	async replaceImageListChildren(newChildren) {
 
 		this.notifyStartChangingImageList();

@@ -90,18 +90,28 @@ class BatchSelectionManager extends BatchOptionManagerButton {
         this.updateWidget();
     }
 
+    getValidSelectedItems() {
+
+        const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+        const listChildren = imageDrawerListInstance.getVisibleImageListChildren();
+
+        // Count up selected items in the current view
+        let selectedItems = [];
+        for (const child of listChildren) {
+            if (child.bIsCheckboxSelectorChecked && child.bIsCheckboxSelectorChecked == true) {
+                selectedItems.push(child);
+            }
+        }
+
+        return selectedItems;
+    }
+
     countCheckedItems() {
 
         const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
-        const listChildren = imageDrawerListInstance.getImageListChildren();
+        const listChildren = imageDrawerListInstance.getVisibleImageListChildren();
 
-        // Count up selected items in the current view
-        let selectedCount = 0;
-        for (const child of listChildren) {
-            if (child.bIsCheckboxSelectorChecked && child.bIsCheckboxSelectorChecked == true) {
-                selectedCount++;
-            }
-        }
+        const selectedCount = this.getValidSelectedItems().length;
 
         this.lastCheckedItemCount = { selectedCount: selectedCount, totalItems: listChildren.length };
 
