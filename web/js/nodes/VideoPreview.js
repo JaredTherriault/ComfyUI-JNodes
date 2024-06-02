@@ -176,7 +176,7 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 	});
 	container.appendChild(infoTextArea);
 
-	let displayData = jnodesPayload?.DisplayData;
+	let displayData = jnodesPayload?.displayData;
 
 	function setInfoTextFromDisplayData(inDisplayData) {
 		if (inDisplayData && Object.keys(inDisplayData).length > 0) {
@@ -294,7 +294,7 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 
 		const currentScale = app?.canvas?.ds?.scale;
 
-		const newFontSize = `${15 * currentScale}px`;
+		const newFontSize = `${11 * currentScale}px`;
 
 		if (infoTextArea) {
 			infoTextArea.style.fontSize = newFontSize;
