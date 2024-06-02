@@ -121,7 +121,7 @@ export function imageElementMouseOutEvent(event, imageElement) {
 
     // If the new actively moused over element is not a child of imageElement, then hide the button
     if (!imageElement.contains(event.relatedTarget)) {
-        
+
         removeAndHideToolButtonFromImageElement(imageElement);
         hideImageElementCheckboxSelector(imageElement);
         currentMousedOverImageElement = null;
@@ -175,6 +175,34 @@ export function getOrCreateToolButton(imageElementToUse) {
 
             if (!imageElementToUse) {
                 return;
+            }
+
+            // Filename / ID
+            {
+                const FileDimensionStringifier = (key, value) => {
+					// Check if the key is 'FileDimensions'
+					if (key === 'FileDimensions') {
+						// Serialize the value of 'FileDimensions' as a single line string
+						return JSON.stringify(value);
+					}
+
+					if (typeof value == "number") {
+						return value.toFixed(3);
+					}
+					// Return the original value for other keys
+					return value;
+				};
+
+                let toolTipText = `${imageElementToUse.subdirectory ? imageElementToUse.subdirectory + "/" : ""}${imageElementToUse.filename}`;
+                        
+                if (imageElementToUse.displayData) {
+                    toolTipText += `\n${JSON.stringify(imageElementToUse.displayData, FileDimensionStringifier, "\t")}`;
+                }
+
+                flyout.menu.appendChild($el("label", {
+                    textContent: imageElementToUse.filename,
+                    title: toolTipText,
+                }));
             }
 
             // Delete button
@@ -329,7 +357,7 @@ export function addToolButtonToImageElement(imageElementToUse) {
     imageElementToUse.appendChild(toolButton);
     toolButton.style.visibility = "visible";
 
-    toolButton.flyout.handle.determineTransformLayout(); // Call immediately after parenting to avoid first caling being from the center
+    toolButton.flyout.handle.determineTransformLayout(); // Call immediately after parenting to avoid first calling being from the center
 }
 
 export function removeAndHideToolButtonFromImageElement(imageElementToUse) {
@@ -517,7 +545,7 @@ export function getDisplayTextFromMetadata(metadata) {
 }
 
 export function makeTooltipWidgetFromMetadata(metadata) {
-    if (utilitiesInstance.isValid(metadata)) {
+    if (utilitiesInstance.isInvalidObject(metadata)) {
         return null;
     }
 
@@ -617,7 +645,7 @@ export function makeTooltipWidgetFromMetadata(metadata) {
         }
     }
 
-    return outputWidget;
+    return outputWidget.firstChild ? outputWidget : null; // Only return the widget if it has at least one child widget
 }
 
 export function setTooltipFromWidget(imageElement, widget) {
@@ -670,5 +698,9 @@ export function setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata
     }
 
     // Finally, set search terms on the element
-    imageElement.searchTerms += " " + getDisplayTextFromMetadata(metadata);
+    const metaString = getDisplayTextFromMetadata(metadata).trim();
+
+    if (metaString) {
+        imageElement.searchTerms += " " + metaString;
+    }
 }

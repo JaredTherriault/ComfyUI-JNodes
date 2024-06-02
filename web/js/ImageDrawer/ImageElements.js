@@ -218,7 +218,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	imageElement.appendChild(img);
 
 	// Sorting meta information
-	imageElement.filename = fileInfo.filename;
+	imageElement.filename = imageElement.friendlyName = fileInfo.filename;
 	imageElement.fileType = imageElement.filename.split(".")[1];
 	imageElement.file_age = fileInfo.file?.file_age || utilitiesInstance.getCurrentSecondsFromEpoch(); // todo: fix for feed images
 	imageElement.subdirectory = fileInfo.subdirectory || null;
@@ -226,7 +226,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	imageElement.displayData = utilitiesInstance.SortJsonObjectByKeys(imageElement.displayData);
 
-	imageElement.searchTerms = href; // Search terms to start with, onload will add more
+	imageElement.searchTerms = `${imageElement.filename} ${imageElement.subdirectory} ${JSON.stringify(imageElement.displayData)} `; // Search terms to start with, onload will add more
 
 	imageElement.draggable = true;
 	imageElement.addEventListener('dragstart', function (event) {
