@@ -90,7 +90,7 @@ class JNodesUtilities {
 		return Math.min(Math.max(value, min), max);
 	}
 
-	isValid(obj) {
+	isInvalidObject(obj) {
 		return !obj || Object.keys(obj).length === 0;
 	}
 
