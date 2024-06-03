@@ -9,6 +9,8 @@ app.registerExtension({
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
 		if (nodeData.name === "JNodes_SyncedStringLiteral") {
 
+			const node = nodeType.prototype;
+
 			async function saveText(path, text) {
 				// Save backup
 				{
@@ -37,6 +39,7 @@ app.registerExtension({
 				const asJson = await resp?.json();
 
 				if (asJson?.success && textWidget?.element) {
+					node.bIsCurrentlyAttemptingLoad = true;
 
 					// Cache scroll position
 					const scrollPosition = textWidget.element.scrollTop;
@@ -54,15 +57,19 @@ app.registerExtension({
 					}
 
 					// Restore scroll position, as it can change
-					textWidget.element.scrollTop = scrollPosition;
+					requestAnimationFrame(() => { // Ensure the view is updated
+						textWidget.element.scrollTop = scrollPosition;
+					});
+
+					node.bIsCurrentlyAttemptingLoad = false;
 				}
 
 				return asJson?.success;
 			}
 
 			// Create Widgets when node is created
-			const onNodeCreated = nodeType.prototype.onNodeCreated;
-			nodeType.prototype.onNodeCreated = function () {
+			const onNodeCreated = node.onNodeCreated;
+			node.onNodeCreated = function () {
 				onNodeCreated ? onNodeCreated.apply(this, []) : undefined;
 
 				this.textWidget = this.widgets[0];
@@ -71,41 +78,48 @@ app.registerExtension({
 
 				this.saveButton = this.addWidget("button", "save", null, () => {
 					if (saveText(this.pathWidget.value, this.textWidget.value)) {
-						this.saveButton.name = "saved!";
+						this.saveButton.name = `last saved at ${utilitiesInstance.getCurrentTimeAsString()}`;
 					}
 				});
 
 				this.loadButton = this.addWidget("button", "load", null, () => {
 					if (loadText(this.pathWidget.value, this.textWidget, true)) {
-						this.loadButton.name = "loaded!";
-						this.justLoaded = true;
+						this.bWasJustLoaded = true;
+						this.loadButton.name = `last loaded at ${utilitiesInstance.getCurrentTimeAsString()}`;
+
+						// Clear the "dirty" state
+						if (this.saveButton.name.includes("*")) {
+							this.saveButton.name = this.saveButton.name.replace("*", "");
+						}
 					}
 				});
 
-				this.textWidget.callback = () => {
+				this.textWidget.element.addEventListener("input", async () => {
 					// When the textarea content changes, we want to update the save and load buttons
 					// as a way to 'dirty' the widget so the user knows that changes have been made
 					// since the last save or load. The 'justLoaded' bool only acts
 					// as a gate to eat the first change that may be caused by the load
 					// loadText > set textWidget.value > callback called > justLoaded gate
 
-					this.saveButton.name = "save";
-
 					if (this.justLoaded) {
-						this.justLoaded = false;
+
+						this.bWasJustLoaded = false;
 					} else {
-						this.loadButton.name = "load";
+
+						if (!this.bIsCurrentlyAttemptingLoad && !this.saveButton.name.includes("*")) {
+							this.saveButton.name = this.saveButton.name + "*";
+						}
 					}
-				};
+				});
 
 			};
 
 			// Called after initial deserialization
-			nodeType.prototype.onConfigure = function () {
+			node.onConfigure = function () {
 				loadText(this.pathWidget?.value, this.textWidget, false);
 			};
 
-			nodeType.prototype.onSerialize = function (o) {
+			node.onSerialize = function (o) {
 				if (this.serializeToggleWidget && this.serializeToggleWidget.value == false) {
 					o.widgets_values[0] = ''; // Remove string since it should be coming from the synced txt
 				}

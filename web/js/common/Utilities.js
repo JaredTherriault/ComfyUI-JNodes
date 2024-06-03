@@ -16,6 +16,21 @@ class JNodesUtilities {
 		return "JNodes"
 	}
 
+	getCurrentTimeAsString () {
+		function addZero(num) {
+			return (num >= 0 && num < 10) ? "0" + num : num;
+		}
+
+		const now = new Date();
+		const timeAsString = [
+			addZero(now.getHours()), 
+			addZero(now.getMinutes()),
+			addZero(now.getSeconds())
+		].join(":");
+
+		return timeAsString;
+	}
+
 	getDarkColor() {
 		return 'rgba(0,0,0,0.5)';
 	}
