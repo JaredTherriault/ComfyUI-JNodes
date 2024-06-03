@@ -18,6 +18,17 @@ from comfy.utils import common_upscale
 from PIL import Image, ImageSequence, ImageOps
 from typing import List
 
+try:
+    from numba import njit, prange
+except Exception as e:
+    print(f"WARINING! Numba failed to import! Stereoimage generation will be much slower! ({str(e)})")
+    from builtins import range as prange
+    def njit(parallel=False):
+        def Inner(func): return lambda *args, **kwargs: func(*args, **kwargs)
+        return Inner
+import numpy as np
+from PIL import Image
+
 
 class MediaInfo:
 
@@ -472,3 +483,86 @@ class UploadVisualMedia:
         if not os.path.isfile(full_path):
             return f"Invalid media file: {full_path}"
         return True
+
+class CreateStereoscopicImageFromDepth:
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "input_image": ("IMAGE",),
+                "depth_map": ("IMAGE",),
+                "max_disparity": ("INT", {"default": 1000}),
+                "mode": (["side-by-side (SBS)", "over-under (OU)"],),
+                "swap_images": ("BOOLEAN", {"default": False}),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "create_sbs_stereo"
+
+    def create_sbs_stereo(self, input_image, depth_map, max_disparity, mode, swap_images):
+        """
+        Create a stereoscopic image from an input image and a depth map.
+
+        Parameters:
+        - input_image: The RGB input image as a PyTorch tensor with shape [1, height, width, 3].
+        - depth_map: The depth map image as a PyTorch tensor with shape [1, height, width, 3].
+        - max_disparity: Maximum disparity for creating the 3D effect.
+        - mode: 'SBS' for side-by-side or 'OU' for over-under.
+        - swap_images: Boolean to swap left and right images.
+
+        Returns:
+        - The stereoscopic image as a PyTorch tensor.
+        """
+
+        # Remove batch dimensions
+        # while len(input_image.shape) > 3:
+        #     input_image = input_image.squeeze(0)
+        # while len(depth_map.shape) > 3:
+        #     depth_map = depth_map.squeeze(0)
+        # stereos = self.create_stereoimages(input_image, depth_map, max_disparity)
+
+        # return (stereos,)
+
+        # Convert tensors to numpy arrays
+        input_image_np = input_image.squeeze(0).numpy()
+        depth_map_np = depth_map.squeeze(0).numpy()
+
+        height, width, channels = input_image_np.shape
+
+        # Create the left and right images
+        left_image = np.zeros_like(input_image_np)
+        right_image = np.zeros_like(input_image_np)
+
+        for y in range(height):
+            for x in range(width):
+                for c in range(channels):
+                    # Get the disparity for the current pixel from the depth map
+                    disparity = (depth_map_np[y, x, c].item() / 255.0) * max_disparity
+
+                    # Calculate the new x positions for left and right images
+                    left_x = int(x - disparity / 2)
+                    right_x = int(x + disparity / 2)
+
+                    # Make sure the new x positions are within image bounds
+                    if 0 <= left_x < width:
+                        left_image[y, left_x, c] = input_image_np[y, x, c]
+                    if 0 <= right_x < width:
+                        right_image[y, right_x, c] = input_image_np[y, x, c]
+
+        if swap_images:
+            left_image, right_image = right_image, left_image
+
+        # Combine images
+        if mode.lower() == 'sbs' or mode.lower() == 'side-by-side (sbs)':
+            stereo_image_np = np.hstack((left_image, right_image))
+        elif mode.lower() == 'ou' or mode.lower() == 'over-under (ou)':
+            stereo_image_np = np.vstack((left_image, right_image))
+        else:
+            raise ValueError("Mode should be 'SBS' for side-by-side or 'OU' for over-under")
+
+        # Convert the result back to a tensor
+        stereo_image = torch.from_numpy(stereo_image_np).unsqueeze(0)
+
+        return (stereo_image,)

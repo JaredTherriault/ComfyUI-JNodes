@@ -100,12 +100,13 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_ImageFormatSelector": ImageFormatSelector,
     "JNodes_SelectRandomFileFromDirectory": SelectRandomFileFromDirectory,
     
-    # video_nodes
+    # media_nodes
     "JNodes_MediaInfoToString": MediaInfoToString,
     "JNodes_BreakMediaInfo": BreakMediaInfo,
     "JNodes_AppendReversedFrames": AppendReversedFrames,
     "JNodes_LoadVisualMediaFromPath": LoadVisualMediaFromPath,
     "JNodes_UploadVisualMedia": UploadVisualMedia,
+    "JNodes_CreateStereoscopicImageFromDepth": CreateStereoscopicImageFromDepth,
     
     # misc
     "JNodes_GetTempDirectory": GetTempDirectory,
@@ -160,12 +161,13 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_ImageFormatSelector": "Image Format Selector",
     "JNodes_SelectRandomFileFromDirectory": "Select Random File From Directory",
     
-    # video_nodes
+    # media_nodes
     "JNodes_MediaInfoToString": "Media Info To String",
     "JNodes_BreakMediaInfo": "Break Media Info",
     "JNodes_AppendReversedFrames": "Append Reversed Frames",
     "JNodes_LoadVisualMediaFromPath": "Load Visual Media From Path",
     "JNodes_UploadVisualMedia": "Upload Visual Media",
+    "JNodes_CreateStereoscopicImageFromDepth": "Create Stereoscopic Image From Depth (Experimental)",
     
     # misc
     "JNodes_GetTempDirectory": "Get Temp Directory",
