@@ -78,14 +78,14 @@ app.registerExtension({
 
 				this.saveButton = this.addWidget("button", "save", null, () => {
 					if (saveText(this.pathWidget.value, this.textWidget.value)) {
-						this.saveButton.name = `last saved at ${utilitiesInstance.getCurrentTimeAsString()}`;
+						this.saveButton.name = `save (last saved at ${utilitiesInstance.getCurrentTimeAsString()})`;
 					}
 				});
 
 				this.loadButton = this.addWidget("button", "load", null, () => {
 					if (loadText(this.pathWidget.value, this.textWidget, true)) {
 						this.bWasJustLoaded = true;
-						this.loadButton.name = `last loaded at ${utilitiesInstance.getCurrentTimeAsString()}`;
+						this.loadButton.name = `load (last loaded at ${utilitiesInstance.getCurrentTimeAsString()})`;
 
 						// Clear the "dirty" state
 						if (this.saveButton.name.includes("*")) {
