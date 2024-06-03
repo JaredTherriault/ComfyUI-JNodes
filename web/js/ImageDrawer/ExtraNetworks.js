@@ -490,7 +490,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 	modelElement.appendChild(createButtonToolbar());
 	modelElement.appendChild(createNameAndTagContainer());
 
-	modelElement.title = JSON.stringify(infoMap);
+	modelElement.title = JSON.stringify(infoMap, null, "\t");
 
 	// Sorting meta information
 	modelElement.filename = nameText;
