@@ -83,7 +83,8 @@ $el("style", {
 	.flyout-handle {
 		align-items: center;
 		padding: 0 5px;
-		position: relative;
+		position: relative;  
+		border: 2px solid var(--border-color);
 	}
 	.flyout-handle .flyout-menu tr {
 		width: 100%

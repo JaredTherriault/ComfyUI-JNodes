@@ -202,6 +202,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		// Remove the drawer widget from view, can be re-opened with showButton
 		const hideButton = $el("button.JNodes-image-drawer-btn.hide-btn", {
 			textContent: "❌",
+			title: "Hide the drawer. Show it again by clicking the icon next to the 'Settings' cog icon.",
 			onclick: () => {
 				utilitiesInstance.setElementVisible(this.imageDrawer, false);
 				utilitiesInstance.setElementVisible(showButton, true);
@@ -230,7 +231,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		this.createDrawerOptionsFlyout();
 
 		const syncButton = $el("button.JNodes-image-drawer-btn.sync-videos-btn", {
-			textContent: "Sync",
+			textContent: "🔄",
 			title: "Sync playback for all currently loaded videos",
 			onclick: () => {
 				for (const video of document.querySelectorAll("video")) {
