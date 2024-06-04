@@ -10,13 +10,26 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 
 		super(args);
 
-		this.searchBarElement;
+		this.searchFieldElement;
 		this.bMatchAny = false; // Whether to return results with any of the given tokens or only results that match all tokens
+		this.matchButtonElement;
 	}
 
 	createSearchBar() {
+		return $el("div", {
+			style: {
+				width: '100%',
+				display: 'flex',
+				flexDirection: 'row',
+			}
+		}, [
+			this.createSearchField(), this.createSearchBarClearButton(), this.createSearchBarMatchButton(), this.createSearchRandomizeButton()
+		]);
+	}
 
-		this.searchBarElement = $el("input", {
+	createSearchField() {
+
+		this.searchFieldElement = $el("input", {
 			type: "text",
 			id: "SearchInput",
 			placeholder: "Type here to search",
@@ -27,9 +40,9 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 		});
 
 		// Attach the handleSearch function to the input's 'input' event
-		this.searchBarElement?.addEventListener('input', () => { this.executeSearchWithEnteredSearchText(); });
+		this.searchFieldElement?.addEventListener('input', () => { this.executeSearchWithEnteredSearchText(); });
 
-		return this.searchBarElement;
+		return this.searchFieldElement;
 	}
 
 	createSearchBarClearButton() {
@@ -39,6 +52,26 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 			title: "Clear Search",
 			onclick: () => { this.clearAndExecuteSearch(); }
 		});
+	}
+
+	createSearchBarMatchButton() {
+
+		this.matchButtonElement = $el("button.JNodes-search-bar-match-btn", {
+			title: "Toggle Match Any / Match All",
+			onclick: () => { 
+				this.bMatchAny = !this.bMatchAny; 
+				this.updateMatchButtonVisual();
+				this.executeSearchWithEnteredSearchText();
+			},
+			style: {
+				color: "red",
+				fontWeight: "bolder"
+			}
+		});
+
+		this.updateMatchButtonVisual();
+
+		return this.matchButtonElement;
 	}
 
 	createSearchRandomizeButton() {
@@ -83,23 +116,30 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 		});
 	}
 
+	updateMatchButtonVisual() {
+
+		if (this.matchButtonElement) {
+			this.matchButtonElement.textContent = this.bMatchAny ? "ANY" : "ALL";
+		}
+	}
+
 	clearSearch() {
-		if (!this.searchBarElement) { return; }
-		this.searchBarElement.value = "";
+		if (!this.searchFieldElement) { return; }
+		this.searchFieldElement.value = "";
 	}
 
 	getSearchText() {
-		return this.searchBarElement.value;
+		return this.searchFieldElement.value;
 	}
 
 	setSearchText(newText) {
-		if (!this.searchBarElement) { return; }
-		this.searchBarElement.value = newText;
+		if (!this.searchFieldElement) { return; }
+		this.searchFieldElement.value = newText;
 	}
 
 	setSearchTextAndExecute(newText) {
-		if (!this.searchBarElement) { return; }
-		this.searchBarElement.value = newText;
+		if (!this.searchFieldElement) { return; }
+		this.searchFieldElement.value = newText;
 		this.executeSearchWithEnteredSearchText();
 	}
 
@@ -109,11 +149,11 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 	}
 
 	focusSearch() {
-		this.searchBarElement.focus();
+		this.searchFieldElement.focus();
 	}
 
 	focusAndSelectSearchText() {
-		this.searchBarElement.select(); // Select focuses already
+		this.searchFieldElement.select(); // Select focuses already
 	}
 
 	// Function to execute seach with an explicit searchTerm
@@ -161,7 +201,7 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 	// Function to execute search using the term entered in the SearchBar
 	executeSearchWithEnteredSearchText() {
 		// Get input value
-		let searchTerm = this.searchBarElement?.value;
+		let searchTerm = this.searchFieldElement?.value;
 
 		this.executeSearch(searchTerm);
 	}

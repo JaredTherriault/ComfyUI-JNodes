@@ -314,7 +314,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 					flexDirection: 'row',
 				}
 			}, [
-				imageDrawerSearchInstance.createSearchBar(), imageDrawerSearchInstance.createSearchBarClearButton(), imageDrawerSearchInstance.createSearchRandomizeButton()
+				imageDrawerSearchInstance.createSearchBar()
 			]);
 
 		const CollapsibleArea = $el("div.JNodes-image-drawer-menu-collapsible-area", {
