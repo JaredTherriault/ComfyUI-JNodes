@@ -1,7 +1,7 @@
 import { setVideoPlaybackRate, setVideoVolume } from "./VideoControl.js";
 
 export class options_VideoPlayback { 
-    autoplay = false; loop = true; controls = true; muted = true; useWheelSeek = true; invertWheelSeek = true; defaultVolume = 50; defaultPlaybackRate = 1.00;
+    autoplay = false; loop = true; controls = true; muted = true; useWheelSeek = false; invertWheelSeek = true; defaultVolume = 50; defaultPlaybackRate = 1.00;
 }; 
 
 export class info_VideoPlaybackOptions {
