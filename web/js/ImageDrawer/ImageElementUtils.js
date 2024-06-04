@@ -693,7 +693,7 @@ export function setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata
     }
 
     const elementUnderMouse = getElementUnderPointer();
-    if (elementUnderMouse && elementUnderMouse == imageElement.img) {
+    if (elementUnderMouse && elementUnderMouse == imageElement.img && imageElement.mouseOverEvent) {
         imageElement.mouseOverEvent();
     }
 
