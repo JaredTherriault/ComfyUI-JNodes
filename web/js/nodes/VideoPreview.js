@@ -275,7 +275,7 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 				}
 
 				if (mediaElement.mozPresentedFrames || fps) {
-					const currentFrame = mediaElement.mozPresentedFrames ? mediaElement.mozPresentedFrames : mediaElement.currentTime * fps;
+					const currentFrame = mediaElement.currentTime * fps;
 					currentInfo.textContent += ` Current Frame: ${currentFrame.toFixed(0)}`;
 				}
 			}
