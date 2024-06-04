@@ -122,15 +122,6 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 					// Create modal content
 					const modalContent = document.createElement("div");
-					modalContent.style.position = 'absolute';
-					modalContent.style.display = "inline-block";
-					modalContent.style.left = "50%";
-					modalContent.style.top = "50%";
-					modalContent.style.transform = "translate(-50%, -50%)";
-					modalContent.style.maxWidth = "99%";
-					modalContent.style.maxHeight = "99%";
-					modalContent.style.overflow = "hidden";
-
 					modalContent.appendChild(modalImg);
 
 					return modalContent;

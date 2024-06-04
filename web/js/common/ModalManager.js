@@ -1,6 +1,26 @@
 
 export function createModal(modalContent, newFocus) {
 	if (!modalContent) { return; }
+
+	// Zoom and Pan functionality
+	let scale = 1;
+	let translateX = -50; // Initial translate X percentage
+	let translateY = -50; // Initial translate Y percentage
+	let bIsPanningActive = false;
+	let bHasPanned = false;
+	let startX = 0;
+	let startY = 0;
+
+	// Set modal content style
+	modalContent.style.position = 'absolute';
+	modalContent.style.display = "inline-block";
+	modalContent.style.left = "50%";
+	modalContent.style.top = "50%";
+	modalContent.style.transform = "translate(-50%, -50%)";
+	modalContent.style.maxWidth = "99%";
+	modalContent.style.maxHeight = "99%";
+	modalContent.style.overflow = "hidden";
+
 	// Create a modal container
 	const modalContainer = document.createElement("div");
 	modalContainer.style.display = "none";
@@ -22,6 +42,10 @@ export function createModal(modalContent, newFocus) {
 	closeButton.style.fontSize = "28px";
 	closeButton.style.fontWeight = "bold";
 	closeButton.style.cursor = "pointer";
+
+	modalContent.draggable = false;
+	modalContainer.addEventListener("dragstart", (event) => { event.preventDefault(); });
+	modalContainer.draggable = false;
 
 	// Append modal content to modal container
 	modalContainer.appendChild(modalContent);
@@ -46,14 +70,79 @@ export function createModal(modalContent, newFocus) {
 
 	// Event listener for closing the modal
 	closeButton.addEventListener("click", closeModal);
-	modalContainer.addEventListener("click", closeModal);
 
-	// Add event listener to close modal on "Escape" key press
-	modalContainer.addEventListener("keydown", function(event) {
+	// Add key event listeners
+	document.addEventListener("keydown", function (event) {
 		if (event.key === "Escape") {
+			event.preventDefault();
 			closeModal();
 		}
 	});
+
+	function zoom(event) {
+		event.preventDefault(); // Prevent the default scroll behavior
+
+		const zoomSpeed = 0.1;
+		const delta = event.deltaY;
+
+		// Adjust the scale based on scroll direction
+		if (delta > 0) {
+			scale = Math.max(0.1, scale - zoomSpeed); // Zoom out
+		} else {
+			scale = Math.min(5, scale + zoomSpeed); // Zoom in
+		}
+
+		// Apply the scale and initial translate to the modal content
+		modalContent.style.transform = `translate(${translateX}%, ${translateY}%) scale(${scale})`;
+	}
+
+	function startPan(event) {
+		bIsPanningActive = true;
+		modalContainer.style.cursor = "grabbing";
+		startX = event.clientX;
+		startY = event.clientY;
+	}
+
+	function pan(event) {
+		if (!bIsPanningActive) return;
+
+		const dx = event.clientX - startX;
+		const dy = event.clientY - startY;
+
+		// Adjust translate values
+		translateX += (dx / modalContainer.clientWidth) * 100;
+		translateY += (dy / modalContainer.clientHeight) * 100;
+
+		// Update start positions for next movement
+		startX = event.clientX;
+		startY = event.clientY;
+
+		// Apply the transformation
+		modalContent.style.transform = `translate(${translateX}%, ${translateY}%) scale(${scale})`;
+
+		bHasPanned = true;
+	}
+
+	function endPan() {
+		bIsPanningActive = false;
+		modalContainer.style.cursor = "grab";
+	}
+
+	function onMouseUp() {
+		endPan();
+
+		if (!bHasPanned) {
+			closeModal();
+		}
+
+		bHasPanned = false;
+	}
+
+	modalContainer.addEventListener("wheel", zoom);
+	modalContainer.addEventListener("mousedown", startPan);
+	modalContainer.addEventListener("mousemove", pan);
+	modalContainer.addEventListener("mouseup", onMouseUp);
+	modalContainer.addEventListener("mouseleave", endPan);
 
 	if (newFocus) {
 		newFocus.focus();
