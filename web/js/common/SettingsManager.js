@@ -170,6 +170,20 @@ export const setupUiSettings = (onDrawerAnchorInput) => {
 		True = Allow list, False = Deny list.`
         addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
+
+    // Video Playback Settings
+    {
+        const labelWidget = $el("label", {
+            textContent: "Video Playback Settings:",
+        });
+
+        const settingWidget = $el("div");
+        createVideoPlaybackOptionsMenuWidgets(settingWidget);
+
+        const tooltip = `Change various settings concerning video playback for videos in the drawer 
+        (note: useWheelSeek and invertWheelSeek apply to all videos in the ComfyUI window)`;
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
 };
 
 export function createDrawerSelectionWidget(onInput) {
