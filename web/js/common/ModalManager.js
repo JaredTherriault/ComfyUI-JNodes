@@ -1,5 +1,5 @@
 
-export function createModal(modalContent, newFocus) {
+export function createModal(modalContent,) {
 	if (!modalContent) { return; }
 
 	// Zoom and Pan functionality
@@ -143,13 +143,6 @@ export function createModal(modalContent, newFocus) {
 	modalContainer.addEventListener("mousemove", pan);
 	modalContainer.addEventListener("mouseup", onMouseUp);
 	modalContainer.addEventListener("mouseleave", endPan);
-
-	if (newFocus) {
-		newFocus.focus();
-	} else {
-		// Remove focus from the currently focused element
-		document.activeElement.blur();
-	}
 
 	return modalContainer;
 }

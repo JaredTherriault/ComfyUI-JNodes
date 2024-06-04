@@ -127,6 +127,9 @@ export async function createImageElementFromFileInfo(fileInfo) {
 					return modalContent;
 				}
 				createModal(createModalContent());
+
+				// Remove focus from the currently focused element
+				document.activeElement.blur();
 			}
 		},
 		ondblclick: async (e) => {
