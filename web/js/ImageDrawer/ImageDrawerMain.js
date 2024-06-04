@@ -229,12 +229,28 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		// Resizing / View options
 		this.createDrawerOptionsFlyout();
 
+		const syncButton = $el("button.JNodes-image-drawer-btn.sync-videos-btn", {
+			textContent: "Sync",
+			title: "Sync playback for all currently loaded videos",
+			onclick: () => {
+				for (const video of document.querySelectorAll("video")) {
+					if (video.readyState > 0) {
+						video.currentTime = 0;
+					}
+				}
+			},
+			style: {
+				width: "fit-content",
+				padding: '3px',
+			},
+		});
+
 		const LeftAffinedControlsGroup = $el("div.JNodes-image-drawer-left-affined-basic-controls-group", {
 			style: {
 				display: "flex",
 				justifycontent: "flex-start",
 			}
-		}, [hideButton, this.drawerOptionsFlyout]);
+		}, [hideButton, this.drawerOptionsFlyout, syncButton]);
 
 		const CollapseExpandButton = $el("button.JNodes-image-drawer-menu-collapsible-area-toggle-button", {
 			title: "Toggle the visibility of the controls below",
