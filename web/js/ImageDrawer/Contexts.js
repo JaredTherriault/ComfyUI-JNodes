@@ -188,7 +188,7 @@ class ImageDrawerContext {
 	}
 
 	getSupportedSortTypes() {
-		return [Sorting.SortTypeFilename, Sorting.SortTypeDate];
+		return [Sorting.SortTypeFilename, Sorting.SortTypeDate, Sorting.SortTypeRandomize];
 	}
 
 	getDesiredSortType() {

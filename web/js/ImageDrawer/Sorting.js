@@ -3,6 +3,8 @@ import { $el } from "/scripts/ui.js";
 import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
 
 let SortingWidget;
+let SortSelectionWidget;
+let SortRandomizeButton;
 let SortTypes;
 
 export function initializeSortTypes() {
@@ -23,6 +25,7 @@ export function initializeSortTypes() {
 		imageAspectRatioDescending: new SortTypeImageAspectRatio(false),
 		fileTypeAscending: new SortTypeFileType(true),
 		fileTypeDescending: new SortTypeFileType(false),
+		randomize: new SortTypeRandomize(),
 	}
 }
 
@@ -31,7 +34,7 @@ export function getSortTypes() {
 }
 
 export function getCurrentSortTypeName() {
-	return SortingWidget.value;
+	return SortSelectionWidget.value;
 }
 
 export function getCurrentSortTypeObject() {
@@ -73,7 +76,7 @@ export function getSortTypeObjectFromClassType(classType, bIsAscending = undefin
 		// returns true if the name at least partially matched and bIsAscending is not specified, 
 		// or is specified and matches the SortType instance
 		const valueType = value.constructor.name;
-		if (valueType == classType.name && (bIsAscending == undefined || value.bIsAscending == bIsAscending)) {
+		if (valueType == classType.name && (value.bIsAscending == undefined || value.bIsAscending == bIsAscending)) {
 			foundSortType = value;
 			break;
 		}
@@ -82,14 +85,14 @@ export function getSortTypeObjectFromClassType(classType, bIsAscending = undefin
 	if (foundSortType) {
 		return foundSortType;
 	} else {
-		console.error(`SortType with name '${foundSortType}' not found.`);
+		console.error(`SortType with name '${classType.name}' not found.`);
 		return null;
 	}
 }
 
 export class SortType {
 	constructor(name, bIsAscending) {
-		this.name = `${name} ${bIsAscending ? "⬆️" : "⬇️"}`;
+		this.name = `${name}${bIsAscending == undefined ? "" : " " + (bIsAscending ? "⬆️" : "⬇️")}`;
 		this.bIsAscending = bIsAscending;
 	}
 
@@ -193,56 +196,113 @@ export class SortTypeFileType extends SortType {
 	}
 }
 
+export class SortTypeRandomize extends SortType {
+	constructor() {
+		super('Randomize', undefined)
+	}
+
+	getSortingLambda() {
+		return () => Math.random() - 0.5;
+	}
+}
+
 // Selector
 
 export function setOptionSelectedFromOptionName(option) {
-	SortingWidget.value = option;
+	
+	SortSelectionWidget.value = option;
 	onOptionSelected(option);
 }
 
 export function setOptionSelectedFromSortType(type, bIsAscending) {
+
 	const foundType = getSortTypeObjectFromClassType(type, bIsAscending);
 	setOptionSelectedFromOptionName(foundType.name);
 }
 
 export function onOptionSelected(option) {
+
 	const NewType = getSortTypeObjectFromName(option);
 	NewType.sortImageList();
+
+	SortRandomizeButton.style.display = (NewType instanceof SortTypeRandomize) ? "unset" : "none";
+}
+
+function addSortingOption(optionName) {
+
+	const option = document.createElement("option");
+	option.value = optionName;
+	option.textContent = optionName;
+	SortSelectionWidget.appendChild(option);
+}
+
+function addUniqueSortingOption(optionName) {
+
+	if (!Array.from(SortSelectionWidget.children).find(op => op.value === optionName)) {
+		addSortingOption(optionName);
+	}
 }
 
 export function setSortingOptionsFromSortTypeArray(inOptionArray) {
-	SortingWidget.replaceChildren();
+
+	SortSelectionWidget.replaceChildren();
 
 	for (const sortType of inOptionArray) {
+
 		for (let bool = 1; bool > -1; bool--) { // Ascending and descending
+
 			const sortObject = getSortTypeObjectFromClassType(sortType, bool);
 			if (sortObject) {
-				const option = document.createElement("option");
-				option.value = sortObject.name;
-				option.textContent = sortObject.name;
-				SortingWidget.appendChild(option);
+				addUniqueSortingOption(sortObject.name);
 			}
 		}
 	}
 }
 
 export function setSortingOptionsFromStringArray(inOptionArray) {
-	SortingWidget.replaceChildren();
+
+	SortSelectionWidget.replaceChildren();
 
 	for (const optionKey in inOptionArray) {
-		const option = document.createElement("option");
-		option.value = optionKey;
-		option.textContent = optionKey;
-		SortingWidget.appendChild(option);
+		addUniqueSortingOption(optionKey);
 	}
 }
 
+function createSortRandomizeButton() {
+
+	SortRandomizeButton = $el("button.JNodes-sort-randomize-btn", {
+		textContent: "🎲",
+		title: "Randomize sorting again",
+		style: {
+			display: "none"
+		},
+		onclick: async () => { sortWithCurrentType(); }
+	});
+
+	return SortRandomizeButton;
+}
+
 export function makeSortingWidget() {
-	SortingWidget = $el("select");
+
+	SortSelectionWidget = $el("select", {
+		style: {
+			width: '100%',
+		}
+	});
+
+	SortingWidget = $el("div", {
+		style: {
+			width: '100%',
+			display: 'flex',
+			flexDirection: 'row',
+		}
+	}, [
+		SortSelectionWidget, createSortRandomizeButton()
+	]);
 
 	// Add an event listener for the "change" event
-	SortingWidget.addEventListener("change", async function() {
-		onOptionSelected(SortingWidget.value);
+	SortSelectionWidget.addEventListener("change", async function () {
+		onOptionSelected(SortSelectionWidget.value);
 	});
 
 	initializeSortTypes();
