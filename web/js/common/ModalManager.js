@@ -64,6 +64,7 @@ export function createModal(modalContent,) {
 	// Function to close the modal
 	function closeModal() {
 		modalContainer.parentNode.removeChild(modalContainer);
+		document.removeEventListener("keydown", handlekeyDown);
 	}
 
 	openModal();
@@ -72,12 +73,13 @@ export function createModal(modalContent,) {
 	closeButton.addEventListener("click", closeModal);
 
 	// Add key event listeners
-	document.addEventListener("keydown", function (event) {
+	function handlekeyDown(event) {
 		if (event.key === "Escape") {
 			event.preventDefault();
 			closeModal();
 		}
-	});
+	}
+	document.addEventListener("keydown", handlekeyDown);
 
 	function zoom(event) {
 		event.preventDefault(); // Prevent the default scroll behavior
