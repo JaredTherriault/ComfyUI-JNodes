@@ -6,7 +6,7 @@ import { utilitiesInstance } from "../common/Utilities.js";
 import { createModal } from "../common/ModalManager.js";
 
 import { setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
-import { onScrollVideo, setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen } from "../common/VideoControl.js";
+import { setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen } from "../common/VideoControl.js";
 
 import * as ImageElementUtils from "./ImageElementUtils.js";
 
@@ -193,8 +193,10 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	if (bIsVideoFormat) {
 
 		imageElement.addEventListener('wheel', (event) => {
+
 			if (setting_VideoPlaybackOptions.value.useWheelSeek) {
-				onScrollVideo(img, event, setting_VideoPlaybackOptions.value.invertWheelSeek);
+				// Prevent scrolling the list
+				event.preventDefault();
 			}
 		});
 

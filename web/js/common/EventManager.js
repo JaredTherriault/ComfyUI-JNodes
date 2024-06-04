@@ -1,5 +1,7 @@
 import { app } from "../../../../scripts/app.js";
 import { utilitiesInstance } from "./Utilities.js";
+
+import { setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
 import * as VideoControl from './VideoControl.js';
 
 // Mouse tracking
@@ -27,14 +29,15 @@ export function getElementUnderPointer() {
 
 // Keyboard events
 
+function isElementAppropriateForVideoEvent(elementUnderPointer) {
+	return elementUnderPointer && VideoControl.isElementVideo(elementUnderPointer);
+}
+
+// Keyboard events
 document.addEventListener("keydown", async (event) => {
 
 	// Video shortcuts
 	// note that elementUnderPointer will always be the video element itself, not the container
-
-	function isElementAppropriateForVideoEvent(elementUnderPointer) {
-		return elementUnderPointer && VideoControl.isElementVideo(elementUnderPointer);
-	}
 
 	if (event.key == "l") { // Seek forward
 		const delta = 1;
@@ -93,6 +96,21 @@ document.addEventListener("keydown", async (event) => {
 			event.preventDefault();
 
 			VideoControl.setVideoPlaybackRate(elementUnderPointer, elementUnderPointer.playbackRate + 0.05);
+		}
+	}
+});
+
+// Scroll wheel
+
+document.addEventListener('wheel', (event) => {
+
+	if (setting_VideoPlaybackOptions.value.useWheelSeek) {
+		const elementUnderPointer = getElementUnderPointer();
+
+		if (isElementAppropriateForVideoEvent(elementUnderPointer)) {
+			event.preventDefault();
+
+			VideoControl.onScrollVideo(elementUnderPointer, event, setting_VideoPlaybackOptions.value.invertWheelSeek);
 		}
 	}
 });
