@@ -166,6 +166,12 @@ class ImageDrawerContext {
 		return false;
 	}
 
+	onRequestShowInFileManager(item) {
+		if (item && item.showInFileManager) {
+			item.showInFileManager();
+		}
+	}
+
 	onRequestSingleDeletion(item) {
 		if (item && item.deleteItem) {
 			item.deleteItem();

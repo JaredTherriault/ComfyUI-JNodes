@@ -1,4 +1,6 @@
 import os
+import platform
+import subprocess
 
 import json
 import re
@@ -209,6 +211,30 @@ def pil2tensor(image: Union[Image.Image, List[Image.Image]]) -> torch.Tensor:
 
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
 
+def open_file_manager(path):
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"The path '{path}' does not exist.")
+
+    if platform.system() == 'Windows':
+        # Windows uses the 'explorer' command
+        if os.path.isfile(path):
+            subprocess.run(['explorer', '/select,', path])
+        else:
+            subprocess.run(['explorer', path])
+    elif platform.system() == 'Darwin':
+        # macOS uses the 'open' command
+        if os.path.isfile(path):
+            subprocess.run(['open', '-R', path])
+        else:
+            subprocess.run(['open', path])
+    elif platform.system() == 'Linux':
+        # Linux uses the 'xdg-open' command
+        if os.path.isfile(path):
+            subprocess.run(['xdg-open', os.path.dirname(path)])
+        else:
+            subprocess.run(['xdg-open', path])
+    else:
+        raise OSError("Unsupported operating system")
 
 def search_and_replace_from_dict(
     text, replacement_dict: Dict, consider_special_characters=True

@@ -175,7 +175,18 @@ def get_comfyui_subdirectory_images_request(request):
         log_exception("Error listing subdirectory images:", e)
         return web.json_response({"success": False, "error": str(e)})
 
-def view_image(request):
+async def request_open_file_manager(request):
+    try:
+        result = await validate_and_return_file_from_request(request)
+
+        if result["success"] == True:
+            open_file_manager(result["payload"]["file"])
+            return web.json_response({"success": True})
+    except Exception as e:
+        logger.error(e)
+        return web.json_response({"success": False, "error": str(e)})
+
+async def validate_and_return_file_from_request(request):
     type = "loras"
     if "type" in request.rel_url.query:
         type = request.rel_url.query["type"]
@@ -201,7 +212,7 @@ def view_image(request):
             
     if base_dir is None:
         logger.warning(f"Unable to get parent directory for {type}")
-        return web.Response(status=400)
+        return { "success": False, "response": 400 }
     
     subfolder = ''
     if "subfolder" in request.rel_url.query:
@@ -214,7 +225,7 @@ def view_image(request):
         # validation for security: prevent accessing arbitrary path
         if filename[0] == '/' or filename.startswith('..') or filename.startswith('./'):
             logger.warning(f"Attempting to access an arbitrary path, aborting. filename: {filename}")
-            return web.Response(status=400)
+            return { "success": False, "response": 400 }
 
         #filename = os.path.basename(filename)
         file = os.path.join(base_dir, filename)
@@ -224,66 +235,73 @@ def view_image(request):
             file = f"/{file}"
         
         if os.path.isfile(file):
-            if 'preview' in request.rel_url.query:
-                with Image.open(file) as img:
-                    preview_info = request.rel_url.query['preview'].split(';')
-                    image_format = preview_info[0]
-                    if image_format not in ['webp', 'jpeg', 'jpg'] or 'a' in request.rel_url.query.get('channel', ''):
-                        image_format = 'webp'
+            return { "success": True, "payload": { "base_dir": base_dir, "subfolder": subfolder, "filename": filename, "file": file } }
 
-                    quality = 90
-                    if preview_info[-1].isdigit():
-                        quality = int(preview_info[-1])
+async def view_image(request):
 
-                    buffer = BytesIO()
-                    if image_format in ['jpeg', 'jpg'] or request.rel_url.query.get('channel', '') == 'rgb':
-                        img = img.convert("RGB")
-                    img.save(buffer, format=image_format, quality=quality)
-                    buffer.seek(0)
+    result = await validate_and_return_file_from_request(request)
 
-                    return web.Response(body=buffer.read(), content_type=f'image/{image_format}',
-                                        headers={"Content-Disposition": f"filename=\"{filename}\""})
+    if result["success"] == True:
+        if 'preview' in request.rel_url.query:
+            with Image.open(result["payload"]["file"]) as img:
+                preview_info = request.rel_url.query['preview'].split(';')
+                image_format = preview_info[0]
+                if image_format not in ['webp', 'jpeg', 'jpg'] or 'a' in request.rel_url.query.get('channel', ''):
+                    image_format = 'webp'
 
-            if 'channel' not in request.rel_url.query:
-                channel = 'rgba'
-            else:
-                channel = request.rel_url.query["channel"]
+                quality = 90
+                if preview_info[-1].isdigit():
+                    quality = int(preview_info[-1])
 
-            if channel == 'rgb':
-                with Image.open(file) as img:
-                    if img.mode == "RGBA":
-                        r, g, b, a = img.split()
-                        new_img = Image.merge('RGB', (r, g, b))
-                    else:
-                        new_img = img.convert("RGB")
+                buffer = BytesIO()
+                if image_format in ['jpeg', 'jpg'] or request.rel_url.query.get('channel', '') == 'rgb':
+                    img = img.convert("RGB")
+                img.save(buffer, format=image_format, quality=quality)
+                buffer.seek(0)
 
-                    buffer = BytesIO()
-                    new_img.save(buffer, format='PNG')
-                    buffer.seek(0)
+                return web.Response(body=buffer.read(), content_type=f'image/{image_format}',
+                                    headers={"Content-Disposition": f"filename=\"{result["payload"]["filename"]}\""})
 
-                    return web.Response(body=buffer.read(), content_type='image/png',
-                                        headers={"Content-Disposition": f"filename=\"{filename}\""})
+        if 'channel' not in request.rel_url.query:
+            channel = 'rgba'
+        else:
+            channel = request.rel_url.query["channel"]
 
-            elif channel == 'a':
-                with Image.open(file) as img:
-                    if img.mode == "RGBA":
-                        _, _, _, a = img.split()
-                    else:
-                        a = Image.new('L', img.size, 255)
+        if channel == 'rgb':
+            with Image.open(result["payload"]["file"]) as img:
+                if img.mode == "RGBA":
+                    r, g, b, a = img.split()
+                    new_img = Image.merge('RGB', (r, g, b))
+                else:
+                    new_img = img.convert("RGB")
 
-                    # alpha img
-                    alpha_img = Image.new('RGBA', img.size)
-                    alpha_img.putalpha(a)
-                    alpha_buffer = BytesIO()
-                    alpha_img.save(alpha_buffer, format='PNG')
-                    alpha_buffer.seek(0)
+                buffer = BytesIO()
+                new_img.save(buffer, format='PNG')
+                buffer.seek(0)
 
-                    return web.Response(body=alpha_buffer.read(), content_type='image/png',
-                                        headers={"Content-Disposition": f"filename=\"{filename}\""})
-            else:
-                return web.FileResponse(file, headers={"Content-Disposition": f"filename=\"{filename}\""})
+                return web.Response(body=buffer.read(), content_type='image/png',
+                                    headers={"Content-Disposition": f"filename=\"{result["payload"]["filename"]}\""})
 
-    return web.Response(status=404)
+        elif channel == 'a':
+            with Image.open(result["payload"]["file"]) as img:
+                if img.mode == "RGBA":
+                    _, _, _, a = img.split()
+                else:
+                    a = Image.new('L', img.size, 255)
+
+                # alpha img
+                alpha_img = Image.new('RGBA', img.size)
+                alpha_img.putalpha(a)
+                alpha_buffer = BytesIO()
+                alpha_img.save(alpha_buffer, format='PNG')
+                alpha_buffer.seek(0)
+
+                return web.Response(body=alpha_buffer.read(), content_type='image/png',
+                                    headers={"Content-Disposition": f"filename=\"{result["payload"]["filename"]}\""})
+        else:
+            return web.FileResponse(result["payload"]["file"], headers={"Content-Disposition": f"filename=\"{result["payload"]["filename"]}\""})
+
+    return web.Response(status= result["response"] if result["response"] else 404)
 
 async def upload_image(request):
     try:
@@ -458,55 +476,10 @@ async def delete_item(request):
             log_exception(f"Error occurred while deleting '{path}':", e)
             return web.json_response({"success": False, "message": message})
 
-    type = "loras"
-    if "type" in request.rel_url.query:
-        type = request.rel_url.query["type"]
-        
-    base_dir = None
-    
-    try: # Try to infer base_dir
-        file_list = folder_paths.get_filename_list(type)
-        if file_list:
-            sample_set = []
-            for item_name in file_list:
-                file_path = folder_paths.get_full_path(type, item_name.replace("\\", "/"))
-                sample_set.append(file_path)
-                if len(sample_set) == 2:
-                    break
-            if len(sample_set) == 2:
-                base_dir = highest_common_folder(sample_set[0], sample_set[1])
-    except: # If we can't, most likely because it's not a built-in type, assume type is a subfolder in the ComfyUI directory
-        try:
-            base_dir = convert_relative_comfyui_path_to_full_path(type)
-        except Exception as e:
-            log_exception(f"Error finding folder {type}. Error:", e)
-            
-    if base_dir is None:
-        logger.warning(f"Unable to get parent directory for {type}")
-        return web.Response(status=400)
-    
-    subfolder = ''
-    if "subfolder" in request.rel_url.query:
-        subfolder = request.rel_url.query["subfolder"]
-        base_dir = os.path.join(base_dir, subfolder)
-    
-    if "filename" in request.rel_url.query:
-        filename = request.rel_url.query["filename"]
+    result = await validate_and_return_file_from_request(request)
 
-        # validation for security: prevent accessing arbitrary path
-        if filename[0] == '/' or filename.startswith('..') or filename.startswith('./'):
-            logger.warning(f"Attempting to access an arbitrary path, aborting. filename: {filename}")
-            return web.Response(status=400)
-
-        #filename = os.path.basename(filename)
-        file = os.path.join(base_dir, filename)
-
-        # Hack for linux/mac/unix
-        if not os.path.isfile(file):
-            file = f"/{file}"
-        
-        if os.path.isfile(file):
-            return delete_file(file)
+    if result["success"] == True:
+        return delete_file(result["payload"]["file"])
 
     logger.warning("File could not be deleted: file not found")
     return web.Response(status=404)

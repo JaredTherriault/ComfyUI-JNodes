@@ -29,11 +29,15 @@ async def save_model_config_wrapper(request):
 
 @server.PromptServer.instance.routes.get("/jnodes_view_image")
 async def view_image_wrapper(request):
-    return view_image(request)
+    return await view_image(request)
 
 @server.PromptServer.instance.routes.get("/jnodes_load_info")
 async def load_info_wrapper(request):
     return load_info(request)
+
+@server.PromptServer.instance.routes.post('/jnodes_request_open_file_manager')
+async def request_open_file_manager_wrapper(request):
+    return await request_open_file_manager(request)
 
 @server.PromptServer.instance.routes.post('/jnodes_request_task_cancellation')
 async def request_task_cancellation_wrapper(request):

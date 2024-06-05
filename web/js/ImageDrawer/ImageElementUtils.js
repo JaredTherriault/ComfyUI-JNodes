@@ -180,27 +180,27 @@ export function getOrCreateToolButton(imageElementToUse) {
             // Filename / ID
             {
                 const FileDimensionStringifier = (key, value) => {
-					// Check if the key is 'FileDimensions'
-					if (key === 'FileDimensions') {
-						// Serialize the value of 'FileDimensions' as a single line string
-						return JSON.stringify(value);
-					}
+                    // Check if the key is 'FileDimensions'
+                    if (key === 'FileDimensions') {
+                        // Serialize the value of 'FileDimensions' as a single line string
+                        return JSON.stringify(value);
+                    }
 
-					if (typeof value == "number") {
-						return value.toFixed(3);
-					}
-					// Return the original value for other keys
-					return value;
-				};
+                    if (typeof value == "number") {
+                        return value.toFixed(3);
+                    }
+                    // Return the original value for other keys
+                    return value;
+                };
 
                 let toolTipText = `${imageElementToUse.subdirectory ? imageElementToUse.subdirectory + "/" : ""}${imageElementToUse.filename}`;
-                        
+
                 if (imageElementToUse.displayData) {
                     toolTipText += `\n${JSON.stringify(imageElementToUse.displayData, FileDimensionStringifier, "\t")}`;
                 }
 
                 flyout.menu.appendChild($el("label", {
-                    textContent: imageElementToUse.filename,
+                    textContent: `📝 ${imageElementToUse.filename}`,
                     title: toolTipText,
                 }));
             }
@@ -257,6 +257,28 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 if (currentContextObject) {
                                     currentContextObject.onRequestSingleRemoval(imageElementToUse);
                                 }
+                            }
+                        }
+                    )
+                );
+            }
+
+            // Open in file manager
+            {
+                const baseLabelText = "📂 Show in File Manager";
+                flyout.menu.appendChild(
+                    createButton(
+                        $el("label", {
+                            textContent: baseLabelText,
+                            style: {
+                                color: 'rgb(250,250,250)',
+                            }
+                        }),
+                        "Open this file's containing directory in your OS's default file manager.",
+                        function (e) {
+                            const currentContextObject = getCurrentContextObject();
+                            if (currentContextObject) {
+                                currentContextObject.onRequestShowInFileManager(imageElementToUse);
                             }
                         }
                     )

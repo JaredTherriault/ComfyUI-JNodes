@@ -53,6 +53,12 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		ImageElementUtils.imageElementMouseOutEvent(event, imageElement);
 	});
 
+	imageElement.showInFileManager = async function () {
+
+		const call = imageElement.fileInfo.href.replace("jnodes_view_image", "jnodes_request_open_file_manager");
+		api.fetchApi(call, { method: "POST" });
+	}
+
 	imageElement.deleteItem = async function (bAlsoRemoveFromImageList = true, bNotifyImageListChanged = true) {
 
 		const deleteCall = imageElement.fileInfo.href.replace("jnodes_view_image", "jnodes_delete_item");
@@ -233,6 +239,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		fileInfo.displayData = imageElement.displayData;
 		event.dataTransfer.setData('text/jnodes_image_drawer_payload', `${JSON.stringify(fileInfo)}`);
 		ImageElementUtils.removeAndHideToolButtonFromImageElement(imageElement);
+        ImageElementUtils.hideImageElementCheckboxSelector(imageElement);
 		ImageElementUtils.hideToolTip();
 	});
 
