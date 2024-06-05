@@ -3,7 +3,7 @@ import { $el } from "/scripts/ui.js";
 
 import { utilitiesInstance } from "../common/Utilities.js";
 
-import { createModal } from "../common/ModalManager.js";
+import { ModalManager } from "../common/ModalManager.js";
 
 import { setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
 import { setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen } from "../common/VideoControl.js";
@@ -109,11 +109,15 @@ export async function createImageElementFromFileInfo(fileInfo) {
 			e.preventDefault();
 
 			if (bIsVideoFormat) {
+
 				if (img && img.togglePlayback) {
 					img.togglePlayback();
 				}
+
 			} else {
+
 				function createModalContent() {
+
 					const modalImg = $el("img", {
 						src: href,
 						style: {
@@ -126,13 +130,13 @@ export async function createImageElementFromFileInfo(fileInfo) {
 						},
 					});
 
-					// Create modal content
 					const modalContent = document.createElement("div");
 					modalContent.appendChild(modalImg);
 
 					return modalContent;
 				}
-				createModal(createModalContent());
+
+				new ModalManager().createModal(createModalContent());
 
 				// Remove focus from the currently focused element
 				document.activeElement.blur();

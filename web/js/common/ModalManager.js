@@ -1,87 +1,107 @@
 
-export function createModal(modalContent,) {
-	if (!modalContent) { return; }
+export class ModalManager {
 
-	// Zoom and Pan functionality
-	let scale = 1;
-	let translateX = -50; // Initial translate X percentage
-	let translateY = -50; // Initial translate Y percentage
-	let bIsPanningActive = false;
-	let bHasPanned = false;
-	let startX = 0;
-	let startY = 0;
+	constructor() {
 
-	// Set modal content style
-	modalContent.style.position = 'absolute';
-	modalContent.style.display = "inline-block";
-	modalContent.style.left = "50%";
-	modalContent.style.top = "50%";
-	modalContent.style.transform = "translate(-50%, -50%)";
-	modalContent.style.maxWidth = "99%";
-	modalContent.style.maxHeight = "99%";
-	modalContent.style.overflow = "hidden";
+		// Zoom and Pan functionality
+		this._scale = 1;
+		this._translateX = -50; // Initial translate X percentage
+		this._translateY = -50; // Initial translate Y percentage
+		this._bIsPanningActive = false;
+		this._bHasPanned = false;
+		this._startX = 0;
+		this._startY = 0;
 
-	// Create a modal container
-	const modalContainer = document.createElement("div");
-	modalContainer.style.display = "none";
-	modalContainer.style.position = "fixed";
-	modalContainer.style.zIndex = "10000";
-	modalContainer.style.left = "0";
-	modalContainer.style.top = "0";
-	modalContainer.style.width = "100%";
-	modalContainer.style.height = "100%";
-	modalContainer.style.overflow = "auto";
-	modalContainer.style.backgroundColor = "rgba(0,0,0,0.7)";
+		this._modalContainer;
+		this._modalContent;
 
-	// Create close button
-	const closeButton = document.createElement("span");
-	modalContainer.style.zIndex = "10001";
-	closeButton.innerHTML = "&times;";
-	closeButton.style.color = "#aaa";
-	closeButton.style.float = "right";
-	closeButton.style.fontSize = "28px";
-	closeButton.style.fontWeight = "bold";
-	closeButton.style.cursor = "pointer";
+		this.handleKeyDownFunction;
+	}
 
-	modalContent.draggable = false;
-	modalContainer.addEventListener("dragstart", (event) => { event.preventDefault(); });
-	modalContainer.draggable = false;
+	createModal(modalContent,) {
+		if (!modalContent) { return; }
 
-	// Append modal content to modal container
-	modalContainer.appendChild(modalContent);
+		this._modalContent = modalContent;
 
-	// Append close button to modal container
-	modalContainer.appendChild(closeButton);
+		this._setModalContentStyle();
 
-	// Append modal container to the document body
-	document.body.appendChild(modalContainer);
+		// Append modal content to modal container
+		this._getOrCreateModalContainer().appendChild(this._modalContent);
 
-	// Function to open the modal
-	function openModal() {
-		modalContainer.style.display = "block";
+		this.handleKeyDownFunction = (event) => { this._handleKeyDown(event); };
+
+		// Add key event listeners
+		document.addEventListener("keydown", this.handleKeyDownFunction);
+
+		return this._getOrCreateModalContainer();
+	}
+
+	_setModalContentStyle() {
+
+		this._modalContent.style.position = 'absolute';
+		this._modalContent.style.display = "inline-block";
+		this._modalContent.style.left = "50%";
+		this._modalContent.style.top = "50%";
+		this._modalContent.style.transform = "translate(-50%, -50%)";
+		this._modalContent.style.maxWidth = "99%";
+		this._modalContent.style.maxHeight = "99%";
+		this._modalContent.style.overflow = "hidden";
+
+		// Prevent drag & drop operation
+		this._modalContent.draggable = false;
+	}
+
+	_createAndOpenModalContainer() {
+		this._modalContainer = document.createElement("div");
+		this._modalContainer.style.display = "block";
+		this._modalContainer.style.position = "fixed";
+		this._modalContainer.style.zIndex = "10000";
+		this._modalContainer.style.left = "0";
+		this._modalContainer.style.top = "0";
+		this._modalContainer.style.width = "100%";
+		this._modalContainer.style.height = "100%";
+		this._modalContainer.style.overflow = "auto";
+		this._modalContainer.style.backgroundColor = "rgba(0,0,0,0.7)";
+
+		this._modalContainer.addEventListener("wheel", (event) => { this._zoom(event); });
+		this._modalContainer.addEventListener("mousedown", (event) => { this._startPan(event); });
+		this._modalContainer.addEventListener("mousemove", (event) => { this._pan(event); });
+		this._modalContainer.addEventListener("mouseup", (event) => { this._onMouseUp(); });
+		this._modalContainer.addEventListener("mouseleave", (event) => { this._endPan(); });
+
+		// Prevent drag & drop operation
+		this._modalContainer.addEventListener("dragstart", (event) => { event.preventDefault(); });
+		this._modalContainer.draggable = false;
+
+		this._modalContainer.data = this;
+
+		// Append modal container to the document body
+		document.body.appendChild(this._modalContainer);
+	}
+
+	_getOrCreateModalContainer() {
+		if (!this._modalContainer) {
+			this._createAndOpenModalContainer();
+		}
+		return this._modalContainer;
 	}
 
 	// Function to close the modal
-	function closeModal() {
-		modalContainer.parentNode.removeChild(modalContainer);
-		document.removeEventListener("keydown", handlekeyDown);
+	_closeModal() {
+		if (this._modalContainer && this._modalContainer.parentNode) {
+			this._modalContainer.parentNode.removeChild(this._modalContainer);
+		}
+		document.removeEventListener("keydown", this.handleKeyDownFunction);
 	}
 
-	openModal();
-
-	// Event listener for closing the modal
-	closeButton.addEventListener("click", closeModal);
-
-	// Add key event listeners
-	function handlekeyDown(event) {
+	_handleKeyDown(event) {
 		if (event.key === "Escape") {
 			event.preventDefault();
-			closeModal();
+			this._closeModal();
 		}
 	}
-	document.addEventListener("keydown", handlekeyDown);
 
-	function zoom(event) {
+	_zoom(event) {
 		event.preventDefault(); // Prevent the default scroll behavior
 
 		const zoomSpeed = 0.1;
@@ -89,62 +109,54 @@ export function createModal(modalContent,) {
 
 		// Adjust the scale based on scroll direction
 		if (delta > 0) {
-			scale = Math.max(0.1, scale - zoomSpeed); // Zoom out
+			this._scale = Math.max(0.1, this._scale - zoomSpeed); // Zoom out
 		} else {
-			scale = Math.min(5, scale + zoomSpeed); // Zoom in
+			this._scale = Math.min(5, this._scale + zoomSpeed); // Zoom in
 		}
 
 		// Apply the scale and initial translate to the modal content
-		modalContent.style.transform = `translate(${translateX}%, ${translateY}%) scale(${scale})`;
+		this._modalContent.style.transform = `translate(${this._translateX}%, ${this._translateY}%) scale(${this._scale})`;
 	}
 
-	function startPan(event) {
-		bIsPanningActive = true;
-		modalContainer.style.cursor = "grabbing";
-		startX = event.clientX;
-		startY = event.clientY;
+	_startPan(event) {
+		this._bIsPanningActive = true;
+		this._getOrCreateModalContainer().style.cursor = "grabbing";
+		this._startX = event.clientX;
+		this._startY = event.clientY;
 	}
 
-	function pan(event) {
-		if (!bIsPanningActive) return;
+	_pan(event) {
+		if (!this._bIsPanningActive) return;
 
-		const dx = event.clientX - startX;
-		const dy = event.clientY - startY;
+		const dx = event.clientX - this._startX;
+		const dy = event.clientY - this._startY;
 
 		// Adjust translate values
-		translateX += (dx / modalContainer.clientWidth) * 100;
-		translateY += (dy / modalContainer.clientHeight) * 100;
+		this._translateX += (dx / this._getOrCreateModalContainer().clientWidth) * 100;
+		this._translateY += (dy / this._getOrCreateModalContainer().clientHeight) * 100;
 
 		// Update start positions for next movement
-		startX = event.clientX;
-		startY = event.clientY;
+		this._startX = event.clientX;
+		this._startY = event.clientY;
 
 		// Apply the transformation
-		modalContent.style.transform = `translate(${translateX}%, ${translateY}%) scale(${scale})`;
+		this._modalContent.style.transform = `translate(${this._translateX}%, ${this._translateY}%) scale(${this._scale})`;
 
-		bHasPanned = true;
+		this._bHasPanned = true;
 	}
 
-	function endPan() {
-		bIsPanningActive = false;
-		modalContainer.style.cursor = "grab";
+	_endPan() {
+		this._bIsPanningActive = false;
+		this._getOrCreateModalContainer().style.cursor = "grab";
 	}
 
-	function onMouseUp() {
-		endPan();
+	_onMouseUp() {
+		this._endPan();
 
-		if (!bHasPanned) {
-			closeModal();
+		if (!this._bHasPanned) {
+			this._closeModal();
 		}
 
-		bHasPanned = false;
+		this._bHasPanned = false;
 	}
-
-	modalContainer.addEventListener("wheel", zoom);
-	modalContainer.addEventListener("mousedown", startPan);
-	modalContainer.addEventListener("mousemove", pan);
-	modalContainer.addEventListener("mouseup", onMouseUp);
-	modalContainer.addEventListener("mouseleave", endPan);
-
-	return modalContainer;
 }
