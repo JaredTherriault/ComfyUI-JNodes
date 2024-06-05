@@ -38,7 +38,7 @@ function loadExtensionBlockList() {
 console.log("Pre-Init JNodes ExtensionManager");
 
 for (const extensionName of loadExtensionBlockList()) {
-    console.log("JNodes ExtensionManager: removing " + extensionName);
+    console.log("JNodes ExtensionManager: blocking " + extensionName);
     setExtensionToDummy(extensionName);
 }
 
