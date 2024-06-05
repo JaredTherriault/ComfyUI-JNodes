@@ -202,7 +202,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	if (bIsVideoFormat) {
 
-		imageElement.addEventListener('wheel', (event) => {
+		img.addEventListener('wheel', (event) => {
 
 			if (setting_VideoPlaybackOptions.value.useWheelSeek) {
 				// Prevent scrolling the list
