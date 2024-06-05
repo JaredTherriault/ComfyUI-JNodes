@@ -91,7 +91,7 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 					element.removeAttribute('src'); // Unload unobserved videos
 					try {
 						if (element.load) { element.load(); } // Release memory
-					}
+					} catch { }
 				}
 			}
 		}
