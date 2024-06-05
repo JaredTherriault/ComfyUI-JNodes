@@ -119,7 +119,7 @@ class ImageDrawerContext {
 	}
 
 	async makeToolbar() {
-		return $el("div", { //Inner container so it can maintain 'flex' display attribute
+		const container = $el("div", { //Inner container so it can maintain 'flex' display attribute
 			style: {
 				alignItems: 'normal',
 				display: 'flex',
@@ -128,6 +128,24 @@ class ImageDrawerContext {
 				justifyContent: 'flex-end',
 			}
 		});
+
+		const scrollToTopButton = $el("button.JNodes-image-drawer-btn", {
+			textContent: "⏫",
+			title: "Jump to top of list",
+			onclick: async () => {
+				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+				imageDrawerListInstance.getImageListElement().scrollTop = 0;
+				scrollToTopButton.blur();
+			},
+			style: {
+				width: "fit-content",
+				padding: '3px',
+			},
+		});
+
+		container.appendChild(scrollToTopButton);
+
+		return container;
 	}
 
 	async checkAndRestoreContextCache() {
@@ -223,7 +241,7 @@ class ContextClearable extends ImageDrawerContext {
 
 		const finalWidget = await super.makeToolbar();
 
-		finalWidget.appendChild(clearButton);
+		finalWidget.insertBefore(clearButton, finalWidget.firstChild);
 
 		return finalWidget;
 	}
@@ -256,7 +274,7 @@ class ContextRefreshable extends ImageDrawerContext {
 
 		const finalWidget = await super.makeToolbar();
 
-		finalWidget.appendChild(refreshButton);
+		finalWidget.insertBefore(refreshButton, finalWidget.firstChild);
 
 		return finalWidget;
 	}
