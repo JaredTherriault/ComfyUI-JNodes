@@ -59,12 +59,9 @@ export function getContextObjectFromName(contextName) {
 }
 
 export class ImageDrawerContextCache {
-	constructor(scrollLevel, searchBarText, columnCount, drawerWidth, drawerHeight, imageListElements, sortType, customContextCacheData = null) {
+	constructor(scrollLevel, searchBarText, imageListElements, sortType, customContextCacheData = null) {
 		this.scrollLevel = scrollLevel;
 		this.searchBarText = searchBarText;
-		this.columnCount = columnCount;
-		this.drawerWidth = drawerWidth;
-		this.drawerHeight = drawerHeight;
 		this.imageListElements = imageListElements;
 		this.sortType = sortType;
 		this.customContextCacheData = customContextCacheData;
@@ -100,7 +97,6 @@ class ImageDrawerContext {
 		const newCache =
 			new ImageDrawerContextCache(
 				imageDrawerListInstance.getImageListScrollLevel(), imageDrawerSearchInstance.getSearchText(),
-				imageDrawerMainInstance.getColumnCount(), imageDrawerMainInstance.getDrawerWidth(), imageDrawerMainInstance.getDrawerHeight(),
 				childNodesArray, Sorting.getCurrentSortTypeName());
 		this.setCache(newCache);
 	}
@@ -154,16 +150,11 @@ class ImageDrawerContext {
 
 				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
 				const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
-				const imageDrawerMainInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerMain");
 
 				// Replace children
 				imageDrawerListInstance.replaceImageListChildren(this.cache.imageListElements);
 				// Execute Search
 				imageDrawerSearchInstance.setSearchTextAndExecute(this.cache.searchBarText);
-				// Drawer column count and size
-				imageDrawerMainInstance.setColumnCount(this.cache.columnCount);
-				imageDrawerMainInstance.setDrawerWidth(this.cache.drawerWidth);
-				imageDrawerMainInstance.setDrawerHeight(this.cache.drawerHeight);
 				// Restore sort type
 				Sorting.setOptionSelectedFromOptionName(this.cache.sortType);
 				// Restore scroll level
@@ -620,7 +611,8 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 
 	makeCache() {
 		super.makeCache();
-		this.cache.customContextCacheData = { selectedSubdirectory: this.subdirectorySelector?.data?.getSelectedOptionName() };
+		this.cache.customContextCacheData = { 
+			selectedSubdirectory: this.subdirectorySelector?.data?.getSelectedOptionName(), subdirectorySearchToken: this.subdirectorySelector?.data?.getFilterText() };
 	}
 
 	async switchToContext() {
@@ -631,6 +623,9 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 		await this.updateSubdirectorySelectorOptions(); //  If we're not calling fetchFolderItems because we're restoring a cache, call updateSubdirectorySelector
 		if (this.cache?.customContextCacheData?.selectedSubdirectory) { // Restore subdirectory selection from custom cache data
 			this.subdirectorySelector.data.setOptionSelected(this.cache.customContextCacheData.selectedSubdirectory);
+		}
+		if (this.cache?.customContextCacheData?.subdirectorySearchToken) { // Restore subdirectory selection from custom cache data
+			this.subdirectorySelector.data.setFilterTextAndExecuteSearch(this.cache.customContextCacheData.subdirectorySearchToken);
 		}
 	}
 
