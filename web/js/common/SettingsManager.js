@@ -41,20 +41,21 @@ export class ConfigSetting {
     _getValue(name, defaultValue) {
         const val = localStorage.getItem("JNodes.Settings." + name);
         //console.log("localstorage (" + name + " : " + val + ")");
-        if (val !== null) {
-            try { // Try to parse the value automatically, and if we can"t then just return the string
-                const loadedValue = JSON.parse(val);
-                if (typeof loadedValue === "object") { // If it's an object, get the default first then assign loaded values on top
-                    let fullValue = defaultValue;
-                    Object.assign(fullValue, loadedValue);
-                    return fullValue;
-                } else { return loadedValue; } // If not, just return the parsed value
-            } catch (error) {
-                return val;
-            }
+        if (val === null || val === undefined || val === "undefined") {
+            //console.log("return defaultValue");
+            return defaultValue;
         }
-        //console.log("return defaultValue");
-        return defaultValue;
+        
+        try { // Try to parse the value automatically, and if we can"t then just return the string
+            const loadedValue = JSON.parse(val);
+            if (typeof loadedValue === "object") { // If it's an object, get the default first then assign loaded values on top
+                let fullValue = defaultValue;
+                Object.assign(fullValue, loadedValue);
+                return fullValue;
+            } else { return loadedValue; } // If not, just return the parsed value
+        } catch (error) {
+            return val;
+        }
     };
 
     _setValue(name, val) {
