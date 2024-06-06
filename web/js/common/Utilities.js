@@ -47,6 +47,49 @@ class JNodesUtilities {
 		});
 	}
 
+	createLongPressableButton(buttonParams, clickFunction, longPressFunction, classNames = [], longPressDurationMs = 500) {
+
+		let timer;
+		let bLongPressTriggered = false;
+
+		const button = $el("button", buttonParams);
+
+		for (const className of classNames) {
+			button.classList.add(className);
+		}
+
+		const startTimer = () => {
+			bLongPressTriggered = false; // Reset the flag
+			timer = setTimeout(() => {
+				longPressFunction();
+				bLongPressTriggered = true; // Set the flag when long press is triggered
+			}, longPressDurationMs);
+		};
+
+		const clearTimer = () => {
+			clearTimeout(timer);
+			timer = 0;
+		};
+
+		const inputRelease = () => {
+			if (timer) {
+				clearTimer();
+				if (!bLongPressTriggered) {
+					clickFunction();
+				}
+			}
+		}
+
+		button.addEventListener('mousedown', startTimer);
+		button.addEventListener('mouseup', inputRelease);
+		button.addEventListener('mouseleave', clearTimer);
+		button.addEventListener('touchstart', startTimer);
+		button.addEventListener('touchend', inputRelease);
+		button.addEventListener('touchcancel', clearTimer);
+
+		return button;
+	}
+
 	setElementVisible(element, bNewVisible, customVisibleType = "unset") {
 		if (!element) { return; }
 		element.style.display = bNewVisible ? customVisibleType : "none";

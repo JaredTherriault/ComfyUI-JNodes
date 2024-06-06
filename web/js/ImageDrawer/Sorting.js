@@ -1,10 +1,11 @@
 import { $el } from "/scripts/ui.js";
 
 import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
+import { utilitiesInstance } from "../common/Utilities.js";
 
 let SortingWidget;
 let SortSelectionWidget;
-let SortRandomizeButton;
+let SortShuffleButton;
 let SortTypes;
 
 export function initializeSortTypes() {
@@ -25,7 +26,7 @@ export function initializeSortTypes() {
 		imageAspectRatioDescending: new SortTypeImageAspectRatio(false),
 		fileTypeAscending: new SortTypeFileType(true),
 		fileTypeDescending: new SortTypeFileType(false),
-		randomize: new SortTypeRandomize(),
+		shuffle: new SortTypeShuffle(),
 	}
 }
 
@@ -196,9 +197,9 @@ export class SortTypeFileType extends SortType {
 	}
 }
 
-export class SortTypeRandomize extends SortType {
+export class SortTypeShuffle extends SortType {
 	constructor() {
-		super('Randomize', undefined)
+		super('Shuffle', undefined)
 	}
 
 	getSortingLambda() {
@@ -209,7 +210,7 @@ export class SortTypeRandomize extends SortType {
 // Selector
 
 export function setOptionSelectedFromOptionName(option) {
-	
+
 	SortSelectionWidget.value = option;
 	onOptionSelected(option);
 }
@@ -225,17 +226,31 @@ export function onOptionSelected(option) {
 	const NewType = getSortTypeObjectFromName(option);
 	NewType.sortImageList();
 
-	SortRandomizeButton.style.display = (NewType instanceof SortTypeRandomize) ? "unset" : "none";
+	if (NewType instanceof SortTypeShuffle) {
+
+		SortShuffleButton.style.display = "unset";
+	} else {
+
+		SortShuffleButton.style.display = "none";
+		stopAutomaticShuffle();
+	}
 }
 
 function addSortingOption(optionName) {
+	
+    const option = document.createElement("option");
+    option.value = optionName;
+    option.textContent = optionName;
 
-	const option = document.createElement("option");
-	option.value = optionName;
-	option.textContent = optionName;
-	SortSelectionWidget.appendChild(option);
+    // Find the correct position to insert the new option
+    let index = 0;
+    while (index < SortSelectionWidget.children.length && optionName.localeCompare(SortSelectionWidget.children[index].value) > 0) {
+        index++;
+    }
+
+    // Insert the new option at the correct position
+    SortSelectionWidget.insertBefore(option, SortSelectionWidget.children[index]);
 }
-
 function addUniqueSortingOption(optionName) {
 
 	if (!Array.from(SortSelectionWidget.children).find(op => op.value === optionName)) {
@@ -268,18 +283,53 @@ export function setSortingOptionsFromStringArray(inOptionArray) {
 	}
 }
 
-function createSortRandomizeButton() {
+function createSortShuffleButton() {
 
-	SortRandomizeButton = $el("button.JNodes-sort-randomize-btn", {
-		textContent: "🎲",
-		title: "Randomize sorting again",
-		style: {
-			display: "none"
+	SortShuffleButton = utilitiesInstance.createLongPressableButton(
+		{
+			textContent: "🔀",
+			title: "Shuffle sorting again",
+			style: {
+				display: "none"
+			}
 		},
-		onclick: async () => { sortWithCurrentType(); }
-	});
+		async () => { // Regular click
 
-	return SortRandomizeButton;
+			if (!stopAutomaticShuffle()) {
+
+				sortWithCurrentType();
+			}
+		},
+		async () => { // Long press
+
+			const value = +prompt("Set automatic shuffle interval in milliseconds:", 1000);
+			if (!isNaN(value)) {
+
+				stopAutomaticShuffle(); // Stop existing auto mode
+
+				SortShuffleButton.style.backgroundColor = "red";
+				SortShuffleButton.timer = setInterval(() => {
+					sortWithCurrentType();
+				}, value);
+			}
+		},
+		["JNodes-sort-shuffle-btn"]);
+
+	return SortShuffleButton;
+}
+
+// If the Shuffle sort type is set to automatically work at an interval,
+// stop it with this function. Returns true if it was in auto mode and was stopped.
+export function stopAutomaticShuffle() {
+	if (SortShuffleButton.timer) {
+		clearInterval(SortShuffleButton.timer);
+		SortShuffleButton.timer = 0;
+		SortShuffleButton.style.backgroundColor = "";
+
+		return true;
+	}
+
+	return false;
 }
 
 export function makeSortingWidget() {
@@ -297,7 +347,7 @@ export function makeSortingWidget() {
 			flexDirection: 'row',
 		}
 	}, [
-		SortSelectionWidget, createSortRandomizeButton()
+		SortSelectionWidget, createSortShuffleButton()
 	]);
 
 	// Add an event listener for the "change" event
