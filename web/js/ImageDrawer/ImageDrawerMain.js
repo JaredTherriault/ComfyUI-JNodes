@@ -43,13 +43,13 @@ class ImageDrawerMain extends ImageDrawerComponent {
 	}
 
 	setColumnCount(value, bSetColumnCountSliderValue = true) {
+		value = utilitiesInstance.clamp(value, 1, value);
 		this.setting_ColumnCount.value = value;
 		this.imageDrawer?.style.setProperty("--column-count", value);
 		this.columnSlider.title = `Controls the number of columns in the drawer (${value} columns).\nClick label to set custom value.`;
 		if (bSetColumnCountSliderValue && this.columnSlider) {
 
-			this.columnSlider.max = Math.max(10, value, this.columnSlider.max);
-			this.columnSlider.setValueDirectly(value);
+			this.columnSlider.setValueDirectly(value, false); // Don't clamp to "max"
 		}
 	}
 
@@ -58,6 +58,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 	}
 
 	setDrawerWidth(value, bSetDrawerWidthSliderValue = true) {
+		value = utilitiesInstance.clamp(value, this._minimumDrawerSize, this._maximumDrawerSize);
 		this.setting_DrawerWidth.value = value;
 		this.imageDrawer?.style.setProperty("--drawer-width", value);
 		this.drawerWidthSlider.title = `Controls the maximum width of the drawer panel (${value}vw)`;
@@ -72,6 +73,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 	}
 
 	setDrawerHeight(value, bSetDrawerHeightSliderValue = true) {
+		value = utilitiesInstance.clamp(value, this._minimumDrawerSize, this._maximumDrawerSize);
 		this.setting_DrawerHeight.value = value;
 		this.imageDrawer?.style.setProperty("--drawer-height", value);
 		this.drawerHeightSlider.title = `Controls the maximum height of the drawer panel (${value}vh)`;
