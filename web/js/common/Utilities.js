@@ -16,14 +16,14 @@ class JNodesUtilities {
 		return "JNodes"
 	}
 
-	getCurrentTimeAsString () {
+	getCurrentTimeAsString() {
 		function addZero(num) {
 			return (num >= 0 && num < 10) ? "0" + num : num;
 		}
 
 		const now = new Date();
 		const timeAsString = [
-			addZero(now.getHours()), 
+			addZero(now.getHours()),
 			addZero(now.getMinutes()),
 			addZero(now.getSeconds())
 		].join(":");
@@ -32,17 +32,17 @@ class JNodesUtilities {
 	}
 
 	getDarkColor() {
-		return 'rgba(0,0,0,0.5)';
+		return "rgba(0,0,0,0.5)";
 	}
 
 	createDarkContainer(identifier, paddingOverride) {
 		return $el("div", {
 			id: identifier,
 			style: {
-				position: 'absolute',
+				position: "absolute",
 				backgroundColor: utilitiesInstance.getDarkColor(),
-				display: 'inline-block', // Size to content, '-block' to allow vertical margin and padding
-				padding: paddingOverride ? paddingOverride : '1%',
+				display: "inline-block", // Size to content, "-block" to allow vertical margin and padding
+				padding: paddingOverride ? paddingOverride : "1%",
 			},
 		});
 	}
@@ -82,8 +82,71 @@ class JNodesUtilities {
 		if (!pasted) {
 			console.error(
 				"execCommand unsuccessful; not supported. Adding text manually, no undo support.");
-			textarea.setRangeText(newText, selectionStart, selectionEnd, 'end');
+			textarea.setRangeText(newText, selectionStart, selectionEnd, "end");
 		}
+	}
+
+	stringifyDisplayData(inDisplayData) {
+		const Stringifier = (key, value) => {
+			// Check if the key is "FileDimensions"
+			if (key === "FileDimensions") {
+				// Serialize the value of "FileDimensions" as a single line string
+				return JSON.stringify(value);
+			}
+
+			if (key === "FileSize") {
+				// Convert 1000000 to "1 MiB" for example
+				return this.formatBytesToString(value);
+			}
+
+			if (typeof value == "number") {
+				return this.toFixedWithoutTrailingZeroesAndDecimal(value, 3);
+			}
+			// Return the original value for other keys
+			return value;
+		};
+
+		inDisplayData = this.sortJsonObjectByKeys(inDisplayData);
+		return JSON.stringify(inDisplayData, Stringifier, "\t"); // Pretty formatting
+	}
+
+	removeCurlyBracesFromJsonString(jsonString) {
+		return jsonString.substring(1, jsonString.length - 1);
+	}
+
+	unindentJsonString(jsonString) {
+		const lines = jsonString.split("\n")
+		const unindentedLines = lines.map(line => {
+			// Use a regular expression to match the first tab or leading whitespace
+			const unindentedLine = line.replace(/^( {4}|\t)/, '');
+			return unindentedLine;
+		});
+
+		return unindentedLines.join("\n").trim();
+	}
+
+	formatBytesToString(bytes, decimalPlaces = 3) {
+		if (bytes === 0) return "0";
+		const k = 1024;
+		const dm = decimalPlaces < 0 ? 0 : decimalPlaces;
+		const sizes = ['Bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+		const num = bytes / Math.pow(k, i);
+
+		let formattedNumber = new Intl.NumberFormat("en-US", {
+			minimumFractionDigits: dm,
+			maximumFractionDigits: dm
+		}).format(num);
+
+		return `${formattedNumber.replace(/\.?0+$/, '')} ${sizes[i]}`;
+	}
+
+	toFixedWithoutTrailingZeroesAndDecimal(value, decimalPlaces = 2) {
+
+		// Remove trailing zeros and possibly the decimal point
+		return value.toFixed(decimalPlaces).replace(/\.?0+$/, '');
 	}
 
 	getMaxZIndex(element) {
@@ -226,7 +289,7 @@ class JNodesUtilities {
 		}
 	}
 
-	SortJsonObjectByKeys(JsonObject) {
+	sortJsonObjectByKeys(JsonObject) {
 		// Convert JSON object to array of key-value pairs
 		const Entries = Object.entries(JsonObject);
 
@@ -241,110 +304,110 @@ class JNodesUtilities {
 
 	getKeyList() {
 		return [
-			'ArrowDown',
-			'ArrowLeft',
-			'ArrowRight',
-			'ArrowUp',
-			'Backquote',
-			'Backslash',
-			'Backspace',
-			'BracketLeft',
-			'BracketRight',
-			'Comma',
-			'Digit0',
-			'Digit1',
-			'Digit2',
-			'Digit3',
-			'Digit4',
-			'Digit5',
-			'Digit6',
-			'Digit7',
-			'Digit8',
-			'Digit9',
-			'Enter',
-			'Equal',
-			'Escape',
-			'F1',
-			'F10',
-			'F11',
-			'F12',
-			'F13',
-			'F13',
-			'F14',
-			'F15',
-			'F16',
-			'F17',
-			'F18',
-			'F19',
-			'F2',
-			'F20',
-			'F21',
-			'F22',
-			'F23',
-			'F24',
-			'F25',
-			'F26',
-			'F27',
-			'F28',
-			'F29',
-			'F3',
-			'F30',
-			'F31',
-			'F32',
-			'F4',
-			'F5',
-			'F6',
-			'F7',
-			'F8',
-			'F9',
-			'KeyA',
-			'KeyB',
-			'KeyC',
-			'KeyD',
-			'KeyE',
-			'KeyF',
-			'KeyG',
-			'KeyH',
-			'KeyI',
-			'KeyJ',
-			'KeyK',
-			'KeyL',
-			'KeyM',
-			'KeyN',
-			'KeyO',
-			'KeyP',
-			'KeyQ',
-			'KeyR',
-			'KeyS',
-			'KeyT',
-			'KeyU',
-			'KeyV',
-			'KeyW',
-			'KeyX',
-			'KeyY',
-			'KeyZ',
-			'Minus',
-			'Numpad0',
-			'Numpad1',
-			'Numpad2',
-			'Numpad3',
-			'Numpad4',
-			'Numpad5',
-			'Numpad6',
-			'Numpad7',
-			'Numpad8',
-			'Numpad9',
-			'NumpadAdd',
-			'NumpadComma',
-			'NumpadDecimal',
-			'NumpadDivide',
-			'NumpadMultiply',
-			'NumpadSubtract',
-			'Period',
-			'Quote',
-			'Semicolon',
-			'Slash',
-			'Space'
+			"ArrowDown",
+			"ArrowLeft",
+			"ArrowRight",
+			"ArrowUp",
+			"Backquote",
+			"Backslash",
+			"Backspace",
+			"BracketLeft",
+			"BracketRight",
+			"Comma",
+			"Digit0",
+			"Digit1",
+			"Digit2",
+			"Digit3",
+			"Digit4",
+			"Digit5",
+			"Digit6",
+			"Digit7",
+			"Digit8",
+			"Digit9",
+			"Enter",
+			"Equal",
+			"Escape",
+			"F1",
+			"F10",
+			"F11",
+			"F12",
+			"F13",
+			"F13",
+			"F14",
+			"F15",
+			"F16",
+			"F17",
+			"F18",
+			"F19",
+			"F2",
+			"F20",
+			"F21",
+			"F22",
+			"F23",
+			"F24",
+			"F25",
+			"F26",
+			"F27",
+			"F28",
+			"F29",
+			"F3",
+			"F30",
+			"F31",
+			"F32",
+			"F4",
+			"F5",
+			"F6",
+			"F7",
+			"F8",
+			"F9",
+			"KeyA",
+			"KeyB",
+			"KeyC",
+			"KeyD",
+			"KeyE",
+			"KeyF",
+			"KeyG",
+			"KeyH",
+			"KeyI",
+			"KeyJ",
+			"KeyK",
+			"KeyL",
+			"KeyM",
+			"KeyN",
+			"KeyO",
+			"KeyP",
+			"KeyQ",
+			"KeyR",
+			"KeyS",
+			"KeyT",
+			"KeyU",
+			"KeyV",
+			"KeyW",
+			"KeyX",
+			"KeyY",
+			"KeyZ",
+			"Minus",
+			"Numpad0",
+			"Numpad1",
+			"Numpad2",
+			"Numpad3",
+			"Numpad4",
+			"Numpad5",
+			"Numpad6",
+			"Numpad7",
+			"Numpad8",
+			"Numpad9",
+			"NumpadAdd",
+			"NumpadComma",
+			"NumpadDecimal",
+			"NumpadDivide",
+			"NumpadMultiply",
+			"NumpadSubtract",
+			"Period",
+			"Quote",
+			"Semicolon",
+			"Slash",
+			"Space"
 		];
 	}
 }

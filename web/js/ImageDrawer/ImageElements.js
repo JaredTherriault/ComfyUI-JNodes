@@ -221,7 +221,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		imageElement.displayData.FrameCount = fileInfo.file.frame_count;
 	}
 
-	imageElement.displayData = utilitiesInstance.SortJsonObjectByKeys(imageElement.displayData);
+	imageElement.displayData = utilitiesInstance.sortJsonObjectByKeys(imageElement.displayData);
 
 	imageElement.searchTerms = `${imageElement.filename} ${imageElement.subdirectory} ${JSON.stringify(imageElement.displayData)} `; // Search terms to start with, onload will add more
 

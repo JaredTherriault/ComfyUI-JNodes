@@ -181,37 +181,18 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 	function setInfoTextFromDisplayData(inDisplayData) {
 		if (inDisplayData && Object.keys(inDisplayData).length > 0) {
 			try {
-				const FileDimensionStringifier = (key, value) => {
-					// Check if the key is 'FileDimensions'
-					if (key === 'FileDimensions') {
-						// Serialize the value of 'FileDimensions' as a single line string
-						return JSON.stringify(value);
-					}
 
-					if (typeof value == "number") {
-						return value.toFixed(3);
-					}
-					// Return the original value for other keys
-					return value;
-				};
+				inDisplayData = utilitiesInstance.sortJsonObjectByKeys(inDisplayData);
+				let jsonString = utilitiesInstance.stringifyDisplayData(inDisplayData);
 
-				inDisplayData = utilitiesInstance.SortJsonObjectByKeys(inDisplayData);
-				const payloadString = JSON.stringify(inDisplayData, FileDimensionStringifier, 4); // Pretty formatting
-
-				if (payloadString) {
+				if (jsonString) {
 					// console.log(PayloadString);
 
-					// Remove curly braces
-					const lines = payloadString.substring(1, payloadString.length - 1).split('\n');
-					const unindentedLines = lines.map(Line => {
-						// Use a regular expression to match the first tab or leading whitespace
-						const unindentedLine = Line.replace(/^\s{4}/, ''); // Replace leading tab (\t)
-						// Alternatively, replace leading spaces (e.g., with /^\s{4}/ for 4 spaces)
+					jsonString = utilitiesInstance.removeCurlyBracesFromJsonString(jsonString);
+					
+					infoTextArea.value = utilitiesInstance.unindentJsonString(jsonString);
 
-						return unindentedLine;
-					});
 					infoTextArea.style.display = "unset";
-					infoTextArea.value = unindentedLines.join('\n').trim();
 					infoTextArea.rows = infoTextArea.value.split('\n').length || 5;
 					infoTextArea.readOnly = true;
 				}

@@ -179,24 +179,10 @@ export function getOrCreateToolButton(imageElementToUse) {
 
             // Filename / ID
             {
-                const FileDimensionStringifier = (key, value) => {
-                    // Check if the key is 'FileDimensions'
-                    if (key === 'FileDimensions') {
-                        // Serialize the value of 'FileDimensions' as a single line string
-                        return JSON.stringify(value);
-                    }
-
-                    if (typeof value == "number") {
-                        return value.toFixed(3);
-                    }
-                    // Return the original value for other keys
-                    return value;
-                };
-
                 let toolTipText = `${imageElementToUse.subdirectory ? imageElementToUse.subdirectory + "/" : ""}${imageElementToUse.filename}`;
 
                 if (imageElementToUse.displayData) {
-                    toolTipText += `\n${JSON.stringify(imageElementToUse.displayData, FileDimensionStringifier, "\t")}`;
+                    toolTipText += `\n${utilitiesInstance.stringifyDisplayData(imageElementToUse.displayData)}`;
                 }
 
                 flyout.menu.appendChild($el("label", {
@@ -706,7 +692,7 @@ export function setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata
         imageElement.displayData.AspectRatio = imageElement.displayData.FileDimensions[0] / imageElement.displayData.FileDimensions[1];
     }
 
-    imageElement.displayData = utilitiesInstance.SortJsonObjectByKeys(imageElement.displayData);
+    imageElement.displayData = utilitiesInstance.sortJsonObjectByKeys(imageElement.displayData);
 
     const toolTipWidget = makeTooltipWidgetFromMetadata(metadata);
 
