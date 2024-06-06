@@ -45,7 +45,7 @@ export class ConfigSetting {
             //console.log("return defaultValue");
             return defaultValue;
         }
-        
+
         try { // Try to parse the value automatically, and if we can"t then just return the string
             const loadedValue = JSON.parse(val);
             if (typeof loadedValue === "object") { // If it's an object, get the default first then assign loaded values on top
@@ -488,6 +488,14 @@ export function createLabeledSliderRange(options = null) {
 
     let valueLabelElement;
 
+    let OuterElement = $el("div", {
+        style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "5%"
+        }
+    });
+
     if (options.bIncludeValueLabel) {
         valueLabelElement = $el("label", {
             textContent: options.value?.toFixed(options.valueLabelFractionalDigits) || 0
@@ -503,12 +511,7 @@ export function createLabeledSliderRange(options = null) {
                 originalOnInput(e);
             }
 
-            // Get the input value and round it to 2 decimal places
-            const inputValue = parseFloat(e.target.value); // Convert input value to number
-            const roundedValue = isNaN(inputValue) ? 0.00 : inputValue.toFixed(options.valueLabelFractionalDigits);
-
-            // Update the labelElement text content with the rounded value
-            valueLabelElement.textContent = roundedValue;
+            OuterElement.setLabelTextContent(e.target.value);
         };
     }
 
@@ -522,14 +525,6 @@ export function createLabeledSliderRange(options = null) {
     });
 
     options.bindEvents(MainElement);
-
-    let OuterElement = $el("div", {
-        style: {
-            display: "flex",
-            alignItems: "center",
-            gap: "5%"
-        }
-    });
 
     const LabelWidget = $el("label", { textContent: options.labelTextContent });
 
@@ -555,6 +550,21 @@ export function createLabeledSliderRange(options = null) {
     OuterElement.getMainElement = function () {
         return MainElement;
     };
+
+    OuterElement.setValueDirectly = function (value) {
+        MainElement.value = value;
+        OuterElement.setLabelTextContent(value);
+    }
+
+    OuterElement.setLabelTextContent = function (value) {
+
+        // Get the input value and round it to 2 decimal places
+        const inputValue = parseFloat(value); // Convert input value to number
+        const roundedValue = isNaN(inputValue) ? 0.00 : inputValue.toFixed(options.valueLabelFractionalDigits);
+
+        // Update the labelElement text content with the rounded value
+        valueLabelElement.textContent = roundedValue;
+    }
 
     return OuterElement;
 }
@@ -597,12 +607,12 @@ export function createLabeledNumberInput(options = null) {
 
         // Update the labelElement text content with the rounded value
 
+        MainElement.lastValue = e.target.value;
+
         // Call the original oninput callback if available
         if (originalOnInput && typeof originalOnInput === "function") {
             originalOnInput(e);
         }
-
-        MainElement.lastValue = e.target.value;
     };
 
     options.bindEvents(MainElement);
