@@ -24,6 +24,7 @@ export class ModalManager {
 		this._modalContent;
 
 		this.handleKeyDownFunction;
+		this._bButtonPressed = false;
 	}
 
 	createModal(modalContent,) {
@@ -35,6 +36,8 @@ export class ModalManager {
 
 		// Append modal content to modal container
 		this._getOrCreateModalContainer().appendChild(this._modalContent);
+
+		this._createModalControlButtons();
 
 		this.handleKeyDownFunction = (event) => { this._handleKeyDown(event); };
 
@@ -106,6 +109,44 @@ export class ModalManager {
 			this._createAndOpenModalContainer();
 		}
 		return this._modalContainer;
+	}
+
+	_createModalControlButtons() {
+
+		const createButton = (text, tooltip, clickFunction) => {
+			const button = $el("button", {
+				title: tooltip,
+				textContent: text,
+				style: {
+					background: "none",
+					border: "none",
+					padding: "0px",
+					color: "white",
+					fontWeight: "bolder",
+					fontSize: "400%",
+					cursor: 'pointer',
+					position: "absolute",
+					filter: "drop-shadow(13px 0px black)",
+				},
+				onmousedown: () => {
+					this._bButtonPressed = true;
+				},
+				onclick: clickFunction,
+			});
+			button.classList.add("JNodes-interactive-container");
+
+			return button;
+		}
+
+		const previousImageButton = createButton("<", "See previous image", () => { this._displayNeighbouringImage(-5); });
+		previousImageButton.style.left = "2.5%";
+		previousImageButton.style.top = "50%";
+		this._getOrCreateModalContainer().appendChild(previousImageButton);
+
+		const nextImageButton = createButton(">", "See next image", () => { this._displayNeighbouringImage(5); });
+		nextImageButton.style.right = "2.5%";
+		nextImageButton.style.top = "50%";
+		this._getOrCreateModalContainer().appendChild(nextImageButton);
 	}
 
 	// Function to close the modal and destroy the class instance
@@ -181,13 +222,24 @@ export class ModalManager {
 	}
 
 	_onMouseUp() {
+
 		this._endPan();
 
-		if (!this._bHasPanned) {
-			this._closeModal();
+		if (this._bButtonPressed == true) {
+
+			this._bButtonPressed = false;
+			return;
 		}
 
-		this._bHasPanned = false;
+		if (this._bHasPanned) {
+
+			this._bHasPanned = false;
+
+		} else {
+
+			this._closeModal();
+
+		}
 	}
 
 	_displayNeighbouringImage(offset = 0) {
@@ -205,11 +257,7 @@ export class ModalManager {
 				newImageIndex += offset;
 
 				// Wrap index to first or last index at the extremes
-				if (newImageIndex >= currentListChildren.length) {
-					newImageIndex = 0;
-				} else if (newImageIndex < 0) {
-					newImageIndex = currentListChildren.length - 1;
-				}
+				newImageIndex = ((newImageIndex % currentListChildren.length) + currentListChildren.length) % currentListChildren.length;
 
 				newImage = currentListChildren[newImageIndex];
 
