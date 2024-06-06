@@ -116,27 +116,14 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 			} else {
 
-				function createModalContent() {
+				// Make a modal for the image, passing in its current index to allow for slideshows and image switching
+				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+				// Find this imageElement in the list
+				const currentIndex = Array.from(imageDrawerListInstance.getImageListChildren()).findIndex((op => op === imageElement));
 
-					const modalImg = $el("img", {
-						src: href,
-						style: {
-							position: 'relative',
-							width: '99vw',
-							height: '99vh',
-							objectFit: 'contain',
-							display: 'block',
-							margin: 'auto',
-						},
-					});
+				const modalManager = new ModalManager((currentIndex !== undefined && currentIndex > -1) ? currentIndex : undefined);
 
-					const modalContent = document.createElement("div");
-					modalContent.appendChild(modalImg);
-
-					return modalContent;
-				}
-
-				new ModalManager().createModal(createModalContent());
+				modalManager.createModal(modalManager.createModalReadyImage(href));
 
 				// Remove focus from the currently focused element
 				document.activeElement.blur();
@@ -243,7 +230,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		fileInfo.displayData = imageElement.displayData;
 		event.dataTransfer.setData('text/jnodes_image_drawer_payload', `${JSON.stringify(fileInfo)}`);
 		ImageElementUtils.removeAndHideToolButtonFromImageElement(imageElement);
-        ImageElementUtils.hideImageElementCheckboxSelector(imageElement);
+		ImageElementUtils.hideImageElementCheckboxSelector(imageElement);
 		ImageElementUtils.hideToolTip();
 	});
 
