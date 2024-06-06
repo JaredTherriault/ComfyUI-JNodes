@@ -138,15 +138,37 @@ export class ModalManager {
 			return button;
 		}
 
-		const previousImageButton = createButton("<", "See previous image", () => { this._displayNeighbouringImage(-5); });
+		const previousImageButton = createButton("<", "See previous image", () => { this._displayNeighbouringImage(-1); });
 		previousImageButton.style.left = "2.5%";
 		previousImageButton.style.top = "50%";
 		this._getOrCreateModalContainer().appendChild(previousImageButton);
 
-		const nextImageButton = createButton(">", "See next image", () => { this._displayNeighbouringImage(5); });
+		const nextImageButton = createButton(">", "See next image", () => { this._displayNeighbouringImage(1); });
 		nextImageButton.style.right = "2.5%";
 		nextImageButton.style.top = "50%";
 		this._getOrCreateModalContainer().appendChild(nextImageButton);
+
+		// Count
+		if (this._imageIndex != undefined) {
+
+			const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+			const currentListChildren = imageDrawerListInstance.getVisibleImageListChildren();
+
+			const countWidget = $el("label", {
+				textContent: `${this._imageIndex + 1}/${currentListChildren.length}`,
+				style: {
+					background: "rgba(0,0,0,0.5)",
+					color: "white",
+					fontWeight: "bolder",
+					fontSize: "100%",
+					fontFamily: "arial",
+					position: "absolute",
+					right: "1%",
+					top: "1%"
+				}
+			});
+			this._getOrCreateModalContainer().appendChild(countWidget);
+		}
 	}
 
 	// Function to close the modal and destroy the class instance
@@ -247,7 +269,7 @@ export class ModalManager {
 		if (this._imageIndex !== undefined) {
 
 			const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
-			const currentListChildren = imageDrawerListInstance.getImageListChildren();
+			const currentListChildren = imageDrawerListInstance.getVisibleImageListChildren();
 
 			let newImageIndex = this._imageIndex;
 			let newImage;
