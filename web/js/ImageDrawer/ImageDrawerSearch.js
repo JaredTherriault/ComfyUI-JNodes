@@ -58,8 +58,8 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 
 		this.matchButtonElement = $el("button.JNodes-search-bar-match-btn", {
 			title: "Toggle Match Any / Match All",
-			onclick: () => { 
-				this.bMatchAny = !this.bMatchAny; 
+			onclick: () => {
+				this.bMatchAny = !this.bMatchAny;
 				this.updateMatchButtonVisual();
 				this.executeSearchWithEnteredSearchText();
 			},
@@ -87,30 +87,32 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
 				const children = imageDrawerListInstance.getImageListChildren();
 
-				let selectedChildElement = null;
+				if (children.length > 1) {
+					let selectedChildElement = null;
 
-				do {
-					const randomIndex = Math.floor(Math.random() * children.length);
-					selectedChildElement = children[randomIndex];
-				} while (!selectedChildElement || !selectedChildElement.searchTerms);
-
-				if (selectedChildElement?.searchTerms) {
-
-					const splitTerms = selectedChildElement.searchTerms.split(" ");
-					let chosenTerm = "";
 					do {
-						// New random
-						const randomIndex = Math.floor(Math.random() * splitTerms.length);
-						chosenTerm = splitTerms[randomIndex];
+						const randomIndex = Math.floor(Math.random() * children.length);
+						selectedChildElement = children[randomIndex];
+					} while (!selectedChildElement || !selectedChildElement.searchTerms);
 
-						// Clean up the string
-						while (chosenTerm.includes(",")) {
-							chosenTerm = chosenTerm.replace(",", " ");
-						}
+					if (selectedChildElement?.searchTerms) {
 
-					} while (!chosenTerm.trim());
+						const splitTerms = selectedChildElement.searchTerms.split(" ");
+						let chosenTerm = "";
+						do {
+							// New random
+							const randomIndex = Math.floor(Math.random() * splitTerms.length);
+							chosenTerm = splitTerms[randomIndex];
 
-					this.setSearchTextAndExecute(chosenTerm);
+							// Clean up the string
+							while (chosenTerm.includes(",")) {
+								chosenTerm = chosenTerm.replace(",", " ");
+							}
+
+						} while (!chosenTerm.trim());
+
+						this.setSearchTextAndExecute(chosenTerm);
+					}
 				}
 			}
 		});
