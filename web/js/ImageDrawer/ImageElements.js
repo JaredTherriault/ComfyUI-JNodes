@@ -119,7 +119,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 				// Make a modal for the image, passing in its current index to allow for slideshows and image switching
 				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
 				// Find this imageElement in the list
-				const currentIndex = Array.from(imageDrawerListInstance.getImageListChildren()).findIndex((op => op === imageElement));
+				const currentIndex = Array.from(imageDrawerListInstance.getVisibleImageListChildren()).findIndex((op => op === imageElement));
 
 				const modalManager = new ModalManager((currentIndex !== undefined && currentIndex > -1) ? currentIndex : undefined);
 
