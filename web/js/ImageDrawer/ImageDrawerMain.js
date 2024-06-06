@@ -47,8 +47,9 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		this.imageDrawer?.style.setProperty("--column-count", value);
 		this.columnSlider.title = `Controls the number of columns in the drawer (${value} columns).\nClick label to set custom value.`;
 		if (bSetColumnCountSliderValue && this.columnSlider) {
+
 			this.columnSlider.max = Math.max(10, value, this.columnSlider.max);
-			this.columnSlider.value = value;
+			this.columnSlider.setValueDirectly(value);
 		}
 	}
 
@@ -61,7 +62,8 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		this.imageDrawer?.style.setProperty("--drawer-width", value);
 		this.drawerWidthSlider.title = `Controls the maximum width of the drawer panel (${value}vw)`;
 		if (bSetDrawerWidthSliderValue && this.drawerWidthSlider) {
-			this.drawerWidthSlider.value = value;
+
+			this.drawerWidthSlider.setValueDirectly(value);
 		}
 	}
 
@@ -74,7 +76,8 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		this.imageDrawer?.style.setProperty("--drawer-height", value);
 		this.drawerHeightSlider.title = `Controls the maximum height of the drawer panel (${value}vh)`;
 		if (bSetDrawerHeightSliderValue && this.drawerHeightSlider) {
-			this.drawerHeightSlider.value = value;
+
+			this.drawerHeightSlider.setValueDirectly(value);
 		}
 	}
 
@@ -134,6 +137,16 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			$el("tr.size-control.drawer-width-control", [
 				$el('td', [$el("span", {
 					textContent: 'Drawer Width',
+					style: {
+						cursor: "pointer",
+						textDecoration: "underline",
+					},
+					onclick: () => {
+						const value = +prompt("Enter custom drawer width", this.getDrawerWidth());
+						if (!isNaN(value)) {
+							this.setDrawerWidth(value);
+						}
+					},
 				})]),
 				$el('td', [this.drawerWidthSlider])
 			]));
@@ -141,6 +154,16 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			$el("tr.size-control.drawer-height-control", [
 				$el('td', [$el("span", {
 					textContent: 'Drawer Height',
+					style: {
+						cursor: "pointer",
+						textDecoration: "underline",
+					},
+					onclick: () => {
+						const value = +prompt("Enter custom drawer height", this.getDrawerHeight());
+						if (!isNaN(value)) {
+							this.setDrawerHeight(value);
+						}
+					},
 				})]),
 				$el('td', [this.drawerHeightSlider])
 			]));
@@ -153,7 +176,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 						textDecoration: "underline",
 					},
 					onclick: () => {
-						const value = +prompt("Enter custom column count", 20);
+						const value = +prompt("Enter custom column count", this.getColumnCount());
 						if (!isNaN(value)) {
 							this.setColumnCount(value);
 						}
