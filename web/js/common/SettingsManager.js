@@ -551,7 +551,10 @@ export function createLabeledSliderRange(options = null) {
         return MainElement;
     };
 
-    OuterElement.setValueDirectly = function (value) {
+    OuterElement.setValueDirectly = function (value, bClamp = true) {
+        if (bClamp) {
+            value = utilitiesInstance.clamp(value, options.min, options.max);
+        }
         MainElement.value = value;
         OuterElement.setLabelTextContent(value);
     }
