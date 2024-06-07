@@ -6,8 +6,6 @@ import * as ImageElements from "./ImageElements.js";
 
 import * as SortTypes from "../common/SortTypes.js"
 
-import { getCurrentContextName, getCurrentContextObject } from "./ContextSelector.js";
-
 import { utilitiesInstance } from "../common/Utilities.js"
 
 import {
@@ -222,7 +220,8 @@ class ImageDrawerContext {
 	}
 
 	shouldCancelAsyncOperation() {
-		return getCurrentContextObject() != this; // By default, cancel async operations if the selected context has changed
+		const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+		return imageDrawerContextSelectorInstance.getCurrentContextObject() != this; // By default, cancel async operations if the selected context has changed
 	}
 }
 
@@ -687,7 +686,8 @@ export class ContextFeed extends ContextClearable {
 					this.feedImages.push(src);
 				}
 
-				if (getCurrentContextName() == this.name) {
+				const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+				if (imageDrawerContextSelectorInstance.getCurrentContextName() == this.name) {
 					await this.addNewUncachedFeedImages();
 				}
 			}

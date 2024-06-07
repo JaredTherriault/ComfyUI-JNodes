@@ -5,7 +5,6 @@ import { BatchOptionManagerButton } from "./BatchOptionManagerButton.js";
 
 import { utilitiesInstance } from "../../common/Utilities.js";
 import { ClassInstanceFactory, imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
-import { getCurrentContextObject } from "../ContextSelector.js";
 
 class BatchRemovalManager extends BatchOptionManagerButton {
 
@@ -52,11 +51,11 @@ class BatchRemovalManager extends BatchOptionManagerButton {
 
             const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
             let lastCheckedItemCount = batchSelectionManagerInstance.lastCheckedItemCount;
-    
+
             if (Object.keys(lastCheckedItemCount).length == 0) {
                 lastCheckedItemCount = batchSelectionManagerInstance.countCheckedItems();
             }
-    
+
             this.setWidgetVisible(lastCheckedItemCount.selectedCount > 0);
         });
 
@@ -73,7 +72,8 @@ class BatchRemovalManager extends BatchOptionManagerButton {
 
         } else {
 
-            const currentContextObject = getCurrentContextObject();
+            const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+            const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
             if (currentContextObject) {
                 currentContextObject.onRequestBatchRemoval();
             }
@@ -97,6 +97,6 @@ class BatchRemovalManager extends BatchOptionManagerButton {
 }
 
 const factoryInstance = new ClassInstanceFactory(BatchRemovalManager, {
-    tooltipText: "Remove all visible selected items from the current context's list. The items will not be deleted from disk. Upon reloading this context's list, they may reappear.", 
+    tooltipText: "Remove all visible selected items from the current context's list. The items will not be deleted from disk. Upon reloading this context's list, they may reappear.",
     buttonClass: "JNodes-image-drawer-menu-delete-selected-button"
 });

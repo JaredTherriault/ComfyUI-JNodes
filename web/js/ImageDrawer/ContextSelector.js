@@ -2,94 +2,100 @@ import { $el } from "/scripts/ui.js";
 
 import * as Contexts from "./Contexts.js";
 
-import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
+import { ImageDrawerComponent, ClassInstanceFactory, imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
 
-let ContextSelector;
+class ImageDrawerContextSelector extends ImageDrawerComponent {
 
-let lastSelectedContextOption;
+	constructor(args) {
 
-export function getCurrentContextName() {
-	return ContextSelector.value;
-}
+		super(args);
 
-export function getCurrentContextObject() {
-	return Contexts.getContextObjectFromName(ContextSelector.value);
-}
+		this.ContextSelector;
+		this.lastSelectedContextOption;
+	}
 
-export function getCacheForContext(contextName) {
-	return Contexts.getContextObjectFromName(contextName)?.cache;
-}
+	getCurrentContextName() {
+		return this.ContextSelector.value;
+	}
 
-export function setOptionSelected(option) {
-	ContextSelector.value = option;
-	onOptionSelected(option);
-}
+	getCurrentContextObject() {
+		return Contexts.getContextObjectFromName(this.ContextSelector.value);
+	}
 
-export async function onOptionSelected(selectedValue) {
-	//		console.log("ContextSelector selectedValue:" + selectedValue);
+	setOptionSelected(option) {
+		this.ContextSelector.value = option;
+		this.onOptionSelected(option);
+	}
 
-	const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+	async onOptionSelected(selectedValue) {
+		//		console.log("ContextSelector selectedValue:" + selectedValue);
 
-	// Create cache for previously selected option
-	if (lastSelectedContextOption) {
+		const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
 
-		const lastContextObject = Contexts.getContextObjectFromName(lastSelectedContextOption);
-		if (lastContextObject) {
-			lastContextObject.makeCache();
+		// Create cache for previously selected option
+		if (this.lastSelectedContextOption) {
+
+			const lastContextObject = Contexts.getContextObjectFromName(this.lastSelectedContextOption);
+			if (lastContextObject) {
+				lastContextObject.makeCache();
+			}
 		}
+
+		const NewContext = Contexts.getContextObjectFromName(selectedValue);
+		await NewContext.switchToContext();
+
+		// Set up lastSelectedContextOption to accommodate future context switching
+		this.lastSelectedContextOption = selectedValue;
+
+		// Setup sorting
+		const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+		imageDrawerListSortingInstance.setSortingOptionsFromSortTypeArray(NewContext.getSupportedSortTypes());
+
+		const sortType = NewContext.getDesiredSortType();
+		if (sortType && typeof sortType === 'object') {
+			imageDrawerListSortingInstance.setOptionSelectedFromSortType(sortType.type, sortType.bIsAscending);
+		} else if (sortType && typeof sortType === 'string') {
+			imageDrawerListSortingInstance.setOptionSelectedFromOptionName(sortType);
+		}
+
+		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+		batchSelectionManagerInstance.updateWidget();
+
+		// Automatically focus search bar and select text to save user a click
+		imageDrawerSearchInstance.focusAndSelectSearchText();
 	}
 
-	const NewContext = Contexts.getContextObjectFromName(selectedValue);
-	await NewContext.switchToContext();
+	createContextSelector() {
 
-	// Set up lastSelectedContextOption to accommodate future context switching
-	lastSelectedContextOption = selectedValue;
+		this.ContextSelector = $el("select");
 
-	// Setup sorting
-	const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
-	imageDrawerListSortingInstance.setSortingOptionsFromSortTypeArray(NewContext.getSupportedSortTypes());
+		Contexts.initializeContexts();
 
-	const sortType = NewContext.getDesiredSortType();
-	if (sortType && typeof sortType === 'object') {
-		imageDrawerListSortingInstance.setOptionSelectedFromSortType(sortType.type, sortType.bIsAscending);
-	} else if (sortType && typeof sortType === 'string') {
-		imageDrawerListSortingInstance.setOptionSelectedFromOptionName(sortType);
-	}
+		this.lastSelectedContextOption = Contexts.getContexts().feed.name;
 
-	const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
-	batchSelectionManagerInstance.updateWidget();
+		for (const contextKey in Contexts.getContexts()) {
+			const context = Contexts.getContexts()[contextKey];
+			const option = document.createElement("option");
+			option.value = context.name;
+			option.textContent = context.name;
+			option.title = context.tooltip;
+			this.ContextSelector.appendChild(option);
+		}
 
-	// Automatically focus search bar and select text to save user a click
-	imageDrawerSearchInstance.focusAndSelectSearchText();
+		// Add an event listener for the "change" event
+		this.ContextSelector.addEventListener("change", async () => {
+			const selectedValue = this.ContextSelector.value;
+			this.onOptionSelected(selectedValue);
+			// await api.fetchApi(
+			// 	'/jnodes_request_task_cancellation', { method: "POST"}); // Cancel any outstanding python task
+		});
+
+		// Initialize
+		this.setOptionSelected(this.lastSelectedContextOption);
+
+		return this.ContextSelector;
+	};
+
 }
 
-export function createContextSelector() {
-
-	ContextSelector = $el("select");
-
-	Contexts.initializeContexts();
-
-	lastSelectedContextOption = Contexts.getContexts().feed.name;
-
-	for (const contextKey in Contexts.getContexts()) {
-		const context = Contexts.getContexts()[contextKey];
-		const option = document.createElement("option");
-		option.value = context.name;
-		option.textContent = context.name;
-		option.title = context.tooltip;
-		ContextSelector.appendChild(option);
-	}
-
-	// Add an event listener for the "change" event
-	ContextSelector.addEventListener("change", async function () {
-		const selectedValue = ContextSelector.value;
-		onOptionSelected(selectedValue);
-		// await api.fetchApi(
-		// 	'/jnodes_request_task_cancellation', { method: "POST"}); // Cancel any outstanding python task
-	});
-
-	// Initialize
-	setOptionSelected(lastSelectedContextOption);
-
-	return ContextSelector;
-};
+const factoryInstance = new ClassInstanceFactory(ImageDrawerContextSelector);

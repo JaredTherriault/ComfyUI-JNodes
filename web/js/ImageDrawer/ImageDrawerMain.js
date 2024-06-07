@@ -2,7 +2,6 @@ import { app } from "/scripts/app.js";
 import { $el } from "/scripts/ui.js";
 
 import * as ExtraNetworks from "./ExtraNetworks.js";
-import * as ContextSelector from "./ContextSelector.js";
 
 import {
 	ImageDrawerConfigSetting, setupUiSettings, createDrawerSelectionWidget,
@@ -339,7 +338,9 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
 			const sortingWidget = imageDrawerListSortingInstance.makeSortingWidget(); // Sorting first since contexts act upon sorting
 			sortingWidget.style.width = '50%';
-			const contextSelector = ContextSelector.createContextSelector();
+
+			const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+			const contextSelector = imageDrawerContextSelectorInstance.createContextSelector();
 			contextSelector.style.width = '50%';
 
 			const DropDownComboContainer = $el("div.JNodes-context-sorting-menu", {

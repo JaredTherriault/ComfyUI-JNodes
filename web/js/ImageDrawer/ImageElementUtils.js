@@ -13,7 +13,6 @@ import { isPointerDown } from "../common/EventManager.js";
 import { setting_FontSize, setting_FontFamily } from "../TextareaFontControl.js"
 
 import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
-import { getCurrentContextObject } from "./ContextSelector.js";
 
 const toolTipOffsetX = 10; // Adjust the offset from the mouse pointer
 const toolTipOffsetY = 10;
@@ -208,7 +207,8 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 labelElement.textContent = confirmLabelText;
                             } else if (labelElement.textContent == confirmLabelText) {
 
-                                const currentContextObject = getCurrentContextObject();
+                                const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+                                const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
                                 if (currentContextObject) {
                                     currentContextObject.onRequestSingleDeletion(imageElementToUse);
                                 }
@@ -237,7 +237,8 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 labelElement.textContent = confirmLabelText;
                             } else if (labelElement.textContent == confirmLabelText) {
 
-                                const currentContextObject = getCurrentContextObject();
+                                const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+                                const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
                                 if (currentContextObject) {
                                     currentContextObject.onRequestSingleRemoval(imageElementToUse);
                                 }
@@ -260,7 +261,8 @@ export function getOrCreateToolButton(imageElementToUse) {
                         }),
                         "Open this file's containing directory in your OS's default file manager.",
                         function (e) {
-                            const currentContextObject = getCurrentContextObject();
+                            const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+                            const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
                             if (currentContextObject) {
                                 currentContextObject.onRequestShowInFileManager(imageElementToUse);
                             }

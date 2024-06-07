@@ -5,7 +5,6 @@ import { BatchOptionManagerButton } from "./BatchOptionManagerButton.js";
 
 import { utilitiesInstance } from "../../common/Utilities.js";
 import { ClassInstanceFactory, imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
-import { getCurrentContextObject } from "../ContextSelector.js";
 
 class BatchDeletionManager extends BatchOptionManagerButton {
 
@@ -73,7 +72,8 @@ class BatchDeletionManager extends BatchOptionManagerButton {
 
         } else {
 
-            const currentContextObject = getCurrentContextObject();
+            const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+            const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
             if (currentContextObject) {
                 currentContextObject.onRequestBatchDeletion();
 
