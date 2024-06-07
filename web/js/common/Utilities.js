@@ -107,7 +107,7 @@ class JNodesUtilities {
 		return parentElement ? parentElement.querySelectorAll("video, img") : [];
 	}
 
-	pasteToTextArea(newText, textarea, selectionStart, selectionEnd) {
+	pasteToTextArea(newText, textarea) {
 
 		// Focus the textarea to make sure execCommand is working with the right selection
 		textarea.focus();
@@ -125,7 +125,7 @@ class JNodesUtilities {
 		if (!pasted) {
 			console.error(
 				"execCommand unsuccessful; not supported. Adding text manually, no undo support.");
-			textarea.setRangeText(newText, selectionStart, selectionEnd, "end");
+			textarea.setRangeText(newText, textarea.selectionStart, textarea.selectionEnd, "end");
 		}
 	}
 
