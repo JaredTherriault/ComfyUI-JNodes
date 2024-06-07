@@ -11,16 +11,21 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 	constructor(args) {
 
 		super(args);
-		this.SortingWidget;
-		this.SortSelectionWidget;
-		this.SortShuffleButton;
-		this.SortTypes;
+
+		this.sortingWidget;
+		this.sortSelectionWidget;
+		this.sortShuffleButton;
+		this.sortTypes;
 
 		this.lastShuffleInterval = 1000;
+
+
+		this.baseShuffleButtonTooltipText = "Shuffle sorting again (long press to enable auto shuffle mode)";
+		this.autoModehuffleButtonTooltipText = "Cancel auto shuffle mode";
 	}
 
 	initializeSortTypes() {
-		this.SortTypes = {
+		this.sortTypes = {
 			filenameAscending: new SortTypes.SortTypeFilename(true),
 			filenameDescending: new SortTypes.SortTypeFilename(false),
 			friendlyNameAscending: new SortTypes.SortTypeFriendlyName(true),
@@ -42,11 +47,11 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 	}
 
 	getSortTypes() {
-		return this.SortTypes;
+		return this.sortTypes;
 	}
 
 	getCurrentSortTypeName() {
-		return this.SortSelectionWidget.value;
+		return this.sortSelectionWidget.value;
 	}
 
 	getCurrentSortTypeObject() {
@@ -58,7 +63,7 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 	}
 
 	getSortTypeObjectFromName(sortName, bIsAscending = undefined) {
-		const sortValues = Object.values(this.SortTypes);
+		const sortValues = Object.values(this.sortTypes);
 
 		let foundSortType;
 
@@ -80,7 +85,7 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 	}
 
 	getSortTypeObjectFromClassType(classType, bIsAscending = undefined) {
-		const sortValues = Object.values(this.SortTypes);
+		const sortValues = Object.values(this.sortTypes);
 
 		let foundSortType;
 
@@ -106,7 +111,7 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 
 	setOptionSelectedFromOptionName(option) {
 
-		this.SortSelectionWidget.value = option;
+		this.sortSelectionWidget.value = option;
 		this.onOptionSelected(option);
 	}
 
@@ -123,10 +128,10 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 
 		if (NewType instanceof SortTypes.SortTypeShuffle) {
 
-			this.SortShuffleButton.style.display = "unset";
+			this.sortShuffleButton.style.display = "unset";
 		} else {
 
-			this.SortShuffleButton.style.display = "none";
+			this.sortShuffleButton.style.display = "none";
 			this.stopAutomaticShuffle();
 		}
 	}
@@ -139,24 +144,24 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 
 		// Find the correct position to insert the new option
 		let index = 0;
-		while (index < this.SortSelectionWidget.children.length && optionName.localeCompare(this.SortSelectionWidget.children[index].value) > 0) {
+		while (index < this.sortSelectionWidget.children.length && optionName.localeCompare(this.sortSelectionWidget.children[index].value) > 0) {
 			index++;
 		}
 
 		// Insert the new option at the correct position
-		this.SortSelectionWidget.insertBefore(option, this.SortSelectionWidget.children[index]);
+		this.sortSelectionWidget.insertBefore(option, this.sortSelectionWidget.children[index]);
 	}
 
 	_addUniqueSortingOption(optionName) {
 
-		if (!Array.from(this.SortSelectionWidget.children).find(op => op.value === optionName)) {
+		if (!Array.from(this.sortSelectionWidget.children).find(op => op.value === optionName)) {
 			this._addSortingOption(optionName);
 		}
 	}
 
 	setSortingOptionsFromSortTypeArray(inOptionArray) {
 
-		this.SortSelectionWidget.replaceChildren();
+		this.sortSelectionWidget.replaceChildren();
 
 		for (const sortType of inOptionArray) {
 
@@ -172,7 +177,7 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 
 	setSortingOptionsFromStringArray(inOptionArray) {
 
-		this.SortSelectionWidget.replaceChildren();
+		this.sortSelectionWidget.replaceChildren();
 
 		for (const optionKey in inOptionArray) {
 			this._addUniqueSortingOption(optionKey);
@@ -181,10 +186,10 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 
 	_createSortShuffleButton() {
 
-		this.SortShuffleButton = utilitiesInstance.createLongPressableButton(
+		this.sortShuffleButton = utilitiesInstance.createLongPressableButton(
 			{
 				textContent: "🔀",
-				title: "Shuffle sorting again",
+				title: this.baseShuffleButtonTooltipText,
 				style: {
 					display: "none"
 				}
@@ -205,24 +210,27 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 
 					this.lastShuffleInterval = value;
 
-					this.SortShuffleButton.style.backgroundColor = "red";
-					this.SortShuffleButton.timer = setInterval(() => {
+					this.sortShuffleButton.style.backgroundColor = "red";
+					this.sortShuffleButton.title = `${this.autoModehuffleButtonTooltipText} (currently ${value} ms)`;
+					this.sortShuffleButton.timer = setInterval(() => {
 						this.sortWithCurrentType();
 					}, value);
 				}
 			},
 			["JNodes-sort-shuffle-btn"]);
 
-		return this.SortShuffleButton;
+		return this.sortShuffleButton;
 	}
 
 	// If the Shuffle sort type is set to automatically work at an interval,
 	// stop it with this function. Returns true if it was in auto mode and was stopped.
 	stopAutomaticShuffle() {
-		if (this.SortShuffleButton?.timer) {
-			clearInterval(this.SortShuffleButton.timer);
-			this.SortShuffleButton.timer = 0;
-			this.SortShuffleButton.style.backgroundColor = "";
+
+		if (this.sortShuffleButton?.timer) {
+			clearInterval(this.sortShuffleButton.timer);
+			this.sortShuffleButton.timer = 0;
+			this.sortShuffleButton.style.backgroundColor = "";
+			this.sortShuffleButton.title = this.baseShuffleButtonTooltipText;
 
 			return true;
 		}
@@ -232,30 +240,30 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 
 	makeSortingWidget() {
 
-		this.SortSelectionWidget = $el("select", {
+		this.sortSelectionWidget = $el("select", {
 			style: {
 				width: '100%',
 			}
 		});
 
-		this.SortingWidget = $el("div", {
+		this.sortingWidget = $el("div", {
 			style: {
 				width: '100%',
 				display: 'flex',
 				flexDirection: 'row',
 			}
 		}, [
-			this.SortSelectionWidget, this._createSortShuffleButton()
+			this.sortSelectionWidget, this._createSortShuffleButton()
 		]);
 
 		// Add an event listener for the "change" event
-		this.SortSelectionWidget.addEventListener("change", async () => {
-			this.onOptionSelected(this.SortSelectionWidget.value);
+		this.sortSelectionWidget.addEventListener("change", async () => {
+			this.onOptionSelected(this.sortSelectionWidget.value);
 		});
 
 		this.initializeSortTypes();
 
-		return this.SortingWidget;
+		return this.sortingWidget;
 	}
 }
 
