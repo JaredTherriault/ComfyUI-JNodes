@@ -35,11 +35,11 @@ export async function getEmbeddings(bForceRefresh = false) {
 		const resp = await api.fetchApi('/jnodes_model_items?type=embeddings', { cache: "no-store" });
 		const asJson = await resp.json();
 		//console.log("Size of embeddings info: " + JSON.stringify(asJson).length)
-		cachedLorasObject = asJson;
+		cachedEmbeddingsObject = asJson;
 		return asJson;
 	}
 
-	return cachedLorasObject;
+	return cachedEmbeddingsObject;
 }
 
 function getLoraTextFontSize(emMultiplier) {
