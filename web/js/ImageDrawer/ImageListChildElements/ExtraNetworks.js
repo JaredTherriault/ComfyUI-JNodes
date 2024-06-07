@@ -1,9 +1,9 @@
 import { api } from "/scripts/api.js";
 import { $el } from "/scripts/ui.js";
-import { utilitiesInstance } from "../common/Utilities.js"
+import { utilitiesInstance } from "../../common/Utilities.js"
 
-import { setting_ModelCardAspectRatio } from "../common/SettingsManager.js";
-import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
+import { setting_ModelCardAspectRatio } from "../../common/SettingsManager.js";
+import { imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
 
 const NoImagePlaceholder = new URL(`../assets/NoImage.png`, import.meta.url);
 

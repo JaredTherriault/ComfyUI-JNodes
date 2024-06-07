@@ -1,16 +1,16 @@
 import { api } from "/scripts/api.js";
 import { $el } from "/scripts/ui.js";
 
-import { utilitiesInstance } from "../common/Utilities.js";
+import { utilitiesInstance } from "../../common/Utilities.js";
 
-import { ModalManager } from "../common/ModalManager.js";
+import { ModalManager } from "../../common/ModalManager.js";
 
-import { setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
-import { setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen } from "../common/VideoControl.js";
+import { setting_VideoPlaybackOptions } from "../../common/SettingsManager.js";
+import { setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen } from "../../common/VideoControl.js";
 
-import * as ImageElementUtils from "./ImageElementUtils.js";
+import * as ImageElementUtils from "./ImageListChildElementUtils.js";
 
-import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
+import { imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
 
 
 export async function createImageElementFromFileInfo(fileInfo) {

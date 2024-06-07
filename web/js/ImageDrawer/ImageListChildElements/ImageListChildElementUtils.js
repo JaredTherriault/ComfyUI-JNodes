@@ -1,18 +1,18 @@
 import { $el } from "/scripts/ui.js";
 
-import { getElementUnderPointer } from "../common/EventManager.js";
+import { getElementUnderPointer } from "../../common/EventManager.js";
 import { getPngMetadata } from "/scripts/pnginfo.js";
 
-import { setting_bKeyListAllowDenyToggle, setting_KeyList, createFlyoutHandle } from "../common/SettingsManager.js";
+import { setting_bKeyListAllowDenyToggle, setting_KeyList, createFlyoutHandle } from "../../common/SettingsManager.js";
 
-import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
+import ExifReader from '../../common/ExifReader-main/src/exif-reader.js';
 
-import { utilitiesInstance } from "../common/Utilities.js";
-import { isPointerDown } from "../common/EventManager.js";
+import { utilitiesInstance } from "../../common/Utilities.js";
+import { isPointerDown } from "../../common/EventManager.js";
 
-import { setting_FontSize, setting_FontFamily } from "../TextareaFontControl.js"
+import { setting_FontSize, setting_FontFamily } from "../../TextareaFontControl.js"
 
-import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
+import { imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
 
 const toolTipOffsetX = 10; // Adjust the offset from the mouse pointer
 const toolTipOffsetY = 10;

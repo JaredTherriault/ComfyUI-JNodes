@@ -1,8 +1,8 @@
 import { $el } from "/scripts/ui.js";
 import { api } from "/scripts/api.js";
 
-import * as ExtraNetworks from "./ExtraNetworks.js";
-import * as ImageElements from "./ImageElements.js";
+import * as ExtraNetworks from "./ImageListChildElements/ExtraNetworks.js";
+import * as ImageElements from "./ImageListChildElements/ImageElements.js";
 
 import * as SortTypes from "../common/SortTypes.js"
 

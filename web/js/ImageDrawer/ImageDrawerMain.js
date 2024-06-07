@@ -1,7 +1,7 @@
 import { app } from "/scripts/app.js";
 import { $el } from "/scripts/ui.js";
 
-import * as ExtraNetworks from "./ExtraNetworks.js";
+import * as ExtraNetworks from "./ImageListChildElements/ExtraNetworks.js";
 
 import {
 	ImageDrawerConfigSetting, setupUiSettings, createDrawerSelectionWidget,
@@ -241,8 +241,9 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			},
 		});
 
-		// Get loras right at the start so we ensure we have to wait less when switching to loras context
+		// Get loras and embeddings right at the start so we ensure we have to wait less when switching to loras context
 		ExtraNetworks.getLoras();
+		ExtraNetworks.getEmbeddings();
 
 		// The main drawer widget
 		this.imageDrawer = $el("div.JNodes-image-drawer", {
