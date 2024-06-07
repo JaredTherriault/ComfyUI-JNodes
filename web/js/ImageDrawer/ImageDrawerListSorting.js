@@ -203,8 +203,8 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 			},
 			async () => { // Long press
 
-				const value = +prompt("Set automatic shuffle interval in milliseconds:", this.lastShuffleInterval);
-				if (!isNaN(value)) {
+				const value = Math.abs(+prompt("Set automatic shuffle interval in milliseconds:", this.lastShuffleInterval));
+				if (!isNaN(value) && value > 1) {
 
 					this.stopAutomaticShuffle(); // Stop existing auto mode
 
