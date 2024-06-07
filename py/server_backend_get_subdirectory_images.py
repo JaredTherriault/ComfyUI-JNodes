@@ -43,7 +43,7 @@ class GetSubdirectoryImages:
         self.walk_through_subdirectories_and_files("")
 
         end_time = time.time()
-        print(f"Execution time (get_subdirectory_images): {end_time - start_time} seconds")
+        print(f"Execution time (get_subdirectory_images): got {len(self.results)} results in {end_time - start_time} seconds")
 
         return self.results
 
