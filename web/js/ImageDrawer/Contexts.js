@@ -104,6 +104,10 @@ class ImageDrawerContext {
 	}
 
 	async switchToContext(bSkipRestore = false) {
+
+		const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+		imageDrawerListSortingInstance.stopAutomaticShuffle();
+
 		const bSuccessfulRestore = bSkipRestore || await this.checkAndRestoreContextCache();
 		if (!bSuccessfulRestore) {
 			const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
@@ -259,6 +263,7 @@ class ContextRefreshable extends ImageDrawerContext {
 
 	async onRefreshClicked() {
 		const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+		imageDrawerListSortingInstance.stopAutomaticShuffle();
 		imageDrawerListSortingInstance.sortWithCurrentType();
 	}
 
@@ -457,6 +462,9 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 	// Get the image paths in the folder or directory specified at this.folderName 
 	// as well as all subdirectories then load the images in a given subdirectory
 	async fetchFolderItems(selectedSubdirectory = "") {
+
+		const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+		imageDrawerListSortingInstance.stopAutomaticShuffle();
 
 		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
 		imageDrawerListInstance.clearImageListChildren();

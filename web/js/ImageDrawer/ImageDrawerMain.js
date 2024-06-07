@@ -228,6 +228,10 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			textContent: "❌",
 			title: "Hide the drawer. Show it again by clicking the icon next to the 'Settings' cog icon.",
 			onclick: () => {
+
+				const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+				imageDrawerListSortingInstance.stopAutomaticShuffle();
+
 				utilitiesInstance.setElementVisible(this.imageDrawer, false);
 				utilitiesInstance.setElementVisible(showButton, true);
 				setting_bMasterVisibility.value = false;

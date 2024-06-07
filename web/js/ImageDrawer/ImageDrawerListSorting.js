@@ -15,6 +15,8 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 		this.SortSelectionWidget;
 		this.SortShuffleButton;
 		this.SortTypes;
+
+		this.lastShuffleInterval = 1000;
 	}
 
 initializeSortTypes() {
@@ -196,10 +198,12 @@ _createSortShuffleButton() {
 		},
 		async () => { // Long press
 
-			const value = +prompt("Set automatic shuffle interval in milliseconds:", 1000);
+			const value = +prompt("Set automatic shuffle interval in milliseconds:", this.lastShuffleInterval);
 			if (!isNaN(value)) {
 
 				this.stopAutomaticShuffle(); // Stop existing auto mode
+
+				this.lastShuffleInterval = value;
 
 				this.SortShuffleButton.style.backgroundColor = "red";
 				this.SortShuffleButton.timer = setInterval(() => {
