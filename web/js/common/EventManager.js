@@ -27,6 +27,19 @@ export function getElementUnderPointer() {
 	return document.elementFromPoint(mousePos[0], mousePos[1]);
 }
 
+export function simulateMouseClickAtPoint(x, y) {
+	// Create the synthetic mouse event
+	const event = new MouseEvent('mousedown', {
+		view: window,
+		bubbles: true,
+		cancelable: true,
+		clientX: x,
+		clientY: y
+	});
+
+	document.dispatchEvent(event);
+}
+
 // Keyboard events
 
 function isElementAppropriateForVideoEvent(elementUnderPointer) {
