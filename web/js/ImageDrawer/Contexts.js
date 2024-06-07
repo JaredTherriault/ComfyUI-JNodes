@@ -3,7 +3,9 @@ import { api } from "/scripts/api.js";
 
 import * as ExtraNetworks from "./ExtraNetworks.js";
 import * as ImageElements from "./ImageElements.js";
-import * as Sorting from "./Sorting.js";
+
+import * as SortTypes from "../common/SortTypes.js"
+
 import { getCurrentContextName, getCurrentContextObject } from "./ContextSelector.js";
 
 import { utilitiesInstance } from "../common/Utilities.js"
@@ -90,14 +92,14 @@ class ImageDrawerContext {
 	makeCache() {
 
 		const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
-		const imageDrawerMainInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerMain");
+		const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
 		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
 		const childNodesArray = Array.from(imageDrawerListInstance.getImageListChildren());
 
 		const newCache =
 			new ImageDrawerContextCache(
 				imageDrawerListInstance.getImageListScrollLevel(), imageDrawerSearchInstance.getSearchText(),
-				childNodesArray, Sorting.getCurrentSortTypeName());
+				childNodesArray, imageDrawerListSortingInstance.getCurrentSortTypeName());
 		this.setCache(newCache);
 	}
 
@@ -150,13 +152,14 @@ class ImageDrawerContext {
 
 				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
 				const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+				const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
 
 				// Replace children
 				imageDrawerListInstance.replaceImageListChildren(this.cache.imageListElements);
 				// Execute Search
 				imageDrawerSearchInstance.setSearchTextAndExecute(this.cache.searchBarText);
 				// Restore sort type
-				Sorting.setOptionSelectedFromOptionName(this.cache.sortType);
+				imageDrawerListSortingInstance.setOptionSelectedFromOptionName(this.cache.sortType);
 				// Restore scroll level
 				imageDrawerListInstance.setImageListScrollLevel(this.cache.scrollLevel);
 
@@ -203,7 +206,7 @@ class ImageDrawerContext {
 	}
 
 	getSupportedSortTypes() {
-		return [Sorting.SortTypeFilename, Sorting.SortTypeDate, Sorting.SortTypeShuffle];
+		return [SortTypes.SortTypeFilename, SortTypes.SortTypeDate, SortTypes.SortTypeShuffle];
 	}
 
 	getDesiredSortType() {
@@ -211,7 +214,7 @@ class ImageDrawerContext {
 	}
 
 	getDefaultSortType() {
-		return { type: Sorting.SortTypeFilename, bIsAscending: true };
+		return { type: SortTypes.SortTypeFilename, bIsAscending: true };
 	}
 
 	shouldCancelAsyncOperation() {
@@ -244,15 +247,19 @@ class ContextClearable extends ImageDrawerContext {
 	}
 
 	getSupportedSortTypes() {
-		const SortTypes = [Sorting.SortTypeFileSize, Sorting.SortTypeImageWidth, Sorting.SortTypeImageHeight, Sorting.SortTypeImageAspectRatio, Sorting.SortTypeFileType];
-		return super.getSupportedSortTypes().concat(SortTypes);
+		const NewSortTypes = [
+			SortTypes.SortTypeFileSize, SortTypes.SortTypeImageWidth,
+			SortTypes.SortTypeImageHeight, SortTypes.SortTypeImageAspectRatio, SortTypes.SortTypeFileType
+		];
+		return super.getSupportedSortTypes().concat(NewSortTypes);
 	}
 }
 
 class ContextRefreshable extends ImageDrawerContext {
 
 	async onRefreshClicked() {
-		Sorting.sortWithCurrentType();
+		const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+		imageDrawerListSortingInstance.sortWithCurrentType();
 	}
 
 	async makeToolbar() {
@@ -375,11 +382,11 @@ class ContextModel extends ContextRefreshable {
 	}
 
 	getSupportedSortTypes() {
-		return super.getSupportedSortTypes().concat([Sorting.SortTypeFriendlyName]);
+		return super.getSupportedSortTypes().concat([SortTypes.SortTypeFriendlyName]);
 	}
 
 	getDefaultSortType() {
-		return { type: Sorting.SortTypeFriendlyName, bIsAscending: true };
+		return { type: SortTypes.SortTypeFriendlyName, bIsAscending: true };
 	}
 }
 
@@ -560,7 +567,8 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 		Promise.all(promises).then(() => {
 			imageDrawerListInstance.notifyFinishChangingImageList();
 
-			Sorting.sortWithCurrentType();
+			const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+			imageDrawerListSortingInstance.sortWithCurrentType();
 
 		});
 
@@ -617,8 +625,9 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 
 	makeCache() {
 		super.makeCache();
-		this.cache.customContextCacheData = { 
-			selectedSubdirectory: this.subdirectorySelector?.data?.getSelectedOptionName(), subdirectorySearchToken: this.subdirectorySelector?.data?.getFilterText() };
+		this.cache.customContextCacheData = {
+			selectedSubdirectory: this.subdirectorySelector?.data?.getSelectedOptionName(), subdirectorySearchToken: this.subdirectorySelector?.data?.getFilterText()
+		};
 	}
 
 	async switchToContext() {
@@ -641,8 +650,11 @@ class ContextSubdirectoryExplorer extends ContextRefreshable {
 	}
 
 	getSupportedSortTypes() {
-		const SortTypes = [Sorting.SortTypeFileSize, Sorting.SortTypeImageWidth, Sorting.SortTypeImageHeight, Sorting.SortTypeImageAspectRatio, Sorting.SortTypeFileType];
-		return super.getSupportedSortTypes().concat(SortTypes);
+		const NewSortTypes = [
+			SortTypes.SortTypeFileSize, SortTypes.SortTypeImageWidth,
+			SortTypes.SortTypeImageHeight, SortTypes.SortTypeImageAspectRatio, SortTypes.SortTypeFileType
+		];
+		return super.getSupportedSortTypes().concat(NewSortTypes);
 	}
 }
 
@@ -740,7 +752,7 @@ export class ContextFeed extends ContextClearable {
 	}
 
 	getDefaultSortType() {
-		return { type: Sorting.SortTypeDate, bIsAscending: false };
+		return { type: SortTypes.SortTypeDate, bIsAscending: false };
 	}
 
 	removeItemFromFeed(item) {
@@ -760,7 +772,7 @@ export class ContextTemp extends ContextSubdirectoryExplorer {
 	}
 
 	getDefaultSortType() {
-		return { type: Sorting.SortTypeDate, bIsAscending: false };
+		return { type: SortTypes.SortTypeDate, bIsAscending: false };
 	}
 }
 

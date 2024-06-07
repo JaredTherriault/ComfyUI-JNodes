@@ -3,7 +3,6 @@ import { $el } from "/scripts/ui.js";
 
 import * as ExtraNetworks from "./ExtraNetworks.js";
 import * as ContextSelector from "./ContextSelector.js";
-import * as Sorting from "./Sorting.js";
 
 import {
 	ImageDrawerConfigSetting, setupUiSettings, createDrawerSelectionWidget,
@@ -333,17 +332,18 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 		function makeDropDownComboContainer() {
 			// Context and sorting Dropdowns
-			const sorting = Sorting.makeSortingWidget(); // Sorting first since contexts act upon sorting
-			sorting.style.width = '50%';
-			const context = ContextSelector.createContextSelector();
-			context.style.width = '50%';
+			const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+			const sortingWidget = imageDrawerListSortingInstance.makeSortingWidget(); // Sorting first since contexts act upon sorting
+			sortingWidget.style.width = '50%';
+			const contextSelector = ContextSelector.createContextSelector();
+			contextSelector.style.width = '50%';
 
 			const DropDownComboContainer = $el("div.JNodes-context-sorting-menu", {
 				style: {
 					display: "flex",
 					flexDirection: "row"
 				}
-			}, [context, sorting]);
+			}, [contextSelector, sortingWidget]);
 
 			return DropDownComboContainer;
 		}

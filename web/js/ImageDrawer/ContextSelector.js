@@ -1,7 +1,6 @@
 import { $el } from "/scripts/ui.js";
 
 import * as Contexts from "./Contexts.js";
-import * as Sorting from "./Sorting.js";
 
 import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
 
@@ -47,13 +46,14 @@ export async function onOptionSelected(selectedValue) {
 	lastSelectedContextOption = selectedValue;
 
 	// Setup sorting
-	Sorting.setSortingOptionsFromSortTypeArray(NewContext.getSupportedSortTypes());
+	const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+	imageDrawerListSortingInstance.setSortingOptionsFromSortTypeArray(NewContext.getSupportedSortTypes());
 
 	const sortType = NewContext.getDesiredSortType();
 	if (sortType && typeof sortType === 'object') {
-		Sorting.setOptionSelectedFromSortType(sortType.type, sortType.bIsAscending);
+		imageDrawerListSortingInstance.setOptionSelectedFromSortType(sortType.type, sortType.bIsAscending);
 	} else if (sortType && typeof sortType === 'string') {
-		Sorting.setOptionSelectedFromOptionName(sortType);
+		imageDrawerListSortingInstance.setOptionSelectedFromOptionName(sortType);
 	}
 
 	const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");

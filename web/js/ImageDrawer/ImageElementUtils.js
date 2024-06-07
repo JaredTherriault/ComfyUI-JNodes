@@ -1,7 +1,5 @@
 import { $el } from "/scripts/ui.js";
 
-import * as Sorting from "./Sorting.js";
-
 import { getElementUnderPointer } from "../common/EventManager.js";
 import { getPngMetadata } from "/scripts/pnginfo.js";
 
@@ -493,7 +491,8 @@ export async function onLoadImageElement(imageElement) {
         imageElement.bComplete = true;
 
         if (imageElement.fileInfo.bShouldSort == true) {
-            Sorting.sortWithCurrentType();
+            const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+            imageDrawerListSortingInstance.sortWithCurrentType();
             imageElement.fileInfo.bShouldSort = false;
         }
 
