@@ -241,10 +241,6 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			},
 		});
 
-		// Get loras and embeddings right at the start so we ensure we have to wait less when switching to loras context
-		ExtraNetworks.getLoras();
-		ExtraNetworks.getEmbeddings();
-
 		// The main drawer widget
 		this.imageDrawer = $el("div.JNodes-image-drawer", {
 			parent: document.body
