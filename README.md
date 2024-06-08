@@ -92,7 +92,7 @@ ContextModel is a context type similar to ContextSubdirectoryExplorer but for lo
   * JNodes_SaveImageWithOutput: Similar to Comfy's SaveImage and PreviewImage but whether it's saved to the output directory is a control, file name control
 
 * Parameter List Nodes
-  * JNodes_GetParameterFromList: Gets a specific parameter as its actual type from a text list of defined parameters. See this [section] for more on text parameters.
+  * JNodes_GetParameterFromList: Gets a specific parameter as its actual type from a text list of defined parameters. See this [section](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#parameter-lists) for more on text parameters.
 
 * Prompting Nodes
 
