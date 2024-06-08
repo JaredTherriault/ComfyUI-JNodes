@@ -116,15 +116,6 @@ Please use the JNodes Extension Management setting in Settings > JNodes > Extens
 * Comfy.EditAttention can be disabled if you would prefer to use a similar system included in this suite (which supports undo/redo).
 
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/c1dbefaa-d6aa-4b94-9ff8-d10c8e55273a)
-
-  
-# Future updates
-* Implementation of more contexts in ImageDrawer
-* Slideshow for images
-* Squashing UI bugs
-* Improving general UX
-* Civit.ai integration (maybe)
-* Plugin support (maybe)
  
 # Issues and Pull Requests
 Feel free to add them, but please do not expect regular updates or responses. This project is just for fun. I will add features and fix bugs when I have free time and when they are important for my needs. I'll review pulls of course and integrate anything that looks good.
