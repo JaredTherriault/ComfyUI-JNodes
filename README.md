@@ -17,7 +17,8 @@ thank you to:
 * Pan faster around the graph by holding ctrl+shift and moving the mouse.
 
 # Installation
-Clone this repo or download the zip file and unzip it into "ComfyUI/custom_nodes"
+* Clone this repo into "ComfyUI/custom_nodes"
+* Download the zip file and unzip it into "ComfyUI/custom_nodes"
 
 # Settings
 Open ComfyUI Settings by clicking the "Cog" icon on the floating toolbar and scroll down to "JNodes Settings." Expand the group by clicking the side-facing arrow beside the text.
