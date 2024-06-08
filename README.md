@@ -8,13 +8,13 @@ thank you to:
 * [Kijai](https://github.com/Kijai) for various code snippets that went into scripts such as statusTitle
  
 # Web Features
-* EditAttention improvements (undo/redo support, remove spacing)
-* Status (progress) indicators (percentage in title, custom favicon, progress bar on floating menu)
+* **EditAttention improvements** (undo/redo support, remove spacing)
+* **Status (progress) indicators** (percentage in title, custom favicon, progress bar on floating menu)
 
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/5887a6e3-28e6-4a07-a1a4-5a20faa5f557)
-* Font control for textareas (see ComfyUI settings > JNodes)
-* Batch Commenting shortcuts: By default, click in any multiline textarea and press ctrl+shift+/ to comment out a line. Requires the use of a JNodes_RemoveCommentedText node. The key combo and the text used to comment are both configurable in ComfyUI settings > JNodes.
-* Pan faster around the graph by holding ctrl+shift and moving the mouse.
+* **Font control** for textareas (see ComfyUI settings > JNodes)
+* **Batch Commenting** shortcuts: By default, click in any multiline textarea and press ctrl+shift+/ to comment out a line. Requires the use of a JNodes_RemoveCommentedText node. The key combo and the text used to comment are both configurable in ComfyUI settings > JNodes.
+* **Pan faster** around the graph by holding ctrl+shift and moving the mouse.
 
 # Installation
 * Clone this repo into "ComfyUI/custom_nodes"
