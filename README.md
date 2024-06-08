@@ -37,8 +37,7 @@ Similar to [pythongosssss](https://github.com/pythongosssss)'s [ImageFeed](https
 * Temp/History:  A [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer). Everything currently in the "temp" directory. This directory is cleared when comfy is restarted. Supports subdirectories.
 * Input: A [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer). Everything currently in the "input" directory.
 * Output:  A [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer). Everything currently in the "output" directory.
-* Lora/Lycoris: A [ContextModel](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextmodel) that displays your loras in a grid something like in a1111 and allows you to search for and copy the lora command in a1111 format (use [Coziness](https://github.com/skfoo/ComfyUI-Coziness) or something similar to support text loras) as well as the trained words. Click tag words to automatically search for similar local loras. Works best with loras downloaded with [Civit Downloader](https://www.ayamaru.com/more). Loras are stored in "models/loras".
-  * Drag and drop from lora picker to canvas to add lora loaders (for people who don't want to use text loras)
+* Lora/Lycoris: A [ContextModel](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextmodel) that displays your loras in a grid something like in a1111 and allows you copy the lora command in a1111 format as well as the trained words. Works best with loras downloaded with [Civit Downloader](https://www.ayamaru.com/more). Loras are stored in "models/loras".
 
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/141ea856-e9b7-4ece-825d-be0aa1ceedf0)
 
