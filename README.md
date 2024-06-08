@@ -146,15 +146,6 @@ Please use the JNodes Extension Management setting in Settings > JNodes > Extens
 * Comfy.EditAttention can be disabled if you would prefer to use a similar system included in this suite (which supports undo/redo).
 
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/c1dbefaa-d6aa-4b94-9ff8-d10c8e55273a)
- 
-# Issues and Pull Requests
-Feel free to add them, but please do not expect regular updates or responses. This project is just for fun. I will add features and fix bugs when I have free time and when they are important for my needs. I'll review pulls of course and integrate anything that looks good.
-
-# Support
-Open an issue if you have any problems, but keep in mind I probably won't have a lot of time to look into them. For the most part, a lot of stuff is just not yet implemented, like most of the contexts in ImageDrawer. If something doesn't work, assume I haven't implemented it yet.
 
 # Data Collection and Privacy Policy
 Your data is your own. This suite of nodes and web features does not collect any data from you or your machine.
-
-# ComfyUI Manager Support
-It'll happen when I've implemented more contexts and features. For now I'm not interested in showcasing the suite since it's only about halfway done.
