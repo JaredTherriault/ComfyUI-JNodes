@@ -17,7 +17,7 @@ thank you to:
 * **Pan faster** around the graph by holding ctrl+shift and moving the mouse.
 
 # Installation
-* Clone this repo into "ComfyUI/custom_nodes"
+* Clone this repo into "ComfyUI/custom_nodes" OR
 * Download the zip file and unzip it into "ComfyUI/custom_nodes"
 
 # Settings
