@@ -18,6 +18,18 @@ thank you to:
 
 # Settings
 Open ComfyUI Settings by clicking the "Cog" icon on the floating toolbar and scroll down to "JNodes Settings." Expand the group by clicking the side-facing arrow beside the text.
+* Batch-commenting Hotkey: A key combo that, when pressed, will insert text at the beginning of the selected lines in a multiline textarea, assuming it is the active element. If no text is selected, the text will be inserted at the beginning of the line where the cursor currently sits. This text will not automatically dummy out any lines, you will need to pass the resulting text into a custom node that removes lines marked as 'commented'.
+* Batch-commenting Token: The token that will be inserted/removed when performing a batch comment operation
+* Extension Management: Deselect any unwanted web extensions to disable them. Select them again to re-enable them. Refresh your browser to see changes. Be extremely careful which extensions you disable.
+* Image Drawer Anchor: To which part of the screen the screen the drawer should be docked
+* Image Drawer Enabled: Toggle whether the drawer is enabled. Requires a page refresh. This is distinct from hiding the drawer - this stops the drawer code from loading entirely until re-enabled. 
+* Image Drawer Image & Video Key List Allow/Deny Toggle: Whether the terms listed in the Key List should be denied or allowed, excluding everything else. True = Allow list, False = Deny list.
+* Image Drawer Image & Video Key List: A set of comma-separated names to include or exclude from the tooltips applied to images in the drawer. For example, we don't show the "prompt" or "workflow" values by default since they would be too lengthy.
+* Multiline Text Font Family: A typeface applied to all multiline text areas in the graph.
+* Multiline Text Font Size (%): How large, as a percentage, the text in multiline text areas should be.
+* Show Progress Bar Above menu: If true, a progress bar for the current node will be displayed above the Comfy floating menu.
+* Show Progress in Title: If true, display progress for the current node in the title/tab of the browser, similar to Automatic1111.
+* Use Custom Favicon: If true, display a custom favicon in the title/tab of the browser. Stored in "ComfyUI/custom_nodes/ComfyUI-JNodes/web/js/assets/", "favicon.ico" is used when a generation is not in progress while "favicon-active.ico" is used when one is.
 
 # ImageDrawer: Overview
 Similar to [pythongosssss](https://github.com/pythongosssss)'s [ImageFeed](https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/main/web/js/imageFeed.js), but with a larger feature set. Searchable. Change Contexts with the Context Selector. Mouse over images in drawer to see exif/png_info.
@@ -31,6 +43,7 @@ Similar to [pythongosssss](https://github.com/pythongosssss)'s [ImageFeed](https
     * If any images are selected (see [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer)), some extra controls will be shown. You can recycle/delete all selected items with the Batch Recycle Button (♻️) or hide all selected with the Batch Removal Button (❌, not to be confused with the hide button on the left side). Note that Batch Removal only hides the images from view and does not delete them.
 * Context Selector: Allows you to select different contexts to show different images, videos and models. See [Contexts](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contexts).
 * Sort Type: Different contexts have different ways of being sorted, such as Date (file age), file size, filename, etc. Not all contexts support all sort types, so they will change between shifting of contexts. Of note is the Shuffle type. Shuffle will semi-randomly sort items in the list and enables a button (🔀) beside the Sort Type dropdown. Click it to shuffle again. Click and hold to set an automatic shuffle every x milliseconds. When in auto mode, click the button again or change the sort type to stop shuffling automatically.
+* Search bar: A search filter for for items in the list, crawling metadata and filename. For generated images you can search for prompts and other parameters. For models you can search for civit.ai info. For everything else you can search for filename, subdirectory, and other things. Items that don't meet the criteria are temporarily hidden. You can clear the search (❌), swap between matching ALL search tokens or matching ANY of the search tokens (separated by space), or randomize search tokens (🎲).
 
 # ImageDrawer: Contexts
 * Image Feed: A stream of your latest stable diffusion generations. Supports most image types and some video types like mp4. ContextFeed is not A [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer), but most of the same information applies excepting the subdirectory selector, the Refresh button and the video controls. See below.
@@ -71,7 +84,7 @@ ContextModel is a context type similar to ContextSubdirectoryExplorer but for lo
   * Text form loras should be familiar to anyone who has used a1111 aside from a second number scaler. This maps to the Comfy lora loader. Each number maps to style and CLIP, respectively. 
   * To use text loras, try a solution like [Coziness](https://github.com/skfoo/ComfyUI-Coziness). 
   * Text embeddings are supported natively by ComfyUI.
- 
+
 # Python Nodes
 * Image Ouput Nodes
   
@@ -113,6 +126,11 @@ ContextModel is a context type similar to ContextSubdirectoryExplorer but for lo
 * Misc Nodes
   * JNodes_GetTempDirectory, JNodes_GetOutputDirectory, JNodes_StringLiteral
   * JNodes_AnyToString: Turn any input into text or string (as python would stringify it for JSON)
+
+# Parameter Lists
+JNodes includes a feature that allows for text parameters in prompts. With this feature you can add something like <params: image_size_y: 512> to your text prompt to make your image have a height of 512. Anything can be parameterized including model names, numbers, even booleans. That means you can have different parameters for individual prompts. Imagine that you normally like to generate images at 512x768 but you want to do an XL generation. Instead of manually changing the latent size to 1024x1024, you can simply add <params: image_size_x: 1024> <params: image_size_y: 1024> to your prompt.
+
+This is not exactly automatic though, and requires some manual set up the first time. 
 
 # Caveats
 There are some incompatibilities with some Comfy extensions and some popular extensions. They can be optionally disabled with this suite.
