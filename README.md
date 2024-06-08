@@ -8,6 +8,14 @@ thank you to:
 * [Kijai](https://github.com/Kijai) for various code snippets that went into scripts such as statusTitle
  
 # Web Features
+* EditAttention improvements (undo/redo support, remove spacing)
+* Status (progress) indicators (percentage in title, custom favicon, progress bar on floating menu)
+
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/5887a6e3-28e6-4a07-a1a4-5a20faa5f557)
+* Font control for textareas (see ComfyUI settings > JNodes)
+* Batch Commenting shortcuts: By default, click in any multiline textarea and press ctrl+shift+/ to comment out a line. Requires the use of a JNodes_RemoveCommentedText node. The key combo and the text used to comment are both configurable in ComfyUI settings > JNodes.
+* Pan faster around the graph by holding ctrl+shift and moving the mouse.
+
 * ImageDrawer: Similar to [pythongosssss](https://github.com/pythongosssss)'s ImageFeed, but with a larger feature set. Searchable. Change Contexts with the Context Selector. Mouse over images in drawer to see exif/png_info.
   * On the top left of the drawer, find:
     * A "Hide" button (❌) that "closes" the drawer. It can be restored with the "Image" button (🖼️) next to the ComfyUI Settings "Cog" button on the floating toolbar. 
@@ -17,6 +25,9 @@ thank you to:
     * A down-facing arrow. If you click it, many of the controls above the list will be hidden. Clicking it again will show the controls again.
     * Select all/none
       * If any images are selected (see [ContextSubdirectoryExplorer]), some extra controls will be shown. You can recycle/delete all selected items with the Batch Recycle Button (♻️) or hide all selected with the Batch Removal Button (❌, not to be confused with the hide button on the left side). Note that Batch Removal only hides the images from view and does not delete them.
+  * Context Selector: Allows you to select different contexts to show different images, videos and models. See [Contexts].
+  * Sort Type: Different contexts have different ways of being sorted, such as Date (file age), file size, filename, etc. Not all contexts support all sort types, so they will change between shifting of contexts. Of note is the Shuffle type. Shuffle will semi-randomly sort items in the list and enables a button (🔀) beside the Sort Type dropdown. Click it to shuffle again. Click and hold to set an automatic shuffle every x milliseconds. When in auto mode, click the button again or change the sort type to stop shuffling automatically.
+
   * Contexts:
     * Image Feed: A stream of your latest stable diffusion generations. Supports most image types and some video types like mp4. ContextFeed is not A [ContextSubdirectoryExplorer], but most of the same information applies excepting the subdirectory selector, the Refresh button and the video controls. See below.
     * Temp/History:  A [ContextSubdirectoryExplorer]. Everything currently in the "temp" directory. This directory is cleared when comfy is restarted. Supports subdirectories.
@@ -55,14 +66,6 @@ thank you to:
         * Text form loras should be familiar to anyone who has used a1111 aside from a second number scaler. This maps to the Comfy lora loader. Each number maps to style and CLIP, respectively. 
         * To use text loras, try a solution like [Coziness](https://github.com/skfoo/ComfyUI-Coziness). 
         * Text embeddings are supported natively by ComfyUI.
-
-* EditAttention improvements (undo/redo support, remove spacing)
-* Status (progress) indicators (percentage in title, custom favicon, progress bar on floating menu)
-
-  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/5887a6e3-28e6-4a07-a1a4-5a20faa5f557)
-* Font control for textareas (see ComfyUI settings > JNodes)
-* Batch Commenting shortcuts: By default, click in any multiline textarea and press ctrl+shift+/ to comment out a line. Requires the use of a JNodes_RemoveCommentedText node. The key combo and the text used to comment are both configurable in ComfyUI settings > JNodes.
-* Pan faster around the graph by holding ctrl+shift and moving the mouse.
  
 # Python Nodes
 * Image Ouput Nodes
