@@ -20,7 +20,7 @@ thank you to:
 Open ComfyUI Settings by clicking the "Cog" icon on the floating toolbar and scroll down to "JNodes Settings." Expand the group by clicking the side-facing arrow beside the text.
 
 # ImageDrawer: Overview
-Similar to [pythongosssss](https://github.com/pythongosssss)'s ImageFeed, but with a larger feature set. Searchable. Change Contexts with the Context Selector. Mouse over images in drawer to see exif/png_info.
+Similar to [pythongosssss](https://github.com/pythongosssss)'s [ImageFeed](https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/main/web/js/imageFeed.js), but with a larger feature set. Searchable. Change Contexts with the Context Selector. Mouse over images in drawer to see exif/png_info.
 * On the top left of the drawer, find:
   * A "Hide" button (❌) that "closes" the drawer. It can be restored with the "Image" button (🖼️) next to the ComfyUI Settings "Cog" button on the floating toolbar. 
   * The View Options flyout allows you to control how many images appear in a row and how large those images apppear. You can adjust them via sliders or click each underlined name to set a number directly. You'll also find a place to adjust the drawer's anchor point so you can adjust it to a position that feels comfortable for you.
@@ -28,21 +28,21 @@ Similar to [pythongosssss](https://github.com/pythongosssss)'s ImageFeed, but wi
 * On the top right you'll find:
   * A down-facing arrow. If you click it, many of the controls above the list will be hidden. Clicking it again will show the controls again.
   * Select all/none
-    * If any images are selected (see [ContextSubdirectoryExplorer]), some extra controls will be shown. You can recycle/delete all selected items with the Batch Recycle Button (♻️) or hide all selected with the Batch Removal Button (❌, not to be confused with the hide button on the left side). Note that Batch Removal only hides the images from view and does not delete them.
-* Context Selector: Allows you to select different contexts to show different images, videos and models. See [Contexts].
+    * If any images are selected (see [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer)), some extra controls will be shown. You can recycle/delete all selected items with the Batch Recycle Button (♻️) or hide all selected with the Batch Removal Button (❌, not to be confused with the hide button on the left side). Note that Batch Removal only hides the images from view and does not delete them.
+* Context Selector: Allows you to select different contexts to show different images, videos and models. See [Contexts](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contexts).
 * Sort Type: Different contexts have different ways of being sorted, such as Date (file age), file size, filename, etc. Not all contexts support all sort types, so they will change between shifting of contexts. Of note is the Shuffle type. Shuffle will semi-randomly sort items in the list and enables a button (🔀) beside the Sort Type dropdown. Click it to shuffle again. Click and hold to set an automatic shuffle every x milliseconds. When in auto mode, click the button again or change the sort type to stop shuffling automatically.
 
 # ImageDrawer: Contexts
-* Image Feed: A stream of your latest stable diffusion generations. Supports most image types and some video types like mp4. ContextFeed is not A [ContextSubdirectoryExplorer], but most of the same information applies excepting the subdirectory selector, the Refresh button and the video controls. See below.
-* Temp/History:  A [ContextSubdirectoryExplorer]. Everything currently in the "temp" directory. This directory is cleared when comfy is restarted. Supports subdirectories.
-* Input: A [ContextSubdirectoryExplorer]. Everything currently in the "input" directory.
-* Output:  A [ContextSubdirectoryExplorer]. Everything currently in the "output" directory.
-* Lora/Lycoris: A [ContextModel] that displays your loras in a grid something like in a1111 and allows you to search for and copy the lora command in a1111 format (use [Coziness](https://github.com/skfoo/ComfyUI-Coziness) or something similar to support text loras) as well as the trained words. Click tag words to automatically search for similar local loras. Works best with loras downloaded with [Civit Downloader](https://www.ayamaru.com/more). Loras are stored in "models/loras".
+* Image Feed: A stream of your latest stable diffusion generations. Supports most image types and some video types like mp4. ContextFeed is not A [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer), but most of the same information applies excepting the subdirectory selector, the Refresh button and the video controls. See below.
+* Temp/History:  A [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer). Everything currently in the "temp" directory. This directory is cleared when comfy is restarted. Supports subdirectories.
+* Input: A [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer). Everything currently in the "input" directory.
+* Output:  A [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer). Everything currently in the "output" directory.
+* Lora/Lycoris: A [ContextModel](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextmodel) that displays your loras in a grid something like in a1111 and allows you to search for and copy the lora command in a1111 format (use [Coziness](https://github.com/skfoo/ComfyUI-Coziness) or something similar to support text loras) as well as the trained words. Click tag words to automatically search for similar local loras. Works best with loras downloaded with [Civit Downloader](https://www.ayamaru.com/more). Loras are stored in "models/loras".
   * Drag and drop from lora picker to canvas to add lora loaders (for people who don't want to use text loras)
 
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/141ea856-e9b7-4ece-825d-be0aa1ceedf0)
 
-* Embeddings/Textual Inversions: A [ContextModel] similar to Loras, but what's in the "embeddings" directory.
+* Embeddings/Textual Inversions: A [ContextModel](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextmodel) similar to Loras, but what's in the "embeddings" directory.
 
 # ImageDrawer: ContextSubdirectoryExplorer
 ContextSubdirectoryExplorer is a context type that displays the images and videos in a specific directory. 
@@ -109,7 +109,7 @@ ContextModel is a context type similar to ContextSubdirectoryExplorer but for lo
   * JNodes_BreakMediaInfo: Get the individual components of the [MediaInfo] structure.
   * JNodes_AppendReversedFrames: Takes in frames as an "IMAGE" pin and reverses them, then appends them. Creates a ping-pong style looped "video".
   * JNodes_LoadVisualMediaFromPath: Given a path to an image or video, will output all frames as an "IMAGE" pin. Start point and number of frames can be specified, as well as wther to deal in frames or a number of seconds, so if you know you want 16 frames starting 3 seconds into a video, you can mix and match. Can also skip a number of frames every cycle (to lighten the workload) and discard transparency.
-  * JNodes_UploadVisualMedia: Similar to Comfy's LoadImage, but works for images and videos. You can also select where to upload the media, either to "temp" or "input" "/upload_media". Below the preview image is formatted metadata loaded from the image or video. You can drag images from the [ImageDrawer] onto this node or drag them in from your file explorer.
+  * JNodes_UploadVisualMedia: Similar to Comfy's LoadImage, but works for images and videos. You can also select where to upload the media, either to "temp" or "input" "/upload_media". Below the preview image is formatted metadata loaded from the image or video. You can drag images from the [ImageDrawer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-overview) onto this node or drag them in from your file explorer.
 
 * Misc Nodes
   * JNodes_GetTempDirectory, JNodes_GetOutputDirectory, JNodes_StringLiteral
