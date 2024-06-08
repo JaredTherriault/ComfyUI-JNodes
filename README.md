@@ -16,6 +16,9 @@ thank you to:
 * Batch Commenting shortcuts: By default, click in any multiline textarea and press ctrl+shift+/ to comment out a line. Requires the use of a JNodes_RemoveCommentedText node. The key combo and the text used to comment are both configurable in ComfyUI settings > JNodes.
 * Pan faster around the graph by holding ctrl+shift and moving the mouse.
 
+# Installation
+Clone this repo or download the zip file and unzip it into "ComfyUI/custom_nodes"
+
 # Settings
 Open ComfyUI Settings by clicking the "Cog" icon on the floating toolbar and scroll down to "JNodes Settings." Expand the group by clicking the side-facing arrow beside the text.
 * Batch-commenting Hotkey: A key combo that, when pressed, will insert text at the beginning of the selected lines in a multiline textarea, assuming it is the active element. If no text is selected, the text will be inserted at the beginning of the line where the cursor currently sits. This text will not automatically dummy out any lines, you will need to pass the resulting text into a custom node that removes lines marked as 'commented'.
