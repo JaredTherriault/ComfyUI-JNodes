@@ -34,6 +34,9 @@ Open ComfyUI Settings by clicking the "Cog" icon on the floating toolbar and scr
 * **Batch-commenting Hotkey**: A key combo that, when pressed, will insert text at the beginning of the selected lines in a multiline textarea, assuming it is the active element. If no text is selected, the text will be inserted at the beginning of the line where the cursor currently sits. This text will not automatically dummy out any lines, you will need to pass the resulting text into a custom node that removes lines marked as 'commented'.
 * **Batch-commenting Token**: The token that will be inserted/removed when performing a batch comment operation
 * **Extension Management**: Deselect any unwanted web extensions to disable them. Select them again to re-enable them. Refresh your browser to see changes. Be extremely careful which extensions you disable.
+
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/c1dbefaa-d6aa-4b94-9ff8-d10c8e55273a)
+  
 * **Image Drawer Anchor**: To which part of the screen the screen the drawer should be docked
 * **Image Drawer Enabled**: Toggle whether the drawer is enabled. Requires a page refresh. This is distinct from hiding the drawer - this stops the drawer code from loading entirely until re-enabled. 
 * **Image Drawer Image & Video Key List Allow/Deny Toggle**: Whether the terms listed in the Key List should be denied or allowed, excluding everything else. True = Allow list, False = Deny list.
@@ -174,14 +177,12 @@ This is not exactly automatic though, and requires some manual set up the first 
 
 # Caveats
 There are some incompatibilities with some Comfy extensions and some popular extensions. They can be optionally disabled with this suite.
-Please use the JNodes Extension Management setting in Settings > JNodes > Extension Management to disable the following extensions by unchecking them:
+Please use the JNodes Extension Management setting in [Settings]() > JNodes > Extension Management to disable the following extensions by unchecking them:
 * pysssss.ImageFeed should be disabled as ImageDrawer relaces it entirely.
 * mtb.ImageFeed can be disabled if you don't want to see it in addition to ImageDrawer. mtb.ImageFeed is designed to only load if pysssss.ImageFeed is not loaded.
 * pysssss.FaviconStatus can be disabled if you'd like to use your own custom favicons or see the progress percentage in the title or tab. This is optional.
 * Comfy.DynamicPrompts can be disabled if you're using another dynamic prompts solution, such as the one included with this suite. If this is enabled, the included solution can't operate.
 * Comfy.EditAttention can be disabled if you would prefer to use a similar system included in this suite (which supports undo/redo).
-
-  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/c1dbefaa-d6aa-4b94-9ff8-d10c8e55273a)
 
 # Data Collection and Privacy Policy
 **Your data is your own**. This suite of nodes and web features does not collect any data from you or your machine.
