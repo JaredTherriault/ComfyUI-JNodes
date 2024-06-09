@@ -177,7 +177,7 @@ This is not exactly automatic though, and requires some manual set up the first 
 
 # Caveats
 There are some incompatibilities with some Comfy extensions and some popular extensions. They can be optionally disabled with this suite.
-Please use the JNodes Extension Management setting in [Settings]() > JNodes > Extension Management to disable the following extensions by unchecking them:
+Please use the JNodes Extension Management setting in [Settings](https://github.com/JaredTherriault/ComfyUI-JNodes/tree/main?tab=readme-ov-file#settings) > JNodes > Extension Management to disable the following extensions by unchecking them:
 * pysssss.ImageFeed should be disabled as ImageDrawer relaces it entirely.
 * mtb.ImageFeed can be disabled if you don't want to see it in addition to ImageDrawer. mtb.ImageFeed is designed to only load if pysssss.ImageFeed is not loaded.
 * pysssss.FaviconStatus can be disabled if you'd like to use your own custom favicons or see the progress percentage in the title or tab. This is optional.
