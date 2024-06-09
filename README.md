@@ -70,6 +70,9 @@ Similar to [pythongosssss](https://github.com/pythongosssss)'s [ImageFeed](https
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/76300611-a2a1-413f-bf08-13f9a186e50f)
   
 * **Search bar**: A search filter for for items in the list, crawling metadata and filename. For generated images you can search for prompts and other parameters. For models you can search for civit.ai info. For everything else you can search for filename, subdirectory, and other things. Items that don't meet the criteria are temporarily hidden. You can clear the search (❌), swap between matching ALL search tokens or matching ANY of the search tokens (separated by space), or randomize search tokens (🎲).
+
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/296b8519-3bec-4b9e-b426-1a56a636125e)
+
 * **Context Toolbar**: Here you can find controls specific to the currently selected context. See [Contexts](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contexts) for more information about the controls in each toolbar.
 
 # ImageDrawer: Contexts
@@ -78,9 +81,6 @@ Similar to [pythongosssss](https://github.com/pythongosssss)'s [ImageFeed](https
 * **Input**: A [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer). Everything currently in the "input" directory.
 * **Output**:  A [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer). Everything currently in the "output" directory.
 * **Lora/Lycoris**: A [ContextModel](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextmodel) that displays your loras in a grid something like in a1111 and allows you copy the lora command in a1111 format as well as the trained words. Works best with loras downloaded with [Civit Downloader](https://www.ayamaru.com/more). Loras are stored in "models/loras".
-
-  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/141ea856-e9b7-4ece-825d-be0aa1ceedf0)
-
 * **Embeddings/Textual Inversions**: A [ContextModel](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextmodel) similar to Loras, but what's in the "embeddings" directory.
 
 # ImageDrawer: ContextSubdirectoryExplorer
@@ -98,8 +98,18 @@ ContextSubdirectoryExplorer is a context type that displays the images and video
     * A control to remove the item from the current view which will be restored when refreshing the context list view.
     * A control to open the containing directory
     * A control for each item in the metadata that can be copied
+   
+      _The metadata tooltip appears when hovering over an image and shows all key-value pairs except those blocked in JNodes Settings_
       
-      ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/54dac675-8507-4212-b867-2c5de9fd8f2b) ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/ce156064-b091-4022-afe3-3fffb577d491) ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/f4646375-1689-40c3-b397-bc760a0f0a24)
+      ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/545272af-632b-4236-acdb-a734b32ed242)
+
+      _The overflow menu toolbutton displays controls relating to this individual image and its metadata_
+      
+      ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/33aa80e0-40e8-46ec-bc3d-033d2a75fd15)
+      
+      _The image on the left is selected which causes the batch deletion/removal buttons to appear. The batch selection button now displays 1 item is selected._
+      
+      ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/ef4ee0f9-dab7-426e-b12f-77cc1f61ad45)
 
 * **Images and videos can be dragged and dropped** onto any JNodes_UploadVisualMedia node 
 
@@ -114,6 +124,8 @@ ContextModel is a context type similar to ContextSubdirectoryExplorer but for lo
   * Text form loras should be familiar to anyone who has used a1111 aside from a second number scaler. This maps to the Comfy lora loader. Each number maps to style and CLIP, respectively. 
   * To use text loras, try a solution like [Coziness](https://github.com/skfoo/ComfyUI-Coziness). 
   * Text embeddings are supported natively by ComfyUI.
+
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/3d091422-e601-4247-9ea8-604fc4d6af22)
 
 # Python Nodes
 * Image Ouput Nodes
