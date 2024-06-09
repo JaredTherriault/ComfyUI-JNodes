@@ -35,7 +35,9 @@ thank you to:
 # Project Support
 If this suite has helped you at all, please consider donating:
 
-[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=D4M4JLFS8GT5N)
+[![Paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=D4M4JLFS8GT5N)
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Z8Z5TXTR0)
  
 # Web Features
 * **EditAttention improvements** (undo/redo support, remove spacing)
