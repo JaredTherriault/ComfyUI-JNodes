@@ -155,7 +155,18 @@ ContextModel is a context type similar to ContextSubdirectoryExplorer but for lo
 * **The Jump button** at the end can be used to automatically scroll to the top of the list.
 * **Each card** displays an image relating to the model and these images can be switched by clicking the left/right arrows (if multiple images exist relting to a given model). The top right of the card displays a number corresponding to the image currently being viewed.
 * **The bottom of each card** displays the friendly name (defined by the info file) and the model's actual filename as well as some tags defined by the model's info file. Click these tags to find other models with similar tags.
-* **On the top left** you can find controls relating to the model defined in the model's info file, if applicable. From right to left: 1) a link to the model on civit.ai 2) a button that can be dragge donto the canvas to create a load lora node 3) a button to copy the lora or embedding in a1111 text form 4) a button to copy the trained words for the model and 5) a button to copy the contents of both 3 and 4. Buttons may not exist if the data they correspond to doesn't exist in the model's info file.
+* **On the top left** you can find controls relating to the model defined in the model's info file, if applicable. From right to left:
+    1) a link to the model on civit.ai
+    2) a button that can be dragged onto the canvas to create a load lora node
+
+    [Screencast_20240609_163155.webm](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/9168a085-bdac-459b-959e-c6f6edbb6641)
+
+    3) a button to copy the lora or embedding in a1111 text form
+    4) a button to copy the trained words for the model and
+    5) a button to copy the contents of both 3 and 4. Buttons may not exist if the data they correspond to doesn't exist in the model's info file.
+ 
+    [Screencast_20240609_162805.webm](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/366c7014-d947-43c8-a4bf-6f4482b03d9d)
+  
   * Text form loras should be familiar to anyone who has used a1111 aside from a second number scaler. This maps to the Comfy lora loader. Each number maps to style and CLIP, respectively. 
   * To use text loras, try a solution like [Coziness](https://github.com/skfoo/ComfyUI-Coziness). 
   * Text embeddings are supported natively by ComfyUI.
