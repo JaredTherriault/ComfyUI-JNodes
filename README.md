@@ -14,11 +14,20 @@ thank you to:
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/5887a6e3-28e6-4a07-a1a4-5a20faa5f557)
 * **Font control** for textareas (see ComfyUI settings > JNodes)
 * **Batch Commenting** shortcuts: By default, click in any multiline textarea and press ctrl+shift+/ to comment out a line. Requires the use of a JNodes_RemoveCommentedText node. The key combo and the text used to comment are both configurable in ComfyUI settings > JNodes.
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/7ff4410b-35f1-492a-b65b-70957edf44e8)
+  
+  _In this example, the headings enclosed in "##" like "## Basic stuff ##" are commented out entirely.
+  In the line "(worst quality, low quality:1.1), ## Works well sometimes, don't go above 1.3 or it will burn. Kills backgrounds ##", "(worst quality, low quality:1.1)," would be used while everything else would be commented out.
+  In another line, "# deformed" would be commented out entirely because it's a single "#" at the beginning of the line. Note the node's fields corresponding to the text itself._
+
 * **Pan faster** around the graph by holding ctrl+shift and moving the mouse.
 
 # Installation
 * Clone this repo into "ComfyUI/custom_nodes" OR
 * Download the zip file and unzip it into "ComfyUI/custom_nodes"
+
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/56c3f73b-75d8-4cd2-a191-178e03c417dc)
+
 
 # Settings
 Open ComfyUI Settings by clicking the "Cog" icon on the floating toolbar and scroll down to "JNodes Settings." Expand the group by clicking the side-facing arrow beside the text.
