@@ -55,13 +55,22 @@ Similar to [pythongosssss](https://github.com/pythongosssss)'s [ImageFeed](https
   * A "Hide" button (❌) that "closes" the drawer. It can be restored with the "Image" button (🖼️) next to the ComfyUI Settings "Cog" button on the floating toolbar. 
   * The View Options flyout allows you to control how many images appear in a row and how large those images apppear. You can adjust them via sliders or click each underlined name to set a number directly. You'll also find a place to adjust the drawer's anchor point so you can adjust it to a position that feels comfortable for you.
   * The "Sync" button (🔄) which will restart all playing videos so that they may sync up better.
+ 
+    ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/64285b1b-3739-4f7f-9c51-2d80aa65a21c)
+
 * **On the top right you'll find**:
   * A down-facing arrow. If you click it, many of the controls above the list will be hidden. Clicking it again will show the controls again.
   * Select all/none
     * If any images are selected (see [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer)), some extra controls will be shown. You can recycle/delete all selected items with the Batch Recycle Button (♻️) or hide all selected with the Batch Removal Button (❌, not to be confused with the hide button on the left side). Note that Batch Removal only hides the images from view and does not delete them.
+   
+    ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/c0f8f446-6e13-48ae-a52a-589a8d6c7dc1)
+
 * **Context Selector**: Allows you to select different contexts to show different images, videos and models. See [Contexts](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contexts).
-* **Sort Typ**e: Different contexts have different ways of being sorted, such as Date (file age), file size, filename, etc. Not all contexts support all sort types, so they will change between shifting of contexts. Of note is the Shuffle type. Shuffle will semi-randomly sort items in the list and enables a button (🔀) beside the Sort Type dropdown. Click it to shuffle again. Click and hold to set an automatic shuffle every x milliseconds. When in auto mode, click the button again or change the sort type to stop shuffling automatically.
+* **Sort Type**: Different contexts have different ways of being sorted, such as Date (file age), file size, filename, etc. Not all contexts support all sort types, so they will change between shifting of contexts. Of note is the Shuffle type. Shuffle will semi-randomly sort items in the list and enables a button (🔀) beside the Sort Type dropdown. Click it to shuffle again. Click and hold to set an automatic shuffle every x milliseconds. When in auto mode, click the button again or change the sort type to stop shuffling automatically.
 * **Search bar**: A search filter for for items in the list, crawling metadata and filename. For generated images you can search for prompts and other parameters. For models you can search for civit.ai info. For everything else you can search for filename, subdirectory, and other things. Items that don't meet the criteria are temporarily hidden. You can clear the search (❌), swap between matching ALL search tokens or matching ANY of the search tokens (separated by space), or randomize search tokens (🎲).
+
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/76300611-a2a1-413f-bf08-13f9a186e50f)
+
 
 # ImageDrawer: Contexts
 * **Image Feed**: A stream of your latest stable diffusion generations. Supports most image types and some video types like mp4. ContextFeed is not A [ContextSubdirectoryExplorer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-contextsubdirectoryexplorer), but most of the same information applies excepting the subdirectory selector, the Refresh button and the video controls. See below.
@@ -89,10 +98,8 @@ ContextSubdirectoryExplorer is a context type that displays the images and video
     * A control to remove the item from the current view which will be restored when refreshing the context list view.
     * A control to open the containing directory
     * A control for each item in the metadata that can be copied
+      
       ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/54dac675-8507-4212-b867-2c5de9fd8f2b) ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/ce156064-b091-4022-afe3-3fffb577d491) ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/f4646375-1689-40c3-b397-bc760a0f0a24)
-
-
-
 
 * **Images and videos can be dragged and dropped** onto any JNodes_UploadVisualMedia node 
 
