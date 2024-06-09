@@ -1,5 +1,5 @@
 # ComfyUI-JNodes
-python and web UX improvements for ComfyUI
+python and web UX improvements for ComfyUI: Lora/Embedding picker, web extension manager (enable/disable any extension without disabling python nodes), control any parameter with text prompts, image and video viewer, metadata viewer, token counter, comments in prompts, font control, and more!
 
 # Acknowledgement
 thank you to:
