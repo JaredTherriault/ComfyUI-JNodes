@@ -75,6 +75,11 @@ ContextSubdirectoryExplorer is a context type that displays the images and video
     * A control to remove the item from the current view which will be restored when refreshing the context list view.
     * A control to open the containing directory
     * A control for each item in the metadata that can be copied
+      ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/54dac675-8507-4212-b867-2c5de9fd8f2b) ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/ce156064-b091-4022-afe3-3fffb577d491) ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/f4646375-1689-40c3-b397-bc760a0f0a24)
+
+
+
+
 * **Images and videos can be dragged and dropped** onto any JNodes_UploadVisualMedia node 
 
 # ImageDrawer: ContextModel
@@ -133,6 +138,9 @@ ContextModel is a context type similar to ContextSubdirectoryExplorer but for lo
     * **frame_time**: The number of seconds between frames. Usually a small number. A dividend of duration / frame_count.
     * **width**: The width in pixels of each frame.
     * **height**: The height in pixels of each frame.
+    
+    Example:
+     ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/54af7f5b-e989-4c17-812b-82284e6dc4d0)
 
 * Misc Nodes
   * **JNodes_GetTempDirectory**, **JNodes_GetOutputDirectory**, **JNodes_StringLiteral**
