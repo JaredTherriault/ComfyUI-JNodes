@@ -103,7 +103,7 @@ ContextModel is a context type similar to ContextSubdirectoryExplorer but for lo
   * **JNodes_TokenCounter**: Count tokens in a given string based on the currently loaded model(s).
  
     ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/4fa9ca93-3891-434f-8cb1-5e0f0e8ed8ee)
-  * **JNodes_AddOrSetMetaDataKey**, JNodes_SetPositivePromptInMetaData, JNodes_SetNegativePromptInMetaData, JNodes_RemoveMetaDataKey: png_info manipulation nodes targeting a1111-style png_info
+  * **JNodes_AddOrSetMetaDataKey**, **JNodes_SetPositivePromptInMetaData**, **JNodes_SetNegativePromptInMetaData**, **JNodes_RemoveMetaDataKey**: png_info manipulation nodes targeting a1111-style png_info
   * **JNodes_SyncedStringLiteral**: a multiline text node synced with external text files. Put the path in the "path_to_synced_txt" field and save/load from it.
   * **JNodes_RemoveParseableDataForInference**: Removes parameters from input text so the text alone can be used for inference.
   * **JNodes_ParseDynamicPrompts**: Yet another dynamic prompts implementation with randomization controls
@@ -114,27 +114,46 @@ ContextModel is a context type similar to ContextSubdirectoryExplorer but for lo
  
   * **JNodes_SplitAndJoin**: Splits input text and rejoins each item with a delimiter. Great for removing extraneous spaces and commas from a display prompt.
   * **JNodes_TrimAndStrip**: Simply removes whitespace from the head and tail of the given text.
-  * **JNodes_SearchAndReplace**, JNodes_SearchAndReplaceFromList, JNodes_SearchAndReplaceFromFile: Search and replace text in any text, intended for prompts to change certain trigger words, for example an embedding named '3mb3dd1n4' can be changed to 'embedding'. The replacement words can come from a muiltline text or a text file (one per line, ex. 3mb3dd1n4->embedding) or can be entered directly.
+  * **JNodes_SearchAndReplace**, **JNodes_SearchAndReplaceFromList**, **JNodes_SearchAndReplaceFromFile**: Search and replace text in any text, intended for prompts to change certain trigger words, for example an embedding named '3mb3dd1n4' can be changed to 'embedding'. The replacement words can come from a muiltline text or a text file (one per line, ex. 3mb3dd1n4->embedding) or can be entered directly.
 
 * Selector Nodes (Can be randomized based on seed (e.g. to select a random checkpoint name) and will return the value as a string)
-  * **JNodes_BooleanSelectorWithString**, JNodes_ImageSizeSelector, JNodes_CheckpointSelectorWithString, JNodes_VaeSelectorWithString, JNodes_SamplerSelectorWithString, JNodes_SchedulerSelectorWithString, JNodes_ImageFormatSelector
+  * **JNodes_BooleanSelectorWithString**, **JNodes_ImageSizeSelector**, **JNodes_CheckpointSelectorWithString**, **JNodes_VaeSelectorWithString**, **JNodes_SamplerSelectorWithString**, **JNodes_SchedulerSelectorWithString**, **JNodes_ImageFormatSelector**
   * **JNodes_SelectRandomFileFromDirectory**: Given a directory path, will return a random image or video path that can then be loaded using one of the media nodes
 
 * Media Nodes
-  * **JNodes_MediaInfoToString**: Format [MediaInfo] as a string.
-  * **JNodes_BreakMediaInfo**: Get the individual components of the [MediaInfo] structure.
+  * **JNodes_MediaInfoToString**: Format [MediaInfo] as a string. See **JNodes_BreakMediaInfo** for more information on the MediaInfo structure.
   * **JNodes_AppendReversedFrames**: Takes in frames as an "IMAGE" pin and reverses them, then appends them. Creates a ping-pong style looped "video".
-  * **JNodes_LoadVisualMediaFromPath**: Given a path to an image or video, will output all frames as an "IMAGE" pin. Start point and number of frames can be specified, as well as wther to deal in frames or a number of seconds, so if you know you want 16 frames starting 3 seconds into a video, you can mix and match. Can also skip a number of frames every cycle (to lighten the workload) and discard transparency.
   * **JNodes_UploadVisualMedia**: Similar to Comfy's LoadImage, but works for images and videos. You can also select where to upload the media, either to "temp" or "input" "/upload_media". Below the preview image is formatted metadata loaded from the image or video. You can drag images from the [ImageDrawer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-overview) onto this node or drag them in from your file explorer.
+  * **JNodes_LoadVisualMediaFromPath**: Given a path to an image or video, will output all frames as an "IMAGE" pin. Start point ("start_at_n") and number of frames ("sample_next_n") can be specified, as well as whether to deal in frames or a number of seconds ("start_at_unit", "sample_next_unit"), so if you know you want 16 frames starting 3 seconds into a video, you can mix and match. Can also skip a number of frames every cycle (to lighten the workload) and discard transparency. Other outputs are MediaInfo outputs, one for the original media and one for the output images. See **JNodes_BreakMediaInfo** for more information on the MediaInfo structure.
+  * **JNodes_BreakMediaInfo**: Get the individual components of the MediaInfo structure:
+    * **start_frame**: Always 0 for original_media_info, but could be different for output_media_info if start_at_n is set to something other than 0.
+    * **frame_count**: The number of frames in the media. 
+    * **fps**: The rate at which playback occurs with the given media. Usually the same between original_media_info and output_media_info. 
+    * **duration**: A product of frame_count * fps. Output is in seconds.
+    * **frame_time**: The number of seconds between frames. Usually a small number. A dividend of duration / frame_count.
+    * **width**: The width in pixels of each frame.
+    * **height**: The height in pixels of each frame.
 
 * Misc Nodes
-  * **JNodes_GetTempDirectory**, JNodes_GetOutputDirectory, JNodes_StringLiteral
+  * **JNodes_GetTempDirectory**, **JNodes_GetOutputDirectory**, **JNodes_StringLiteral**
   * **JNodes_AnyToString**: Turn any input into text or string (as python would stringify it for JSON)
 
 # Parameter Lists
 JNodes includes a feature that allows for text parameters in prompts. With this feature you can add something like <params: image_size_y: 512> to your text prompt to make your image have a height of 512. Anything can be parameterized including model names, numbers, even booleans. That means you can have different parameters for individual prompts. Imagine that you normally like to generate images at 512x768 but you want to do an XL generation. Instead of manually changing the latent size to 1024x1024, you can simply add <params: image_size_x: 1024> <params: image_size_y: 1024> to your prompt.
 
 This is not exactly automatic though, and requires some manual set up the first time. 
+
+  1. Think of a name for your parameter. It doesn't mnatter what name you use, as long as you can remember it and what it does. "image_size_x" is just a name I chose - there are no built-in parameter names. It can be anything you want.
+  2. Add the parameter to your prompt in this format: <param: {parameter_name}: {parameter_value}>. This can go in any text you'd like and doesn't have to be a part of your prompt so you can create something like a control panel if you prefer.
+  3. Add a **JNodes_GetParameterFromList** node to your graph. 
+  4. Copy the parameter name that you had added to your prompt and paste it into the "parameter_name" field.
+  5. A bit above the parameter_name field you should see a multiline text area with some hint text in it. Right click the node and convert widget to input > parameter_list. Plug your prompt into the new pin named parameter_list.
+  6. If you'd like you can plug something into "parameter_default" that will be used in the event that the parameter is not found in your prompt. Any pin type is compatible.
+  7. The output of the node can go into any other node. It should be compatible with any other node. Just be sure that the "parameter_value" is actually parseable by python JSON. For example, don't try to plug into a number pin when the value you set is "omega." It will result in a graph error. If the pin is a number, the parameter_value should be a number too, like "5.0" for example.
+  8. Other fields on the node are optional: 
+    * **parsing_key**: This determines what tag to look for in the prompt. So if your parameter is marked like "<params: image_size_x: 1024>", then "params" is the parsing key. This can be whatever you want.
+    * **return_type**: This should usually be on "auto" but in some cases you may want a string instead of automatically converting the parameter. For example, you have a node with a string input and your parameter is "5.0". You intend this to be hooked up this way, but normally the node would output 5.0 as a number. In this case, set "return_type" to "string".
+    * **add_to_png_info**: If true, the parameter_name and output value will be added to the png_info of the current generation as a key-value pair. Turn this off if you don't want your parameters crowding up your generations' metadata.
 
 # Caveats
 There are some incompatibilities with some Comfy extensions and some popular extensions. They can be optionally disabled with this suite.
