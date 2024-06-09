@@ -141,6 +141,7 @@ ContextModel is a context type similar to ContextSubdirectoryExplorer but for lo
   * **JNodes_TokenCounter**: Count tokens in a given string based on the currently loaded model(s).
  
     ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/4fa9ca93-3891-434f-8cb1-5e0f0e8ed8ee)
+    
   * **JNodes_AddOrSetMetaDataKey**, **JNodes_SetPositivePromptInMetaData**, **JNodes_SetNegativePromptInMetaData**, **JNodes_RemoveMetaDataKey**: png_info manipulation nodes targeting a1111-style png_info
   * **JNodes_SyncedStringLiteral**: a multiline text node synced with external text files. Put the path in the "path_to_synced_txt" field and save/load from it.
   * **JNodes_RemoveParseableDataForInference**: Removes parameters from input text so the text alone can be used for inference.
@@ -199,9 +200,9 @@ This is not exactly automatic though, and requires some manual set up the first 
     * **return_type**: This should usually be on "auto" but in some cases you may want a string instead of automatically converting the parameter. For example, you have a node with a string input and your parameter is "5.0". You intend this to be hooked up this way, but normally the node would output 5.0 as a number. In this case, set "return_type" to "string".
     * **add_to_png_info**: If true, the parameter_name and output value will be added to the png_info of the current generation as a key-value pair. Turn this off if you don't want your parameters crowding up your generations' metadata.
 
-  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/625d8c0b-3518-4ede-a383-f8e8939da501)
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/7abcdf8e-5d5a-46e2-a300-62077de96863)
 
-  _In this example, we have a **JNodes_GetParameterFromList** node with a random seed (from the rgthree suite) plugged into parameter_default. This means that if we don't specify a parameter in parameter_list, we will use the random seed. Hooked into parameter_list is the current prompt which does specify a seed with "<params:seed:8675309>" meaning we will use this number instead of the randomly generated one from the default input. The parsing_key and parameter_name fields match up with the prompt's parameter and return type is "auto" which means it will be automatically converted to the correct type (number)._
+  _In this example, we have a **JNodes_GetParameterFromList** node with a random seed (from the rgthree suite) plugged into parameter_default. This means that if we don't specify a parameter in parameter_list, we will use the random seed. Hooked into parameter_list is the current prompt which does specify a seed with "<params:seed:8675309>" meaning we will use this number instead of the randomly generated one from the default input. The parsing_key and parameter_name fields match up with the prompt's parameter and return type is "auto" which means it will be automatically converted to the correct type (number) Finally, note that we plug the prompt into a **JNodes_RemoveParseableDataForInference** node before being passed into the CLIP Conditioning happens. This removes instances of parameters from the text like "<params:seed:8675309>". You do not need to make a new parameter list for every parameter, you can put them all in the same single prompt._
 
 
 # Caveats
