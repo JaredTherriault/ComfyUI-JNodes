@@ -143,7 +143,7 @@ ContextSubdirectoryExplorer is a context type that displays the images and video
       
       ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/ef4ee0f9-dab7-426e-b12f-77cc1f61ad45)
 
-* **Images and videos can be dragged and dropped** onto any JNodes_UploadVisualMedia node
+* **Images and videos can be dragged and dropped** onto any JNodes_UploadVisualMedia node. Note that at this time it is not possible to drop them onto a comfy LoadImage node.
 
   [Screencast_20240609_162527.webm](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/19751dae-f76a-4a54-b932-ae9db7809574)
 
