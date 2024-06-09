@@ -46,7 +46,7 @@ Open ComfyUI Settings by clicking the "Cog" icon on the floating toolbar and scr
 * **Show Progress Bar Above menu**: If true, a progress bar for the current node will be displayed above the Comfy floating menu.
 * **Show Progress in Title**: If true, display progress for the current node in the title/tab of the browser, similar to Automatic1111.
 * **Use Custom Favicon**: If true, display a custom favicon in the title/tab of the browser. Stored in "ComfyUI/custom_nodes/ComfyUI-JNodes/web/js/assets/", "favicon.ico" is used when a generation is not in progress while "favicon-active.ico" is used when one is.
-* 
+
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/5887a6e3-28e6-4a07-a1a4-5a20faa5f557)
 
 # ImageDrawer: Overview
