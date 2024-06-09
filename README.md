@@ -161,8 +161,11 @@ ContextModel is a context type similar to ContextSubdirectoryExplorer but for lo
 * Media Nodes
   * **JNodes_MediaInfoToString**: Format [MediaInfo] as a string. See **JNodes_BreakMediaInfo** for more information on the MediaInfo structure.
   * **JNodes_AppendReversedFrames**: Takes in frames as an "IMAGE" pin and reverses them, then appends them. Creates a ping-pong style looped "video".
-  * **JNodes_UploadVisualMedia**: Similar to Comfy's LoadImage, but works for images and videos. You can also select where to upload the media, either to "temp" or "input" "/upload_media". Below the preview image is formatted metadata loaded from the image or video. You can drag images from the [ImageDrawer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-overview) onto this node or drag them in from your file explorer.
-  * **JNodes_LoadVisualMediaFromPath**: Given a path to an image or video, will output all frames as an "IMAGE" pin. Start point ("start_at_n") and number of frames ("sample_next_n") can be specified, as well as whether to deal in frames or a number of seconds ("start_at_unit", "sample_next_unit"), so if you know you want 16 frames starting 3 seconds into a video, you can mix and match. Can also skip a number of frames every cycle (to lighten the workload) and discard transparency. Other outputs are MediaInfo outputs, one for the original media and one for the output images. See **JNodes_BreakMediaInfo** for more information on the MediaInfo structure.
+  * **JNodes_UploadVisualMedia**: Similar to Comfy's LoadImage, but works for images and videos and returns a path to the uploaded media. The path should then be plugged into a node like **JNodes_LoadVisualMediaFromPath**. You can also select where to upload the media, either to "temp" or "input" "/upload_media". Below the preview image is formatted metadata loaded from the image or video. You can drag images from the [ImageDrawer](https://github.com/JaredTherriault/ComfyUI-JNodes?tab=readme-ov-file#imagedrawer-overview) onto this node or drag them in from your file explorer.
+  * **JNodes_LoadVisualMediaFromPath**: Given a path to an image or video, will output all frames as an "IMAGE" pin. Start point ("start_at_n") and number of frames ("sample_next_n") can be specified, as well as whether to deal in frames or a number of seconds ("start_at_unit", "sample_next_unit"), so if you know you want 16 frames starting 3 seconds into a video, you can mix and match. A "sample_next_n" value of 0 means to get all remaining frames after "start_an_n". Can also skip a number of frames every cycle (to lighten the workload) and discard transparency. Other outputs are MediaInfo outputs, one for the original media and one for the output images. See **JNodes_BreakMediaInfo** for more information on the MediaInfo structure.
+    
+    ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/cedd88e4-69a2-41fd-8986-f6d72609b8fe)
+
   * **JNodes_BreakMediaInfo**: Get the individual components of the MediaInfo structure:
     * **start_frame**: Always 0 for original_media_info, but could be different for output_media_info if start_at_n is set to something other than 0.
     * **frame_count**: The number of frames in the media. 
@@ -195,6 +198,11 @@ This is not exactly automatic though, and requires some manual set up the first 
     * **parsing_key**: This determines what tag to look for in the prompt. So if your parameter is marked like "<params: image_size_x: 1024>", then "params" is the parsing key. This can be whatever you want.
     * **return_type**: This should usually be on "auto" but in some cases you may want a string instead of automatically converting the parameter. For example, you have a node with a string input and your parameter is "5.0". You intend this to be hooked up this way, but normally the node would output 5.0 as a number. In this case, set "return_type" to "string".
     * **add_to_png_info**: If true, the parameter_name and output value will be added to the png_info of the current generation as a key-value pair. Turn this off if you don't want your parameters crowding up your generations' metadata.
+
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/625d8c0b-3518-4ede-a383-f8e8939da501)
+
+  _In this example, we have a **JNodes_GetParameterFromList** node with a random seed (from the rgthree suite) plugged into parameter_default. This means that if we don't specify a parameter in parameter_list, we will use the random seed. Hooked into parameter_list is the current prompt which does specify a seed with "<params:seed:8675309>" meaning we will use this number instead of the randomly generated one from the default input. The parsing_key and parameter_name fields match up with the prompt's parameter and return type is "auto" which means it will be automatically converted to the correct type (number)._
+
 
 # Caveats
 There are some incompatibilities with some Comfy extensions and some popular extensions. They can be optionally disabled with this suite.
