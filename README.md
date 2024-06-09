@@ -1,5 +1,30 @@
 # ComfyUI-JNodes
-python and web UX improvements for ComfyUI: Lora/Embedding picker, web extension manager (enable/disable any extension without disabling python nodes), control any parameter with text prompts, image and video viewer, metadata viewer, token counter, comments in prompts, font control, and more!
+python and web UX improvements for ComfyUI: 
+* Lora/Embedding picker
+
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/3d091422-e601-4247-9ea8-604fc4d6af22)
+  
+* web extension manager (enable/disable any extension without disabling python nodes)
+
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/c1dbefaa-d6aa-4b94-9ff8-d10c8e55273a)
+  
+* control any parameter with text prompts
+
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/7abcdf8e-5d5a-46e2-a300-62077de96863)
+  
+* image and video viewer, metadata viewer
+      
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/545272af-632b-4236-acdb-a734b32ed242)
+  
+* token counter
+ 
+    ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/4fa9ca93-3891-434f-8cb1-5e0f0e8ed8ee)
+  
+* comments in prompts
+  
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/7ff4410b-35f1-492a-b65b-70957edf44e8)
+  
+* font control, and more!
 
 # Acknowledgement
 thank you to:
