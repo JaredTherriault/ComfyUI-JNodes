@@ -31,6 +31,11 @@ thank you to:
 * [Kosinkadink](https://github.com/Kosinkadink) for the original work in [VHS](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite) on which SaveVideo and UploadVideo are based
 * [pythongosssss](https://github.com/pythongosssss) for the original [ImageFeed](https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/main/web/js/imageFeed.js) element on which ImageDrawer is based
 * [Kijai](https://github.com/Kijai) for various code snippets that went into scripts such as statusTitle
+
+# Project Support
+If this suite has helped you at all, please consider donating:
+
+[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=D4M4JLFS8GT5N)
  
 # Web Features
 * **EditAttention improvements** (undo/redo support, remove spacing)
