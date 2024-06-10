@@ -1,7 +1,8 @@
 import { $el } from "/scripts/ui.js";
 
+import * as pngInfo from "/scripts/pnginfo.js";
+
 import { getElementUnderPointer } from "../../common/EventManager.js";
-import { getPngMetadata } from "/scripts/pnginfo.js";
 
 import { setting_bKeyListAllowDenyToggle, setting_KeyList, createFlyoutHandle } from "../../common/SettingsManager.js";
 
@@ -449,9 +450,10 @@ export async function onLoadImageElement(imageElement) {
         //console.log(imageElement.fileInfo.href);
         let metadata = null;
         try {
-            if (imageElement.fileInfo.href.includes(".png")) {
-                metadata = await getPngMetadata(blob);
-            } else if (imageElement.fileInfo.href.includes(".webp")) {
+            if (blob.type === "image/png") {
+                metadata = await pngInfo.getPngMetadata(blob);
+            } else if (blob.type === "image/webp") {
+
                 const webpArrayBuffer = await blob.arrayBuffer();
 
                 // Use the exif library to extract Exif data
