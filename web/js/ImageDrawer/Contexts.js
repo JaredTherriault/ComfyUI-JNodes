@@ -553,7 +553,7 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 				bShouldApplySearch: false,
 			});
 			if (element !== undefined) {
-				imageDrawerListInstance.addElementToImageList(element);
+				imageDrawerListInstance.addElementToImageList(element, false);
 			} else {
 				console.log(`Attempted to add undefined image element in ${this.name}`);
 			}
@@ -577,6 +577,8 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 			const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
 			imageDrawerListSortingInstance.sortWithCurrentType();
 
+			const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+			imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
 		});
 
 
