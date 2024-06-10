@@ -1,6 +1,6 @@
 import { app } from '/scripts/app.js'
 
-function getVideoMetadata(file) {
+export function getVideoMetadata(file) {
     return new Promise((r) => {
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -69,14 +69,16 @@ function getVideoMetadata(file) {
         reader.readAsArrayBuffer(file);
     });
 }
-function isVideoFile(file) {
-    if (file?.name?.endsWith(".webm")) {
+
+export function isVideoFile(file) {
+    const testString = file?.name || file.type;
+    if (testString?.endsWith("webm")) {
         return true;
     }
-    if (file?.name?.endsWith(".mp4")) {
+    if (testString?.endsWith("mp4")) {
         return true;
     }
-    if (file?.name?.endsWith(".ogg")) {
+    if (testString?.endsWith("ogg")) {
         return true;
     }
 

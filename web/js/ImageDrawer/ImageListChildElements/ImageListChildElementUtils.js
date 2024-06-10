@@ -14,6 +14,7 @@ import { isPointerDown } from "../../common/EventManager.js";
 import { setting_FontSize, setting_FontFamily } from "../../TextareaFontControl.js"
 
 import { imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
+import { getVideoMetadata, isVideoFile } from "../../nodes/MediaMetadata.js";
 
 const toolTipOffsetX = 10; // Adjust the offset from the mouse pointer
 const toolTipOffsetY = 10;
@@ -454,6 +455,12 @@ export async function onLoadImageElement(imageElement) {
         try {
             if (blob.type === "image/png") {
                 metadata = await pngInfo.getPngMetadata(blob);
+
+                if (metadata.parameters) {
+                    metadata = makeMetaDataFromA111(metadata.parameters);
+                }
+            } else if (isVideoFile(blob)) {
+                metadata = await getVideoMetadata(blob);
 
                 if (metadata.parameters) {
                     metadata = makeMetaDataFromA111(metadata.parameters);
