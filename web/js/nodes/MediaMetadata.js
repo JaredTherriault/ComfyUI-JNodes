@@ -110,4 +110,3 @@ if (!app.originalHandleFile) {
 
 //hijack comfy-file-input to allow webm/mp4
 document.getElementById("comfy-file-input").accept += ",video/webm,video/mp4";
-}
