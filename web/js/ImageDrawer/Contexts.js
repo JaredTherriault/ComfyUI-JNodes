@@ -68,7 +68,7 @@ export class ImageDrawerContextCache {
 	}
 };
 
-class ImageDrawerContext {
+export class ImageDrawerContext {
 	constructor(name, tooltip) {
 		this.name = name;
 		this.tooltip = tooltip;
@@ -225,7 +225,7 @@ class ImageDrawerContext {
 	}
 }
 
-class ContextClearable extends ImageDrawerContext {
+export class ContextClearable extends ImageDrawerContext {
 	async onClearClicked() { }
 
 	async makeToolbar() {
@@ -258,7 +258,7 @@ class ContextClearable extends ImageDrawerContext {
 	}
 }
 
-class ContextRefreshable extends ImageDrawerContext {
+export class ContextRefreshable extends ImageDrawerContext {
 
 	async onRefreshClicked() {
 		const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
@@ -288,7 +288,7 @@ class ContextRefreshable extends ImageDrawerContext {
 	}
 }
 
-class ContextModel extends ContextRefreshable {
+export class ContextModel extends ContextRefreshable {
 	constructor(name, description, type) {
 		super(name, description);
 		this.type = type;
@@ -394,7 +394,7 @@ class ContextModel extends ContextRefreshable {
 	}
 }
 
-class ContextSubdirectoryExplorer extends ContextRefreshable {
+export class ContextSubdirectoryExplorer extends ContextRefreshable {
 	constructor(name, description, directoryName, bShouldForceLoad = false) {
 		super(name, description);
 		this.rootDirectoryName = directoryName;

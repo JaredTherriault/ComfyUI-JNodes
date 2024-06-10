@@ -1,5 +1,7 @@
 import { $el } from "/scripts/ui.js";
 
+import { ContextModel } from "../Contexts.js";
+
 import { ClassInstanceFactory, imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
 
 import { BatchOptionManagerButton } from "./BatchOptionManagerButton.js";
@@ -161,6 +163,12 @@ class BatchSelectionManager extends BatchOptionManagerButton {
         }
 
         this.countText.textContent = `(${this.lastCheckedItemCount.selectedCount}/${this.lastCheckedItemCount.totalItems})`;
+
+        const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+		const currentContext = imageDrawerContextSelectorInstance.getCurrentContextObject();
+        const bIsContextModel = currentContext instanceof ContextModel;
+
+        this.setWidgetVisible(!bIsContextModel);
     }
 }
 

@@ -19,7 +19,11 @@ class ImageDrawerContextSelector extends ImageDrawerComponent {
 	}
 
 	getCurrentContextObject() {
-		return Contexts.getContextObjectFromName(this.ContextSelector.value);
+		if (this.ContextSelector) {
+			return Contexts.getContextObjectFromName(this.ContextSelector.value);
+		}
+
+		return null;
 	}
 
 	setOptionSelected(option) {
