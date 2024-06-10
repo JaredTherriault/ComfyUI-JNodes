@@ -277,7 +277,7 @@ export function getOrCreateToolButton(imageElementToUse) {
 
             if (imageElementToUse.promptMetadata && Object.keys(imageElementToUse.promptMetadata).length > 0) {
 
-                if (imageElementToUse?.promptMetadata?.positive_prompt) {
+                if (imageElementToUse?.promptMetadata && imageElementToUse?.promptMetadata["Positive prompt"]) {
                     flyout.menu.appendChild(
                         createButton(
                             $el("label", {
@@ -288,7 +288,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                             }),
                             'Copy positive prompt',
                             function (e) {
-                                let positive_prompt = imageElementToUse?.promptMetadata?.positive_prompt;
+                                let positive_prompt = imageElementToUse?.promptMetadata ? imageElementToUse?.promptMetadata["Positive prompt"] : "";
                                 if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
                                 if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
                                 utilitiesInstance.copyToClipboard(positive_prompt);
@@ -302,7 +302,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                 let metadataKeys = Object.keys(imageElementToUse.promptMetadata);
                 metadataKeys.sort();
                 for (const key of metadataKeys) {
-                    if (key == "positive_prompt") {
+                    if (key == "Positive prompt") {
                         continue;
                     }
 
@@ -545,14 +545,14 @@ export function makeMetaDataFromA111(inString) {
                 if (s[1].endsWith(',')) {
                     s[1] = s[1].substring(0, s[1].length - 1);
                 }
-                p[s[0].trim().toLowerCase()] = s[1].trim();
+                p[s[0].trim()] = s[1].trim();
                 return p;
             }, {});
         const p2 = inString.lastIndexOf("\nNegative prompt:", p);
         if (p2 > -1) {
 
-            const positivePromptKey = 'positive_prompt';
-            const negativePromptKey = 'negative_prompt';
+            const positivePromptKey = "Positive prompt";
+            const negativePromptKey = "Negative prompt";
 
             metadata[positivePromptKey] = inString.substring(0, p2).trim();
             metadata[negativePromptKey] = inString.substring(p2 + 18, p).trim();
@@ -569,8 +569,8 @@ export function getDisplayTextFromMetadata(metadata) {
 
     if (!metadata) { return ''; }
 
-    const positivePromptKey = 'positive_prompt';
-    const negativePromptKey = 'negative_prompt';
+    const positivePromptKey = "Positive prompt";
+    const negativePromptKey = "Negative prompt";
 
     const allowDenyList = setting_KeyList.value.split(",")?.map(item => item.trim());
     const bIsAllowList = setting_bKeyListAllowDenyToggle.value;
@@ -582,7 +582,7 @@ export function getDisplayTextFromMetadata(metadata) {
     }
 
     const metaKeys = Object.keys(metadata)?.sort((a, b) => {
-        // 'negative_prompt' comes first
+        // "Negative prompt" comes first
         if (a === negativePromptKey) { return -1; }
         if (b === negativePromptKey) { return 1; }
         return a.localeCompare(b);  // Alphabetical sorting for other keys
@@ -614,8 +614,8 @@ export function makeTooltipWidgetFromMetadata(metadata) {
         return null;
     }
 
-    const positivePromptKey = 'positive_prompt';
-    const negativePromptKey = 'negative_prompt';
+    const positivePromptKey = "Positive prompt";
+    const negativePromptKey = "Negative prompt";
 
     const allowDenyList = setting_KeyList.value.split(",")?.map(item => item.trim());
     const bIsAllowList = setting_bKeyListAllowDenyToggle.value;

@@ -550,7 +550,7 @@ class SetPositivePromptInMetaData:
     OUTPUT_NODE = True
 
     def set_prompt(self, prompt, extra_pnginfo=None):
-        return AddOrSetMetaDataKey().add_or_set_metadata_key("positive_prompt", prompt, extra_pnginfo)
+        return AddOrSetMetaDataKey().add_or_set_metadata_key("Positive prompt", prompt, extra_pnginfo)
     
 class SetNegativePromptInMetaData:
 
@@ -571,7 +571,7 @@ class SetNegativePromptInMetaData:
     OUTPUT_NODE = True
 
     def set_prompt(self, prompt, extra_pnginfo=None):
-        return AddOrSetMetaDataKey().add_or_set_metadata_key("negative_prompt", prompt, extra_pnginfo)
+        return AddOrSetMetaDataKey().add_or_set_metadata_key("Negative prompt", prompt, extra_pnginfo)
     
 class RemoveMetaDataKey:
 

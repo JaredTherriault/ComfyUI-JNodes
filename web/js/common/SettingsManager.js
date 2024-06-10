@@ -8,7 +8,7 @@ import { utilitiesInstance } from "./Utilities.js";
 
 import { imageDrawerComponentManagerInstance } from "../ImageDrawer/Core/ImageDrawerModule.js";
 
-export const defaultKeyList = "prompt, workflow";
+export const defaultKeyList = "prompt, workflow, parameters";
 
 var underButtonContent;
 
