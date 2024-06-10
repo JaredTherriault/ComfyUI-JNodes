@@ -452,7 +452,11 @@ export async function onLoadImageElement(imageElement) {
         try {
             if (blob.type === "image/png") {
                 metadata = await pngInfo.getPngMetadata(blob);
-            } else if (blob.type === "image/webp") {
+
+                if (metadata.parameters) {
+                    metadata = makeMetaDataFromA111(metadata.parameters);
+                }
+            } else if (blob.type === "image/webp" || blob.type === "image/jpeg") {
 
                 const webpArrayBuffer = await blob.arrayBuffer();
 
@@ -478,9 +482,16 @@ export async function onLoadImageElement(imageElement) {
                     const jsonReadyString = cleanedString.replace("UNICODE", "")
 
                     try {
+
                         metadata = JSON.parse(jsonReadyString);
+
                     } catch (error) {
-                        console.log(`${error} (${imageElement.fileInfo.href})`);
+
+                        // see if it's an a111 prompt
+                        metadata = makeMetaDataFromA111(jsonReadyString);
+                        if (!metadata) {
+                            console.log(`${error} (${imageElement.fileInfo.href})`);
+                        }
                     }
                 }
             }
@@ -509,6 +520,40 @@ export async function onLoadImageElement(imageElement) {
     else {
         console.log('Image is still loading.');
     }
+}
+
+export function makeMetaDataFromA111(inString) {
+
+    let metadata = null;
+    const p = inString.lastIndexOf("\nSteps:");
+    if (p > -1) {
+        metadata = inString
+            .substring(p)
+            .split("\n")[1]
+            .match(new RegExp("\\s*([^:]+:\\s*([^\"\\{].*?|\".*?\"|\\{.*?\\}))\\s*(,|$)", "g"))
+            .reduce((p, n) => {
+                const s = n.split(":");
+                if (s[1].endsWith(',')) {
+                    s[1] = s[1].substring(0, s[1].length - 1);
+                }
+                p[s[0].trim().toLowerCase()] = s[1].trim();
+                return p;
+            }, {});
+        const p2 = inString.lastIndexOf("\nNegative prompt:", p);
+        if (p2 > -1) {
+
+            const positivePromptKey = 'positive_prompt';
+            const negativePromptKey = 'negative_prompt';
+
+            metadata[positivePromptKey] = inString.substring(0, p2).trim();
+            metadata[negativePromptKey] = inString.substring(p2 + 18, p).trim();
+        }
+
+        metadata["parameters"] = inString;
+
+    }
+
+    return metadata;
 }
 
 export function getDisplayTextFromMetadata(metadata) {
