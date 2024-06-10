@@ -33,7 +33,7 @@ thank you to:
 * [Kijai](https://github.com/Kijai) for various code snippets that went into scripts such as statusTitle
 
 # Project Support
-If this suite has helped you at all, please consider donating:
+Free, open-source software (FOSS) donations are my only source of income. If this suite has helped you at all, please consider donating:
 
 [![Paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=D4M4JLFS8GT5N)
 
