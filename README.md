@@ -18,7 +18,7 @@ python and web UX improvements for ComfyUI:
   
 * token [counter](https://github.com/JaredTherriault/ComfyUI-JNodes/tree/main?tab=readme-ov-file#python-nodes)
  
-    ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/4fa9ca93-3891-434f-8cb1-5e0f0e8ed8ee)
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/4fa9ca93-3891-434f-8cb1-5e0f0e8ed8ee)
   
 * [comments](https://github.com/JaredTherriault/ComfyUI-JNodes/tree/main?tab=readme-ov-file#web-features) in prompts
   
@@ -31,6 +31,7 @@ thank you to:
 * [Kosinkadink](https://github.com/Kosinkadink) for the original work in [VHS](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite) on which SaveVideo and UploadVideo are based
 * [pythongosssss](https://github.com/pythongosssss) for the original [ImageFeed](https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/main/web/js/imageFeed.js) element on which ImageDrawer is based
 * [Kijai](https://github.com/Kijai) for various code snippets that went into scripts such as statusTitle
+* [mattiasw](https://github.com/mattiasw) for his work on [ExifReader](https://github.com/mattiasw/ExifReader)
 
 # Project Support
 Free, open-source software (FOSS) donations are my only source of income. If this suite has helped you at all, please consider donating:
