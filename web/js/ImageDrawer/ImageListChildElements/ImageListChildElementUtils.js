@@ -195,7 +195,7 @@ export function getOrCreateToolButton(imageElementToUse) {
             // Delete button
             {
                 const baseLabelText = "♻️ Delete From Disk";
-                const confirmLabelText = "♻️ Click again to confirm";
+                const confirmLabelText = "♻️ Confirm?";
                 flyout.menu.appendChild(
                     createButton(
                         $el("label", {
@@ -225,7 +225,7 @@ export function getOrCreateToolButton(imageElementToUse) {
             // Remove button
             {
                 const baseLabelText = "❌ Remove From List";
-                const confirmLabelText = "❌ Click again to confirm";
+                const confirmLabelText = "❌ Confirm?";
                 flyout.menu.appendChild(
                     createButton(
                         $el("label", {
