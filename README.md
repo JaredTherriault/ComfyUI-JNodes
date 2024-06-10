@@ -73,6 +73,7 @@ Open ComfyUI Settings by clicking the "Cog" icon on the floating toolbar and scr
 * **Image Drawer Enabled**: Toggle whether the drawer is enabled. Requires a page refresh. This is distinct from hiding the drawer - this stops the drawer code from loading entirely until re-enabled. 
 * **Image Drawer Image & Video Key List Allow/Deny Toggle**: Whether the terms listed in the Key List should be denied or allowed, excluding everything else. True = Allow list, False = Deny list.
 * **Image Drawer Image & Video Key List**: A set of comma-separated names to include or exclude from the tooltips applied to images in the drawer. For example, we don't show the "prompt" or "workflow" values by default since they would be too lengthy.
+* **Image Drawer Image & Video Metadata Tooltip Toggle**: Whether to show a tooltip with metadata when hovering images and videos in the drawer.
 * **Multiline Text Font Family**: A typeface applied to all multiline text areas in the graph.
 * **Multiline Text Font Size (%)**: How large, as a percentage, the text in multiline text areas should be.
 * **Show Progress Bar Above menu**: If true, a progress bar for the current node will be displayed above the Comfy floating menu.
@@ -123,7 +124,7 @@ ContextSubdirectoryExplorer is a context type that displays the images and video
 * **A flyout of video options** sits beside the "Include Subdirectories" checkbox - hover over it to reveal some controls for video pplayback such as autoplay, loopiing, control visibility, muting, volume, and playback rate. There's also the option to seek throuugh videos using the mouse wheel, but this can be deisabled through this menu if you don't like this function.
 * **The Refresh button** can be used to reload the current set of images and videos in case some are added or removed. 
 * **The Jump button** at the end can be used to automatically scroll to the top of the list of images and videos.
-* **Mouse over** any image or video in the list to see metadata in a tooltip as well as a couple of controls listed below.
+* **Mouse over** any image or video in the list to see metadata in a tooltip as well as a couple of controls listed below. Metadata tooltips can be disabled in JNodes [Settings](https://github.com/JaredTherriault/ComfyUI-JNodes/tree/main?tab=readme-ov-file#settings).
   * The top left of an image will have a checkbox to allow for selecting multiple images at once which can then be hidden or recycled using the Batch Buttons (see below).
   * The top right of an image will have an overflow menu that when hovered will display some extra controls:
     * The filename, which when hovered will display file information like its subdirectory, file size, dimensions, and, if available, fps, frame count and duration.
@@ -132,7 +133,7 @@ ContextSubdirectoryExplorer is a context type that displays the images and video
     * A control to open the containing directory
     * A control for each item in the metadata that can be copied
    
-      _The metadata tooltip appears when hovering over an image and shows all key-value pairs except those blocked in JNodes Settings_
+      _The metadata tooltip appears when hovering over an image and shows all key-value pairs except those blocked in JNodes [Settings](https://github.com/JaredTherriault/ComfyUI-JNodes/tree/main?tab=readme-ov-file#settings)
       
       ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/545272af-632b-4236-acdb-a734b32ed242)
 
