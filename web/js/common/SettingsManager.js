@@ -88,6 +88,7 @@ export let setting_DrawerAnchor = new ImageDrawerConfigSetting("DrawerAnchor", "
 
 export let setting_KeyList = new ImageDrawerConfigSetting("ImageVideo.KeyList", defaultKeyList);
 export let setting_bKeyListAllowDenyToggle = new ImageDrawerConfigSetting("ImageVideo.bKeyListAllowDenyToggle", false);
+export let setting_bMetadataTooltipToggle = new ImageDrawerConfigSetting("ImageVideo.bMetadataTooltipToggle", true);
 
 export let setting_ModelCardAspectRatio = new ImageDrawerConfigSetting("Models.AspectRatio", 0.67);
 
@@ -168,7 +169,28 @@ export const setupUiSettings = (onDrawerAnchorInput) => {
 
         const tooltip = `Whether the terms listed in the Key List should be 
 		denied or allowed, excluding everything else.
-		True = Allow list, False = Deny list.`
+		True = Allow list, False = Deny list.`;
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+
+    // Mouse over image/video to show tooltips
+    {
+        const labelWidget = $el("label", {
+            textContent: "Image Drawer Image & Video Metadata Tooltip Toggle:",
+        });
+
+        const settingWidget = $el(
+            "input",
+            {
+                type: "checkbox",
+                checked: setting_bMetadataTooltipToggle.value,
+                oninput: (e) => {
+                    setting_bMetadataTooltipToggle.value = e.target.checked;
+                },
+            },
+        );
+
+        const tooltip = `Whether to show a tooltip with metadata when hovering images and videos in the drawer.`;
         addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
 

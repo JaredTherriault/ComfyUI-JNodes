@@ -4,7 +4,7 @@ import * as pngInfo from "/scripts/pnginfo.js";
 
 import { getElementUnderPointer } from "../../common/EventManager.js";
 
-import { setting_bKeyListAllowDenyToggle, setting_KeyList, createFlyoutHandle } from "../../common/SettingsManager.js";
+import { setting_bKeyListAllowDenyToggle, setting_bMetadataTooltipToggle, setting_KeyList, createFlyoutHandle } from "../../common/SettingsManager.js";
 
 import ExifReader from '../../common/ExifReader-main/src/exif-reader.js';
 
@@ -79,10 +79,12 @@ function updateTooltip(newTooltipWidget, imageElement) {
 }
 
 export function updateAndShowTooltip(newTooltipWidget, imageElement) {
-    const bTooltipUpdated = updateTooltip(newTooltipWidget, imageElement);
-    if (bTooltipUpdated && toolTip) {
-        toolTip.style.visibility = "visible";
-        toolTip.style.opacity = "1";
+    if (setting_bMetadataTooltipToggle.value) {
+        const bTooltipUpdated = updateTooltip(newTooltipWidget, imageElement);
+        if (bTooltipUpdated && toolTip) {
+            toolTip.style.visibility = "visible";
+            toolTip.style.opacity = "1";
+        }
     }
 }
 
