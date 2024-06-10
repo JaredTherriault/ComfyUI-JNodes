@@ -164,6 +164,7 @@ class BatchSelectionManager extends BatchOptionManagerButton {
 
         this.countText.textContent = `(${this.lastCheckedItemCount.selectedCount}/${this.lastCheckedItemCount.totalItems})`;
 
+        // Hide selector for model contexts as it's not currently implemented
         const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
 		const currentContext = imageDrawerContextSelectorInstance.getCurrentContextObject();
         const bIsContextModel = currentContext instanceof ContextModel;
