@@ -1,6 +1,5 @@
 import { app } from '/scripts/app.js'
 
-
 function getVideoMetadata(file) {
     return new Promise((r) => {
         const reader = new FileReader();
@@ -101,9 +100,14 @@ async function handleFile(file) {
     }
 }
 
-//Storing the original function in app is probably a major no-no
-//But it's the only way I've found to keep the 'this' reference
-app.originalHandleFile = app.handleFile;
-app.handleFile = handleFile;
+// We need this, but if it's already been done by VHS, don't do it second time or it'll mean infinite recursion
+if (!app.originalHandleFile) {
+    //Storing the original function in app is probably a major no-no
+    //But it's the only way I've found to keep the 'this' reference
+    app.originalHandleFile = app.handleFile;
+    app.handleFile = handleFile;
+}
+
 //hijack comfy-file-input to allow webm/mp4
 document.getElementById("comfy-file-input").accept += ",video/webm,video/mp4";
+}
