@@ -43,22 +43,6 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	imageElement.fileInfo = fileInfo;
 	imageElement.bIsVideoFormat = bIsVideoFormat;
 
-	// Mouse Events
-	imageElement.addEventListener("mouseover", (event) => {
-
-		ImageElementUtils.imageElementMouseOverEvent(event, imageElement);
-	});
-	imageElement.addEventListener("mouseout", (event) => {
-
-		ImageElementUtils.imageElementMouseOutEvent(event, imageElement);
-	});
-
-	imageElement.showInFileManager = async function () {
-
-		const call = imageElement.fileInfo.href.replace("jnodes_view_image", "jnodes_request_open_file_manager");
-		api.fetchApi(call, { method: "POST" });
-	}
-
 	imageElement.deleteItem = async function (bAlsoRemoveFromImageList = true, bNotifyImageListChanged = true) {
 
 		const deleteCall = imageElement.fileInfo.href.replace("jnodes_view_image", "jnodes_delete_item");
@@ -77,7 +61,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		}
 
 		return bSuccess;
-	}
+	};
 
 	imageElement.removeItemFromImageList = async function (bNotifyImageListChanged = true) {
 
@@ -92,7 +76,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		if (bNotifyImageListChanged) {
 			imageDrawerListInstance.notifyFinishChangingImageList();
 		}
-	}
+	};
 
 	const img = $el(bIsVideoFormat ? "video" : "img", {
 		// Store the image source as a data attribute for easy access
@@ -105,39 +89,6 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		},
 		onload: () => { ImageElementUtils.onLoadImageElement(imageElement); }, // Still / animated images
 		onloadedmetadata: () => { ImageElementUtils.onLoadImageElement(imageElement); }, // Videos
-		onclick: async (e) => {
-			e.preventDefault();
-
-			if (bIsVideoFormat) {
-
-				if (img && img.togglePlayback) {
-					img.togglePlayback();
-				}
-
-			} else {
-
-				// Make a modal for the image, passing in its current index to allow for slideshows and image switching
-				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
-				// Find this imageElement in the list
-				const currentIndex = Array.from(imageDrawerListInstance.getVisibleImageListChildren()).findIndex((op => op === imageElement));
-
-				const modalManager = new ModalManager((currentIndex !== undefined && currentIndex > -1) ? currentIndex : undefined);
-
-				modalManager.createModal(modalManager.createModalReadyImage(href));
-
-				// Remove focus from the currently focused element
-				document.activeElement.blur();
-			}
-		},
-		ondblclick: async (e) => {
-			e.preventDefault();
-
-			if (bIsVideoFormat) {
-				if (img) {
-					toggleVideoFullscreen(img);
-				}
-			}
-		}
 	});
 
 	imageElement.img = img;
@@ -148,22 +99,11 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		if (bIsVideoFormat) {
 			setVideoPlaybackRate(img, setting_VideoPlaybackOptions.value.defaultPlaybackRate); // This gets reset when src is reset
 		}
-	}
-
-	img.initVideo = function () {
-
-		img.type = fileInfo.file?.format || undefined;
-		img.autoplay = false; // Start false, will autoplay via observer
-		img.loop = setting_VideoPlaybackOptions.value.loop;
-		img.controls = setting_VideoPlaybackOptions.value.controls;
-		img.muted = setting_VideoPlaybackOptions.value.muted;
-		setVideoVolume(img, setting_VideoPlaybackOptions.value.defaultVolume);
-		setVideoPlaybackRate(img, setting_VideoPlaybackOptions.value.defaultPlaybackRate);
-	}
+	};
 
 	imageElement.forceLoad = function () {
 		img.forceLoad();
-	}
+	};
 
 	if (fileInfo.bShouldForceLoad) {
 		imageElement.forceLoad(); // Immediately load img if we don't want to lazy load (like in feed)
@@ -179,7 +119,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		imageElement.displayData.AspectRatio = imageElement.displayData.FileDimensions[0] / imageElement.displayData.FileDimensions[1];
 		imageElement.style.aspectRatio = imageElement.displayData.AspectRatio;
 	} else {
-		//If we can't properly placehold, load the whole image now instead of later
+		// If we can't properly placehold, load the whole image now instead of later
 		imageElement.forceLoad();
 	}
 
@@ -188,6 +128,17 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	}
 
 	if (bIsVideoFormat) {
+
+		img.initVideo = function () {
+
+			img.type = fileInfo.file?.format || undefined;
+			img.autoplay = false; // Start false, will autoplay via observer
+			img.loop = setting_VideoPlaybackOptions.value.loop;
+			img.controls = setting_VideoPlaybackOptions.value.controls;
+			img.muted = setting_VideoPlaybackOptions.value.muted;
+			setVideoVolume(img, setting_VideoPlaybackOptions.value.defaultVolume);
+			setVideoPlaybackRate(img, setting_VideoPlaybackOptions.value.defaultPlaybackRate);
+		}
 
 		img.addEventListener('wheel', (event) => {
 
@@ -198,8 +149,6 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		});
 
 		img.initVideo();
-
-		imageElement.bIsVideoFormat = bIsVideoFormat;
 	}
 
 	imageElement.appendChild(img);
@@ -225,13 +174,70 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	imageElement.searchTerms = `${imageElement.filename} ${imageElement.subdirectory} ${JSON.stringify(imageElement.displayData)} `; // Search terms to start with, onload will add more
 
-	imageElement.draggable = true;
-	imageElement.addEventListener('dragstart', function (event) {
-		fileInfo.displayData = imageElement.displayData;
-		event.dataTransfer.setData('text/jnodes_image_drawer_payload', `${JSON.stringify(fileInfo)}`);
-		ImageElementUtils.removeAndHideToolButtonFromImageElement(imageElement);
-		ImageElementUtils.hideImageElementCheckboxSelector(imageElement);
-		ImageElementUtils.hideToolTip();
+	// Mouse Events
+	imageElement.bHasEverMousedOver = false;
+	imageElement.addEventListener("mouseover", (event) => {
+
+		if (!imageElement.bHasEverMousedOver) {
+			imageElement.addEventListener("mouseout", (event) => {
+
+				ImageElementUtils.imageElementMouseOutEvent(event, imageElement);
+			});
+
+			imageElement.draggable = true;
+			imageElement.addEventListener('dragstart', function (event) {
+				fileInfo.displayData = imageElement.displayData;
+				event.dataTransfer.setData('text/jnodes_image_drawer_payload', `${JSON.stringify(fileInfo)}`);
+				ImageElementUtils.removeAndHideToolButtonFromImageElement(imageElement);
+				ImageElementUtils.hideImageElementCheckboxSelector(imageElement);
+				ImageElementUtils.hideToolTip();
+			});
+
+			imageElement.showInFileManager = async function () {
+
+				const call = imageElement.fileInfo.href.replace("jnodes_view_image", "jnodes_request_open_file_manager");
+				api.fetchApi(call, { method: "POST" });
+			}
+
+			img.addEventListener("click", async (e) => {
+				e.preventDefault();
+
+				if (bIsVideoFormat) {
+
+					if (img && img.togglePlayback) {
+						img.togglePlayback();
+					}
+
+				} else {
+
+					// Make a modal for the image, passing in its current index to allow for slideshows and image switching
+					const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+					// Find this imageElement in the list
+					const currentIndex = Array.from(imageDrawerListInstance.getVisibleImageListChildren()).findIndex((op => op === imageElement));
+
+					const modalManager = new ModalManager((currentIndex !== undefined && currentIndex > -1) ? currentIndex : undefined);
+
+					modalManager.createModal(modalManager.createModalReadyImage(href));
+
+					// Remove focus from the currently focused element
+					document.activeElement.blur();
+				}
+			});
+
+			img.addEventListener("dblclick", async (e) => {
+				e.preventDefault();
+
+				if (bIsVideoFormat) {
+					if (img) {
+						toggleVideoFullscreen(img);
+					}
+				}
+			});
+
+			imageElement.bHasEverMousedOver = true;
+		}
+
+		ImageElementUtils.imageElementMouseOverEvent(event, imageElement);
 	});
 
 	// Selection
