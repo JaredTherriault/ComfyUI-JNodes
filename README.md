@@ -2,7 +2,7 @@
 python and web UX improvements for ComfyUI: 
 * [Lora/Embedding](https://github.com/JaredTherriault/ComfyUI-JNodes/tree/main?tab=readme-ov-file#imagedrawer-contextmodel) picker
 
-  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/3d091422-e601-4247-9ea8-604fc4d6af22)
+  ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/1613bffe-db15-4271-87a1-f24278fc6945)
   
 * web extension [manager](https://github.com/JaredTherriault/ComfyUI-JNodes/tree/main?tab=readme-ov-file#settings) (enable/disable any extension without disabling python nodes)
 
