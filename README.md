@@ -4,7 +4,7 @@ python and web UX improvements for ComfyUI:
 
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/1613bffe-db15-4271-87a1-f24278fc6945)
   
-* web extension [manager](https://github.com/JaredTherriault/ComfyUI-JNodes/tree/main?tab=readme-ov-file#settings) (enable/disable any extension without disabling python nodes)
+* web extension [manager](https://github.com/JaredTherriault/ComfyUI-JNodes/tree/main?tab=readme-ov-file#settings) (enable/disable any web extension without disabling python nodes)
 
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/c1dbefaa-d6aa-4b94-9ff8-d10c8e55273a)
   
