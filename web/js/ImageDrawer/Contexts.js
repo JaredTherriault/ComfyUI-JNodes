@@ -572,13 +572,14 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 
 		// Wait for all promises to resolve
 		Promise.all(promises).then(() => {
-			imageDrawerListInstance.notifyFinishChangingImageList();
 
 			const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
 			imageDrawerListSortingInstance.sortWithCurrentType();
 
 			const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
 			imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
+
+			imageDrawerListInstance.notifyFinishChangingImageList();
 		});
 
 
@@ -713,6 +714,13 @@ export class ContextFeed extends ContextClearable {
 				const bHandleSearch = false;
 				await imageDrawerListInstance.addElementToImageList(element, bHandleSearch);
 			}
+
+			const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+			imageDrawerListSortingInstance.sortWithCurrentType();
+
+			const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+			imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
+
 			imageDrawerListInstance.notifyFinishChangingImageList();
 		}
 	}
