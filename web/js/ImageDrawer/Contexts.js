@@ -707,19 +707,21 @@ export class ContextFeed extends ContextClearable {
 
 				let fileInfo = this.feedImages[imageIndex];
 				fileInfo.bShouldForceLoad = true; // Don't lazy load
-				fileInfo.bShouldSort = bShouldSort; // Optionally apply sort after image load
-				fileInfo.bShouldApplySearch = bShouldApplySearch; // Optionally apply search after image load
 				const element = await ImageElements.createImageElementFromFileInfo(fileInfo);
 				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
 				const bHandleSearch = false;
 				await imageDrawerListInstance.addElementToImageList(element, bHandleSearch);
 			}
 
-			const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
-			imageDrawerListSortingInstance.sortWithCurrentType();
+			if (bShouldSort) {
+				const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+				imageDrawerListSortingInstance.sortWithCurrentType();
+			}
 
-			const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
-			imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
+			if (bShouldApplySearch) {
+				const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+				imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
+			}
 
 			imageDrawerListInstance.notifyFinishChangingImageList();
 		}
@@ -731,7 +733,7 @@ export class ContextFeed extends ContextClearable {
 			imageDrawerListInstance.clearImageListChildren();
 		}
 
-		await this.addNewUncachedFeedImages(false);
+		await this.addNewUncachedFeedImages();
 	}
 
 	async onClearClicked() {

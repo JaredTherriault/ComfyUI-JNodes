@@ -513,18 +513,6 @@ export async function onLoadImageElement(imageElement) {
         setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata);
 
         imageElement.bComplete = true;
-
-        if (imageElement.fileInfo.bShouldSort == true) {
-            const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
-            imageDrawerListSortingInstance.sortWithCurrentType();
-            imageElement.fileInfo.bShouldSort = false;
-        }
-
-        if (imageElement.fileInfo.bShouldApplySearch == true) {
-            const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
-            imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
-            imageElement.fileInfo.bShouldApplySearch = false;
-        }
     }
     else {
         console.log('Image is still loading.');
