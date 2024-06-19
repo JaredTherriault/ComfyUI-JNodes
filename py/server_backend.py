@@ -53,42 +53,47 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
         if should_cancel_task():
             break
             
-        #logger.info(f"item_name: {item_name}")
-        file_name_no_ext, file_ext = os.path.splitext(item_name)
-        #logger.info(f"file_name_no_ext: {file_name_no_ext}")
-        file_path = folder_paths.get_full_path(type, item_name)
-        #logger.info(f"file_path: {file_path}")
-        
-        # Get time of creation since the last epoch, in seconds
-        file_age = os.path.getctime(file_path)
+        try:
+            #logger.info(f"item_name: {item_name}")
+            file_name_no_ext, file_ext = os.path.splitext(item_name)
+            #logger.info(f"file_name_no_ext: {file_name_no_ext}")
+            file_path = folder_paths.get_full_path(type, item_name)
+            #logger.info(f"file_path: {file_path}")
+            
+            # Get time of creation since the last epoch, in seconds
+            file_age = os.path.getctime(file_path)
 
-        if file_path is None:
-            logger.warning(f"Unable to get path for {type} {item_name}")
-            continue
+            if file_path is None:
+                logger.warning(f"Unable to get path for {type} {item_name}")
+                continue
 
-        file_path = file_path.replace("\\", "/")
-        #print(f'file_path: {file_path}')
-        
-        parent_directory = os.path.dirname(file_path)
-        #logger.info(f"parent_directory: {parent_directory}") 
-        
-        containing_directory = None
-        if "/" in file_name_no_ext:
-            split = file_name_no_ext.split("/")
-            if len(split) > 1:
-                containing_directory, file_name_no_ext = split
-        familiar_images = find_items_with_similar_names(parent_directory, containing_directory, file_name_no_ext, image_extension_filter)
-        familiar_infos = find_items_with_similar_names(parent_directory, containing_directory, file_name_no_ext, info_extension_filter, True)
-        #logger.info(f"similar_images: {similar_images}")
-        
-        familiar_dictionaries[file_name_no_ext] = {
-            "containing_directory": containing_directory, 
-            "full_name": item_name, 
-            "file_age": file_age, 
-            "file_ext": file_ext,
-            "familiar_images": familiar_images, 
-            "familiar_infos": familiar_infos
-        }
+            file_path = file_path.replace("\\", "/")
+            #print(f'file_path: {file_path}')
+            
+            parent_directory = os.path.dirname(file_path)
+            #logger.info(f"parent_directory: {parent_directory}") 
+            
+            containing_directory = None
+            if "/" in file_name_no_ext:
+                split = file_name_no_ext.split("/")
+                if len(split) > 1:
+                    file_name_no_ext = split[len(split) - 1]
+                    split.pop()
+                    containing_directory = "/".join(split)
+            familiar_images = find_items_with_similar_names(parent_directory, containing_directory, file_name_no_ext, image_extension_filter)
+            familiar_infos = find_items_with_similar_names(parent_directory, containing_directory, file_name_no_ext, info_extension_filter, True)
+            #logger.info(f"similar_images: {similar_images}")
+            
+            familiar_dictionaries[file_name_no_ext] = {
+                "containing_directory": containing_directory, 
+                "full_name": item_name, 
+                "file_age": file_age, 
+                "file_ext": file_ext,
+                "familiar_images": familiar_images, 
+                "familiar_infos": familiar_infos
+            }
+        except Exception as e:
+            logger.error(f"Error loading lora: {e}")
         
     return familiar_dictionaries
     
