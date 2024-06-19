@@ -5,7 +5,7 @@ import { utilitiesInstance } from "../../common/Utilities.js"
 import { setting_ModelCardAspectRatio } from "../../common/SettingsManager.js";
 import { imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
 
-const NoImagePlaceholder = new URL(`../assets/NoImage.png`, import.meta.url);
+const NoImagePlaceholder = new URL(`../../assets/NoImage.png`, import.meta.url);
 
 let cachedLorasObject = undefined;
 let cachedEmbeddingsObject = undefined;
