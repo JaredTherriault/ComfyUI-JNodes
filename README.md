@@ -28,7 +28,7 @@ python and web UX improvements for ComfyUI:
 
 # Acknowledgement
 thank you to:
-* [Kosinkadink](https://github.com/Kosinkadink) for the original work in [VHS](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite) on which SaveVideo and UploadVideo are based
+* [Kosinkadink](https://github.com/Kosinkadink) for the original work in [VHS](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite) on which SaveVideo, UploadVisualMedia and LoadVisualMediaFromPath are based
 * [pythongosssss](https://github.com/pythongosssss) for the original [ImageFeed](https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/main/web/js/imageFeed.js) element on which ImageDrawer is based
 * [Kijai](https://github.com/Kijai) for various code snippets that went into scripts such as statusTitle
 * [mattiasw](https://github.com/mattiasw) for his work on [ExifReader](https://github.com/mattiasw/ExifReader)
