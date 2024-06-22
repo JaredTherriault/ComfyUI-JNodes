@@ -46,7 +46,7 @@ Free, open-source software (FOSS) donations are my only source of income. If thi
 
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/5887a6e3-28e6-4a07-a1a4-5a20faa5f557)
 * **Font control** for textareas (see ComfyUI settings > JNodes)
-* **Batch Commenting** shortcuts: By default, click in any multiline textarea and press ctrl+shift+/ to comment out a line. Requires the use of a JNodes_RemoveCommentedText node. The key combo and the text used to comment are both configurable in ComfyUI settings > JNodes.
+* **Batch Commenting** shortcuts: By default, click in any multiline textarea and press ctrl+shift+/ to comment out a line or lines, if highlighted. Requires the use of a JNodes_RemoveCommentedText node. The key combo and the text used to comment are both configurable in ComfyUI settings > JNodes.
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/7ff4410b-35f1-492a-b65b-70957edf44e8)
   
   _In this example, the headings enclosed in "##" like "## Basic stuff ##" are commented out entirely.
