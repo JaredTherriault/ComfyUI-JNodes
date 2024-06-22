@@ -264,8 +264,14 @@ async def view_image(request):
                 img.save(buffer, format=image_format, quality=quality)
                 buffer.seek(0)
 
-                return web.Response(body=buffer.read(), content_type=f'image/{image_format}',
-                                    headers={"Content-Disposition": f"filename=\"{result["payload"]["filename"]}\""})
+                filename = result["payload"]["filename"]
+                filename = filename.replace('"', '\\"')  # Escape double quotes
+
+                return web.Response(
+                    body=buffer.read(),
+                    content_type=f'image/{image_format}',
+                    headers={"Content-Disposition": f'filename="{filename}"'}
+                )
 
         if 'channel' not in request.rel_url.query:
             channel = 'rgba'
@@ -284,8 +290,14 @@ async def view_image(request):
                 new_img.save(buffer, format='PNG')
                 buffer.seek(0)
 
-                return web.Response(body=buffer.read(), content_type='image/png',
-                                    headers={"Content-Disposition": f"filename=\"{result["payload"]["filename"]}\""})
+                filename = result["payload"]["filename"]
+                filename = filename.replace('"', '\\"')  # Escape double quotes
+
+                return web.Response(
+                    body=buffer.read(),
+                    content_type=f'image/{image_format}',
+                    headers={"Content-Disposition": f'filename="{filename}"'}
+                )
 
         elif channel == 'a':
             with Image.open(result["payload"]["file"]) as img:
@@ -301,10 +313,18 @@ async def view_image(request):
                 alpha_img.save(alpha_buffer, format='PNG')
                 alpha_buffer.seek(0)
 
-                return web.Response(body=alpha_buffer.read(), content_type='image/png',
-                                    headers={"Content-Disposition": f"filename=\"{result["payload"]["filename"]}\""})
+                filename = result["payload"]["filename"]
+                filename = filename.replace('"', '\\"')  # Escape double quotes
+
+                return web.Response(
+                    body=alpha_buffer.read(),
+                    content_type=f'image/{image_format}',
+                    headers={"Content-Disposition": f'filename="{filename}"'}
+                )
         else:
-            return web.FileResponse(result["payload"]["file"], headers={"Content-Disposition": f"filename=\"{result["payload"]["filename"]}\""})
+            filename = result["payload"]["filename"]
+            filename = filename.replace('"', '\\"')  # Escape double quotes
+            return web.FileResponse(result["payload"]["file"], headers={"Content-Disposition": f'filename="{filename}"'})
 
     return web.Response(status= result["response"] if result["response"] else 404)
 
