@@ -152,7 +152,7 @@ ContextSubdirectoryExplorer is a context type that displays the images and video
 
 
 # ImageDrawer: ContextModel
-ContextModel is a context type similar to ContextSubdirectoryExplorer but for loras and embeddings. There is no subdirectory selection support - all models within subdirectories are automatically found along with their images and info files if they are named similarly. 
+ContextModel is a context type similar to ContextSubdirectoryExplorer but for loras and embeddings (lora picker/embeddings picker). There is no subdirectory selection support - all models within subdirectories are automatically found along with their images and info files if they are named similarly. 
 * The **model cards** can have their aspect ratio edited using the toolbar.
 * **The Refresh button** can be used to reload the current set of models and images in case some are added or removed. 
 * **The Jump button** at the end can be used to automatically scroll to the top of the list.
