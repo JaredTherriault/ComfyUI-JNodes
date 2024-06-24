@@ -82,7 +82,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
                     containing_directory = "/".join(split)
             familiar_images = find_items_with_similar_names(parent_directory, containing_directory, file_name_no_ext, image_extension_filter)
             familiar_infos = find_items_with_similar_names(parent_directory, containing_directory, file_name_no_ext, info_extension_filter, True)
-            logger.info(f"similar_images: {similar_images}")
+            logger.info(f"similar_images: {familiar_images}")
             
             familiar_dictionaries[file_name_no_ext] = {
                 "containing_directory": containing_directory, 
