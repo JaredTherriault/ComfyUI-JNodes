@@ -98,7 +98,9 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
     return familiar_dictionaries
     
 def find_items_with_similar_names(folder_path, containing_directory, base_name, extension_filter, load = False):
-    logger.info(f'folder_path: {folder_path}')
+    logger.info(
+        f'folder_path, containing_directory, base_name, extension_filter, load: {folder_path, containing_directory, base_name, extension_filter, load}'
+    )
     familiars = []
     
     for file_name in os.listdir(folder_path):
