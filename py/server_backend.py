@@ -68,6 +68,11 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
             if file_path is None:
                 logger.warning(f"Unable to get path for {type} {item_name}")
                 continue
+
+            file_path = file_path.replace("\\", "/")
+            # logger.info(f'file_path: {file_path}')
+            file_name_no_ext = file_name_no_ext.replace("\\", "/")
+            # logger.info(f'file_path: {file_name_no_ext}')
             
             parent_directory = os.path.dirname(file_path)
             # logger.info(f"parent_directory: {parent_directory}") 
