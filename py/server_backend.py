@@ -207,18 +207,23 @@ async def validate_and_return_file_from_request(request):
     
     try: # Try to infer base_dir
         file_list = folder_paths.get_filename_list(type)
+        logger.info(f"file_list: {file_list}")
         if file_list:
             sample_set = []
             for item_name in file_list:
+                logger.info(f"item_name: {item_name}")
                 file_path = folder_paths.get_full_path(type, item_name.replace("\\", "/"))
                 sample_set.append(file_path)
                 if len(sample_set) == 2:
                     break
             if len(sample_set) == 2:
                 base_dir = highest_common_folder(sample_set[0], sample_set[1])
+        logger.info(f"base_dir: {base_dir}")
     except: # If we can't, most likely because it's not a built-in type, assume type is a subfolder in the ComfyUI directory
+        logger.info("validate_and_return_file_from_request: failed to infer base_dir")
         try:
             base_dir = convert_relative_comfyui_path_to_full_path(type)
+            logger.info(f"base_dir: {base_dir}")
         except Exception as e:
             log_exception(f"Error finding folder {type}. Error:", e)
             
