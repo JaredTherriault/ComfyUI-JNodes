@@ -58,7 +58,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
         try:
             # logger.info(f"item_name: {item_name}")
             file_name_no_ext, file_ext = os.path.splitext(item_name)
-            # logger.info(f"file_name_no_ext: {file_name_no_ext}")
+            logger.info(f"file_name_no_ext, file_ext: {file_name_no_ext, file_ext}")
             file_path = folder_paths.get_full_path(type, item_name)
             # logger.info(f"file_path: {file_path}")
             
@@ -72,7 +72,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
             file_path = file_path.replace("\\", "/")
             # logger.info(f'file_path: {file_path}')
             file_name_no_ext = file_name_no_ext.replace("\\", "/")
-            # logger.info(f'file_path: {file_name_no_ext}')
+            logger.info(f'file_name_no_ext: {file_name_no_ext}')
             
             parent_directory = os.path.dirname(file_path)
             # logger.info(f"parent_directory: {parent_directory}") 
