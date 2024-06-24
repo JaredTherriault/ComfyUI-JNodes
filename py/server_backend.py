@@ -58,7 +58,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
         try:
             # logger.info(f"item_name: {item_name}")
             file_name_no_ext, file_ext = os.path.splitext(item_name)
-            logger.info(f"file_name_no_ext, file_ext: {file_name_no_ext, file_ext}")
+            # logger.info(f"file_name_no_ext, file_ext: {file_name_no_ext, file_ext}")
             file_path = folder_paths.get_full_path(type, item_name)
             # logger.info(f"file_path: {file_path}")
             
@@ -72,7 +72,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
             file_path = file_path.replace("\\", "/")
             # logger.info(f'file_path: {file_path}')
             file_name_no_ext = file_name_no_ext.replace("\\", "/")
-            logger.info(f'file_name_no_ext: {file_name_no_ext}')
+            # logger.info(f'file_name_no_ext: {file_name_no_ext}')
             
             parent_directory = os.path.dirname(file_path)
             # logger.info(f"parent_directory: {parent_directory}") 
@@ -102,9 +102,9 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
     return familiar_dictionaries
     
 def find_items_with_similar_names(folder_path, containing_directory, base_name, extension_filter, load = False):
-    logger.info(
-        f'folder_path, containing_directory, base_name, extension_filter, load: {folder_path, containing_directory, base_name, extension_filter, load}'
-    )
+    # logger.info(
+    #     f'folder_path, containing_directory, base_name, extension_filter, load: {folder_path, containing_directory, base_name, extension_filter, load}'
+    # )
     familiars = []
     
     for file_name in os.listdir(folder_path):
@@ -112,11 +112,11 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
         if should_cancel_task():
             break
 
-        logger.info(f"file_name in directory: {file_name}")
+        # logger.info(f"file_name in directory: {file_name}")
         file_name_no_ext, ext = os.path.splitext(file_name)
-        logger.info(f"file_name_no_ext, ext: {file_name_no_ext, ext}")
+        # logger.info(f"file_name_no_ext, ext: {file_name_no_ext, ext}")
         if ext in extension_filter and base_name in file_name_no_ext:
-            logger.info(f"file_name matches criteria: {file_name}")
+            # logger.info(f"file_name matches criteria: {file_name}")
             if load:
                 try: 
                     with open(folder_path + "/" + file_name, 'r', encoding='utf-8') as opened_file:
@@ -207,12 +207,12 @@ async def validate_and_return_file_from_request(request):
     
     try: # Try to infer base_dir
         base_dirs = folder_paths.get_folder_paths(type)
-        logger.info(f"base_dirs: {base_dirs}")
+        # logger.info(f"base_dirs: {base_dirs}")
     except: # If we can't, most likely because it's not a built-in type, assume type is a subfolder in the ComfyUI directory
-        logger.info("validate_and_return_file_from_request: failed to infer base_dir")
+        # logger.info("validate_and_return_file_from_request: failed to infer base_dir")
         try:
             base_dirs = [convert_relative_comfyui_path_to_full_path(type)]
-            logger.info(f"base_dirs: {base_dirs}")
+            # logger.info(f"base_dirs: {base_dirs}")
         except Exception as e:
             log_exception(f"Error finding folder {type}. Error:", e)
             
