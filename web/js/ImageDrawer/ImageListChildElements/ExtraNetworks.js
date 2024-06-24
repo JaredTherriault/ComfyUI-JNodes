@@ -54,6 +54,8 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 		return;
 	}
 
+	console.log(familiars);
+
 	let nameToUse = nameText;
 	let trainedWords = [];
 	let tags = [];
