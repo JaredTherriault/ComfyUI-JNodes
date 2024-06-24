@@ -50,6 +50,8 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
     familiar_dictionaries = {}
     for item_name in names:
 
+        item_name = os.path.normpath(item_name)
+
         if should_cancel_task():
             break
             
@@ -67,8 +69,10 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
                 logger.warning(f"Unable to get path for {type} {item_name}")
                 continue
 
-            file_path = file_path.replace("\\", "/")
+            file_path = os.path.normpath(file_path)
             # logger.info(f'file_path: {file_path}')
+            file_name_no_ext = os.path.normpath(file_name_no_ext)
+            # logger.info(f'file_name_no_ext: {file_name_no_ext}')
             
             parent_directory = os.path.dirname(file_path)
             # logger.info(f"parent_directory: {parent_directory}") 
@@ -206,7 +210,7 @@ async def validate_and_return_file_from_request(request):
         if file_list:
             sample_set = []
             for item_name in file_list:
-                file_path = folder_paths.get_full_path(type, item_name.replace("\\", "/"))
+                file_path = folder_paths.get_full_path(type, os.path.normpath(item_name))
                 sample_set.append(file_path)
                 if len(sample_set) == 2:
                     break
@@ -413,7 +417,7 @@ def load_info(request):
     
     base_dir = None
     for item_name in file_list:
-        if "/" not in item_name.replace("\\", "/"):
+        if "/" not in os.path.normpath(item_name):
             file_path = folder_paths.get_full_path(type, item_name)
             base_dir = os.path.dirname(file_path)
             
