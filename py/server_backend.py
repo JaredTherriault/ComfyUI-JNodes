@@ -54,11 +54,11 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
             break
             
         try:
-            logger.info(f"item_name: {item_name}")
+            # logger.info(f"item_name: {item_name}")
             file_name_no_ext, file_ext = os.path.splitext(item_name)
-            logger.info(f"file_name_no_ext: {file_name_no_ext}")
+            # logger.info(f"file_name_no_ext: {file_name_no_ext}")
             file_path = folder_paths.get_full_path(type, item_name)
-            logger.info(f"file_path: {file_path}")
+            # logger.info(f"file_path: {file_path}")
             
             # Get time of creation since the last epoch, in seconds
             file_age = os.path.getctime(file_path)
@@ -68,10 +68,10 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
                 continue
 
             file_path = file_path.replace("\\", "/")
-            logger.info(f'file_path: {file_path}')
+            # logger.info(f'file_path: {file_path}')
             
             parent_directory = os.path.dirname(file_path)
-            logger.info(f"parent_directory: {parent_directory}") 
+            # logger.info(f"parent_directory: {parent_directory}") 
             
             containing_directory = None
             if "/" in file_name_no_ext:
@@ -82,7 +82,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
                     containing_directory = "/".join(split)
             familiar_images = find_items_with_similar_names(parent_directory, containing_directory, file_name_no_ext, image_extension_filter)
             familiar_infos = find_items_with_similar_names(parent_directory, containing_directory, file_name_no_ext, info_extension_filter, True)
-            logger.info(f"similar_images: {familiar_images}")
+            # logger.info(f"familiar_images: {familiar_images}")
             
             familiar_dictionaries[file_name_no_ext] = {
                 "containing_directory": containing_directory, 
@@ -108,6 +108,7 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
 
         logger.info(f"file_name in directory: {file_name}")
         file_name_no_ext, ext = os.path.splitext(file_name)
+        logger.info(f"file_name_no_ext, ext: {file_name_no_ext, ext}")
         if ext in extension_filter and base_name in file_name_no_ext:
             logger.info(f"file_name matches criteria: {file_name}")
             if load:
