@@ -66,7 +66,7 @@ class GetSubdirectoryImages:
                 full_path = result[1]
                 if self.recursive and os.path.isdir(full_path):
 
-                    new_subd = os.path.join(current_subdirectory, os.path.basename(os.path.normpath(full_path)))
+                    new_subd = os.path.join(current_subdirectory, os.path.basename(full_path.replace("\\", "/")))
                     self.walk_through_subdirectories_and_files(new_subd)
 
             else:

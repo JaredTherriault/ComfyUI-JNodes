@@ -136,8 +136,8 @@ def resolve_file_path(in_file_path):
 
 def highest_common_folder(path1, path2):
     # Split the paths into their components
-    path1_parts = os.path.normpath(path1).split(os.path.sep)
-    path2_parts = os.path.normpath(path2).split(os.path.sep)
+    path1_parts = path1.replace("\\", "/").split(os.path.sep)
+    path2_parts = path2.replace("\\", "/").split(os.path.sep)
 
     # Find the minimum length of the two paths
     min_length = min(len(path1_parts), len(path2_parts))
