@@ -203,56 +203,48 @@ async def validate_and_return_file_from_request(request):
     if "type" in request.rel_url.query:
         type = request.rel_url.query["type"]
         
-    base_dir = None
+    base_dirs = None
     
     try: # Try to infer base_dir
-        file_list = folder_paths.get_filename_list(type)
-        logger.info(f"file_list: {file_list}")
-        if file_list:
-            sample_set = []
-            for item_name in file_list:
-                logger.info(f"item_name: {item_name}")
-                file_path = folder_paths.get_full_path(type, item_name.replace("\\", "/"))
-                sample_set.append(file_path)
-                if len(sample_set) == 2:
-                    break
-            if len(sample_set) == 2:
-                base_dir = highest_common_folder(sample_set[0], sample_set[1])
-        logger.info(f"base_dir: {base_dir}")
+        base_dirs = folder_paths.get_folder_paths(type)
+        logger.info(f"base_dirs: {base_dirs}")
     except: # If we can't, most likely because it's not a built-in type, assume type is a subfolder in the ComfyUI directory
         logger.info("validate_and_return_file_from_request: failed to infer base_dir")
         try:
-            base_dir = convert_relative_comfyui_path_to_full_path(type)
-            logger.info(f"base_dir: {base_dir}")
+            base_dirs = [convert_relative_comfyui_path_to_full_path(type)]
+            logger.info(f"base_dirs: {base_dirs}")
         except Exception as e:
             log_exception(f"Error finding folder {type}. Error:", e)
             
-    if base_dir is None:
+    if base_dirs is None or len(base_dirs) == 0:
         logger.warning(f"Unable to get parent directory for {type}")
         return { "success": False, "response": 400 }
     
-    subfolder = ''
-    if "subfolder" in request.rel_url.query:
-        subfolder = request.rel_url.query["subfolder"]
-        base_dir = os.path.join(base_dir, subfolder)
-    
-    if "filename" in request.rel_url.query:
-        filename = request.rel_url.query["filename"]
-
-        # validation for security: prevent accessing arbitrary path
-        if filename[0] == '/' or filename.startswith('..') or filename.startswith('./'):
-            logger.warning(f"Attempting to access an arbitrary path, aborting. filename: {filename}")
-            return { "success": False, "response": 400 }
-
-        #filename = os.path.basename(filename)
-        file = os.path.join(base_dir, filename)
-
-        # Hack for linux/mac/unix
-        if not os.path.isfile(file):
-            file = f"/{file}"
+    for base_dir in base_dirs:
+        subfolder = ''
+        if "subfolder" in request.rel_url.query:
+            subfolder = request.rel_url.query["subfolder"]
+            base_dir = os.path.join(base_dir, subfolder)
         
-        if os.path.isfile(file):
-            return { "success": True, "payload": { "base_dir": base_dir, "subfolder": subfolder, "filename": filename, "file": file } }
+        if "filename" in request.rel_url.query:
+            filename = request.rel_url.query["filename"]
+
+            # validation for security: prevent accessing arbitrary path
+            if filename[0] == '/' or filename.startswith('..') or filename.startswith('./'):
+                logger.warning(f"Attempting to access an arbitrary path, aborting. filename: {filename}")
+                return { "success": False, "response": 400 }
+
+            #filename = os.path.basename(filename)
+            file = os.path.join(base_dir, filename)
+
+            # Hack for linux/mac/unix
+            if not os.path.isfile(file):
+                file = f"/{file}"
+            
+            if os.path.isfile(file):
+                return { "success": True, "payload": { "base_dir": base_dir, "subfolder": subfolder, "filename": filename, "file": file } }
+
+    return { "success": False, "response": 400 }
 
 async def view_image(request):
 
