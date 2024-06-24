@@ -196,7 +196,6 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 	async setup() {
 
-		console.log(app.extensions);
 		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
 		const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
 
