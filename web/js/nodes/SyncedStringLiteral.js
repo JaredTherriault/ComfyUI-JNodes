@@ -4,12 +4,24 @@ import { utilitiesInstance } from "../common/Utilities.js"
 
 // Node that allows you to tunnel connections for cleaner graphs
 
+let caches = {};
+
 app.registerExtension({
 	name: "JNodes.SyncedStringLiteral",
+
+	// Before undo, create cache of node texts 
+	async beforeConfigureGraph(graphData, missingNodeTypes) {
+
+		for (const node of app.graph._nodes) {
+			if (node?.type == "JNodes_SyncedStringLiteral" && node.textWidget.value) {
+				caches[node.id] = node.textWidget.value;
+			}
+		}
+	},
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
 		if (nodeData.name === "JNodes_SyncedStringLiteral") {
 
-			const node = nodeType.prototype;
+			const nodePrototype = nodeType.prototype;
 
 			async function saveText(path, text) {
 				// Save backup
@@ -39,7 +51,7 @@ app.registerExtension({
 				const asJson = await resp?.json();
 
 				if (asJson?.success && textWidget?.element) {
-					node.bIsCurrentlyAttemptingLoad = true;
+					nodePrototype.bIsCurrentlyAttemptingLoad = true;
 
 					// Cache scroll position
 					const scrollPosition = textWidget.element.scrollTop;
@@ -61,15 +73,15 @@ app.registerExtension({
 						textWidget.element.scrollTop = scrollPosition;
 					});
 
-					node.bIsCurrentlyAttemptingLoad = false;
+					nodePrototype.bIsCurrentlyAttemptingLoad = false;
 				}
 
 				return asJson?.success;
 			}
 
 			// Create Widgets when node is created
-			const onNodeCreated = node.onNodeCreated;
-			node.onNodeCreated = function () {
+			const onNodeCreated = nodePrototype.onNodeCreated;
+			nodePrototype.onNodeCreated = function () {
 				onNodeCreated ? onNodeCreated.apply(this, []) : undefined;
 
 				this.textWidget = this.widgets[0];
@@ -115,11 +127,31 @@ app.registerExtension({
 			};
 
 			// Called after initial deserialization
-			node.onConfigure = function () {
-				loadText(this.pathWidget?.value, this.textWidget, false);
+			nodePrototype.onConfigure = function () {
+
+				if (!this.textWidget) {
+					console.error("textWidget is not defined");
+					return;
+				}
+
+				if (caches[this.id]) { // If cache exists, restore then delete it
+					this.textWidget.value = caches[this.id];
+					delete caches[this.id];
+				} else { // Otherwise load directly from file
+					if (this.pathWidget && this.pathWidget.value) {
+						try {
+							// Load text from the file specified by pathWidget's value
+							loadText(this.pathWidget.value, this.textWidget, false);
+						} catch (error) {
+							console.error("Failed to load text from file:", error);
+						}
+					} else {
+						console.warn("pathWidget is not defined or has no value");
+					}
+				}
 			};
 
-			node.onSerialize = function (o) {
+			nodePrototype.onSerialize = function (o) {
 				if (this.serializeToggleWidget && this.serializeToggleWidget.value == false) {
 					o.widgets_values[0] = ''; // Remove string since it should be coming from the synced txt
 				}
