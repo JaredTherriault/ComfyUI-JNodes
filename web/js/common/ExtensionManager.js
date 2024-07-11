@@ -5,6 +5,10 @@ import { addJNodesSetting, createLabeledCheckboxToggle, options_LabeledCheckboxT
 const extensionManagerName = "JNodes.ExtensionManager";
 const storageItemName = "JNodes.Settings.ExtensionManager.Extensions";
 
+const defaultSettings = [
+    "pysssss.ImageFeed"
+];
+
 const recommendedSettings = [
     "Comfy.DynamicPrompts",
     "Comfy.EditAttention",
@@ -34,7 +38,7 @@ function setExtensionToDummy(extensionName) {
 // This function does not use the ConfigSetting class because it may or may not be initialized when this runs
 function loadExtensionBlockList() {
 
-    let currentBlockList = app.ui.settings.getSettingValue(storageItemName, recommendedSettings);
+    let currentBlockList = app.ui.settings.getSettingValue(storageItemName, defaultSettings);
 
     return currentBlockList;
 }
@@ -60,6 +64,13 @@ function onChangeExtensionEnabledState(extensionName, newState) {
 
     app.ui.settings.setSettingValue(storageItemName, currentBlockList); // Not necessary to stringify beforehand
     localStorage.setItem(storageItemName, JSON.stringify(currentBlockList)); // Backup solution
+}
+
+function onClickUseRecommendedSettings() {
+
+    for (const ext of recommendedSettings) {
+        onChangeExtensionEnabledState(ext, false);
+    }
 }
 
 function createExtensionManagerWidget() {
@@ -101,9 +112,14 @@ app.registerExtension({
 
         // Create Settings Widget
         {
-            const labelWidget = $el("label", {
-                textContent: "Extension Management:",
-            });
+            const recommendedButton = $el("button", { textContent: "Disable Recommended Extensions", onclick: () => { 
+                onClickUseRecommendedSettings(); 
+                recommendedButton.textContent = "Refresh the page!";
+            }});
+            const labelWidget = $el("div", [
+                $el("label", { textContent: "Extension Management:" }),
+                recommendedButton
+            ]);
 
             const settingWidget = createExtensionManagerWidget();
 
