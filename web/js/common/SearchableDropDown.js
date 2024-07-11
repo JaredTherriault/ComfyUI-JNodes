@@ -279,6 +279,20 @@ export class SearchableDropDown {
 
         this._bIsContentShown = true;
 
+        // Get button and dropdown content positions
+        const buttonRect = this._mainButton.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+
+        if (buttonRect.bottom > (viewportHeight / 2)) {
+            // console.log(`Open upward: buttonRect,bottom: ${buttonRect.bottom}, viewportHeight: ${viewportHeight}, buttonRect.top: ${buttonRect.top}`);
+            this._dropDownContent.style.bottom = `${buttonRect.height}px`;
+            this._dropDownContent.style.top = "auto";
+        } else {
+            // console.log(`Open downward: buttonRect,bottom: ${buttonRect.bottom}, viewportHeight: ${viewportHeight}, buttonRect.top: ${buttonRect.top}`);
+            this._dropDownContent.style.top = `${buttonRect.height}px`;
+            this._dropDownContent.style.bottom = "auto";
+        }
+
         this._dropDownContent.classList.add("dropdown-show");
         this.filterOptions(this.getFilterText());
         this._searchInput.focus();
