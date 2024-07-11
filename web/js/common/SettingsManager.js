@@ -39,11 +39,31 @@ export class ConfigSetting {
 
     // localStorage
     _getValue(name, defaultValue) {
-        const val = localStorage.getItem("JNodes.Settings." + name);
-        //console.log("localstorage (" + name + " : " + val + ")");
-        if (val === null || val === undefined || val === "undefined") {
-            //console.log("return defaultValue");
-            return defaultValue;
+
+        const id = "JNodes.Settings." + name;
+
+        let val = null;
+
+        try {
+
+            val = app.ui.settings.getSettingValue(id, null);
+            //console.log(`comfy.settings: ${id}: ${val}`);
+
+        } catch {
+
+        }
+
+        if (val === null) {
+
+            val = localStorage.getItem(id); // Backup solution
+            // console.log(`localstorage: ${id}: ${val}`);
+
+
+            if (val === null || val === undefined || val === "undefined") {
+
+                //console.log("return defaultValue");
+                return defaultValue;
+            }
         }
 
         try { // Try to parse the value automatically, and if we can"t then just return the string
@@ -59,7 +79,11 @@ export class ConfigSetting {
     };
 
     _setValue(name, val) {
-        localStorage.setItem("JNodes.Settings." + name, JSON.stringify(val));
+
+        const id = "JNodes.Settings." + name;
+
+        localStorage.setItem(id, JSON.stringify(val)); // Backup solution
+        app.ui.settings.setSettingValue(id, val); // Not necessary to stringify beforehand
     };
 
     // Usage Example

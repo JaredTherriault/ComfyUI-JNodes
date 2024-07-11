@@ -3,7 +3,15 @@ import { app } from "../../../../scripts/app.js";
 import { addJNodesSetting, createLabeledCheckboxToggle, options_LabeledCheckboxToggle } from "./SettingsManager.js";
 
 const extensionManagerName = "JNodes.ExtensionManager";
-const localStorageItemName = "JNodes.Settings.ExtensionManager.Extensions";
+const storageItemName = "JNodes.Settings.ExtensionManager.Extensions";
+
+const recommendedSettings = [
+    "Comfy.DynamicPrompts",
+    "Comfy.EditAttention",
+    "mtb.ImageFeed",
+    "pysssss.FaviconStatus",
+    "pysssss.ImageFeed"
+];
 
 // We have to do this stuff outside of the extension initialization to avoid any disabled extensions being initialized
 
@@ -26,11 +34,7 @@ function setExtensionToDummy(extensionName) {
 // This function does not use the ConfigSetting class because it may or may not be initialized when this runs
 function loadExtensionBlockList() {
 
-    let currentBlockList = [];
-    let currentListString = localStorage.getItem(localStorageItemName);
-    if (currentListString) {
-        currentBlockList = JSON.parse(currentListString);
-    }
+    let currentBlockList = app.ui.settings.getSettingValue(storageItemName, recommendedSettings);
 
     return currentBlockList;
 }
@@ -54,7 +58,8 @@ function onChangeExtensionEnabledState(extensionName, newState) {
         currentBlockList.splice(extensionName, 1); // Remove from block list
     }
 
-    localStorage.setItem(localStorageItemName, JSON.stringify(currentBlockList));
+    app.ui.settings.setSettingValue(storageItemName, currentBlockList); // Not necessary to stringify beforehand
+    localStorage.setItem(storageItemName, JSON.stringify(currentBlockList)); // Backup solution
 }
 
 function createExtensionManagerWidget() {
