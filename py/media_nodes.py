@@ -5,6 +5,7 @@ from .logger import logger
 from .misc import *
 from .utils import *
 
+import copy
 import cv2
 import json
 import re
@@ -17,6 +18,7 @@ from comfy.utils import common_upscale
 
 from PIL import Image, ImageSequence, ImageOps
 from typing import List
+from pathlib import Path
 
 try:
     from numba import njit, prange
@@ -425,6 +427,65 @@ class LoadVisualMediaFromPath:
             ),
         )
 
+class LoadVisualMediaFromPath_Batch:
+    """
+    A mutation from Kosinkadink's VideoHelperSuite, credits to his repository!
+    """
+
+    FORCE_SIZE_DIMENSIONS = ["Disabled", "256", "512", "768", "1024"]
+    TIME_UNITS = ["frames", "seconds"]
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "media_path": ("STRING", {"default": "/insert/path/here.ext"}),
+                "recursive": ("BOOLEAN", {"default": True}),
+                "start_at_n": ("INT", {"default": 0, "min": 0, "step": 1}),
+                "start_at_unit": (s.TIME_UNITS,),
+                "sample_next_n": (
+                    "INT",
+                    {"default": 0, "min": 0, "step": 1},
+                ),  # 0 in this case means no maximum
+                "sample_next_unit": (s.TIME_UNITS,),
+                "frame_skip": ("INT", {"default": 0, "min": 0, "step": 1}),
+                "discard_transparency": ("BOOLEAN", {"default": True}),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("IMAGE",)
+    FUNCTION = "load_media"
+
+    def load_media(self, **kwargs):
+        media_path = kwargs.get("media_path")
+        recursive = kwargs.pop("recursive", None)
+
+        def batch(image1, image2):
+            if image1.shape[1:] != image2.shape[1:]:
+            #     image1 = comfy.utils.common_upscale(image1.movedim(-1,1), 512, 512, "bilinear", "none").movedim(1,-1)
+            #     image2 = comfy.utils.common_upscale(image2.movedim(-1,1), 512, 512, "bilinear", "none").movedim(1,-1)
+                image2 = comfy.utils.common_upscale(image2.movedim(-1,1), image1.shape[2], image1.shape[1], "bilinear", "center").movedim(1,-1)
+
+            s = torch.cat((image1, image2), dim=0)
+            return (s,)
+        
+        if media_path and os.path.isdir(media_path):
+            images = []
+            for path in os.listdir(media_path):
+                full_path = os.path.join(media_path, path)
+                if os.path.isfile(full_path):
+                    new_kwargs = copy.deepcopy(kwargs)
+                    new_kwargs["media_path"] = full_path
+                    return_value = LoadVisualMediaFromPath.load_media_cv(**new_kwargs)
+                    if len(images) == 0:
+                        images = return_value[0]
+                    else:
+                        images = batch(images, return_value[0])[0]
+
+            return (images,)
+        else:
+            return LoadVisualMediaFromPath.load_media_cv(**kwargs)
 
 class UploadVisualMedia:
     """
@@ -444,9 +505,53 @@ class UploadVisualMedia:
     @classmethod
     def INPUT_TYPES(s):
         files = []
+
+        #         def add_files(input_dir, sub = ""):
+        #     for filename in os.listdir(os.path.join(input_dir, sub)):
+        #         file_path = os.path.join(input_dir, sub, filename)
+        #         if os.path.isfile(file_path):
+        #             file_parts = filename.split(".")
+        #             if len(file_parts) > 1 and (
+        #                 file_parts[-1]
+        #                 in ACCEPTED_UPLOAD_VIDEO_EXTENSIONS
+        #                 + ACCEPTED_ANIMATED_IMAGE_EXTENSIONS
+        #                 + ACCEPTED_STILL_IMAGE_EXTENSIONS
+        #             ):
+        #                 files.append(f"{sub}{"/" if sub else ""}{filename}")
+
+        # valid_dirs = ["input"]
+        # for input_type in s.INPUT_DIR_TYPE_NAMES:
+        #     valid_dirs.append(f"{input_type}/{s.UPLOAD_SUBDIRECTORY}")
+        # # This just pulls in whatever's in the /input or /temp /upload_media folders on start
+        # for input_type in valid_dirs:
+        #     input_dir = convert_relative_comfyui_path_to_full_path(input_type)
+        #     if not os.path.isdir(input_dir):
+        #         continue
+        #     add_files(input_dir)
+        #     if s.UPLOAD_SUBDIRECTORY in input_dir:
+        #         for _, subs, _ in os.walk(input_dir):
+        #             for sub in subs:
+        #                 new_path = os.path.join(input_dir, sub)
+        #                 add_files(input_dir, sub)
+
+
         valid_dirs = ["input"]
         for input_type in s.INPUT_DIR_TYPE_NAMES:
-            valid_dirs.append(f"{input_type}/{s.UPLOAD_SUBDIRECTORY}")
+            starting_subdirectory = f"{input_type}/{s.UPLOAD_SUBDIRECTORY}"
+            valid_dirs.append(starting_subdirectory)
+
+            # Get all subdirectories starting from starting_subdirectory
+            for root, dirs, files in os.walk(convert_relative_comfyui_path_to_full_path(starting_subdirectory), followlinks=True):
+                for subdir in dirs:
+                    # Entries need to begin with "input" or "temp"
+                    valid_dirs.append(
+                        os.path.normpath(
+                            f"{input_type}/{(f"{root}/{subdir}").replace(
+                                convert_relative_comfyui_path_to_full_path(input_type), "")}"
+                        )
+                    )
+
+
         # This just pulls in whatever's in the /input or /temp /upload_media folders on start
         for input_type in valid_dirs:
             input_dir = convert_relative_comfyui_path_to_full_path(input_type)
@@ -457,7 +562,7 @@ class UploadVisualMedia:
                 if os.path.isfile(file_path):
                     file_parts = filename.split(".")
                     if len(file_parts) > 1 and (
-                        file_parts[-1]
+                        file_parts[-1].lower()
                         in ACCEPTED_UPLOAD_VIDEO_EXTENSIONS
                         + ACCEPTED_ANIMATED_IMAGE_EXTENSIONS
                         + ACCEPTED_STILL_IMAGE_EXTENSIONS

@@ -109,6 +109,7 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_BreakMediaInfo": BreakMediaInfo,
     "JNodes_AppendReversedFrames": AppendReversedFrames,
     "JNodes_LoadVisualMediaFromPath": LoadVisualMediaFromPath,
+    "JNodes_LoadVisualMediaFromPath_Batch": LoadVisualMediaFromPath_Batch,
     "JNodes_UploadVisualMedia": UploadVisualMedia,
     "JNodes_CreateStereoscopicImageFromDepth": CreateStereoscopicImageFromDepth,
     
@@ -152,7 +153,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_AddOrSetPngInfoKey" : "Add Or Set Png Info Key",
     "JNodes_SetPositivePromptInMetaData": "Set Positive Prompt In MetaData",
     "JNodes_SetNegativePromptInMetaData": "Set Negative Prompt In MetaData",
-    "JNodes_RemovePngInfoKey" : "Remove Png Info Key",
+    "JNodes_RemoveMetaDataKey" : "Remove Metadata Key",
     "JNodes_TokenCounter": "Token Counter",
     
     # selector_nodes
@@ -170,6 +171,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_BreakMediaInfo": "Break Media Info",
     "JNodes_AppendReversedFrames": "Append Reversed Frames",
     "JNodes_LoadVisualMediaFromPath": "Load Visual Media From Path",
+    "JNodes_LoadVisualMediaFromPath_Batch": "Load Visual Media From Path (Batch)",
     "JNodes_UploadVisualMedia": "Upload Visual Media",
     "JNodes_CreateStereoscopicImageFromDepth": "Create Stereoscopic Image From Depth (Experimental)",
     
