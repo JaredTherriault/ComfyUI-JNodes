@@ -263,7 +263,7 @@ Please use the JNodes Extension Management setting in [Settings](https://github.
 * Comfy.DynamicPrompts can be disabled if you're using another dynamic prompts solution, such as the one included with this suite. If this is enabled, the included solution can't operate.
 * Comfy.EditAttention can be disabled if you would prefer to use a similar system included in this suite (which supports undo/redo).
 
-pysssss.ImageFeed is disabled by default.
+pysssss.ImageFeed is disabled by default. You can disable all of these extensions in one click by clicking the "Disable Recommended Extensions" button and refreshing the page.
 
 # Data Collection and Privacy Policy
 **Your data is your own**. This suite of nodes and web features does not collect any data from you or your machine.
