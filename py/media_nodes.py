@@ -506,35 +506,6 @@ class UploadVisualMedia:
     def INPUT_TYPES(s):
         files = []
 
-        #         def add_files(input_dir, sub = ""):
-        #     for filename in os.listdir(os.path.join(input_dir, sub)):
-        #         file_path = os.path.join(input_dir, sub, filename)
-        #         if os.path.isfile(file_path):
-        #             file_parts = filename.split(".")
-        #             if len(file_parts) > 1 and (
-        #                 file_parts[-1]
-        #                 in ACCEPTED_UPLOAD_VIDEO_EXTENSIONS
-        #                 + ACCEPTED_ANIMATED_IMAGE_EXTENSIONS
-        #                 + ACCEPTED_STILL_IMAGE_EXTENSIONS
-        #             ):
-        #                 files.append(f"{sub}{"/" if sub else ""}{filename}")
-
-        # valid_dirs = ["input"]
-        # for input_type in s.INPUT_DIR_TYPE_NAMES:
-        #     valid_dirs.append(f"{input_type}/{s.UPLOAD_SUBDIRECTORY}")
-        # # This just pulls in whatever's in the /input or /temp /upload_media folders on start
-        # for input_type in valid_dirs:
-        #     input_dir = convert_relative_comfyui_path_to_full_path(input_type)
-        #     if not os.path.isdir(input_dir):
-        #         continue
-        #     add_files(input_dir)
-        #     if s.UPLOAD_SUBDIRECTORY in input_dir:
-        #         for _, subs, _ in os.walk(input_dir):
-        #             for sub in subs:
-        #                 new_path = os.path.join(input_dir, sub)
-        #                 add_files(input_dir, sub)
-
-
         valid_dirs = ["input"]
         for input_type in s.INPUT_DIR_TYPE_NAMES:
             starting_subdirectory = f"{input_type}/{s.UPLOAD_SUBDIRECTORY}"
@@ -543,13 +514,14 @@ class UploadVisualMedia:
             # Get all subdirectories starting from starting_subdirectory
             for root, dirs, files in os.walk(convert_relative_comfyui_path_to_full_path(starting_subdirectory), followlinks=True):
                 for subdir in dirs:
-                    # Entries need to begin with "input" or "temp"
-                    valid_dirs.append(
-                        os.path.normpath(
-                            f"{input_type}/{(f"{root}/{subdir}").replace(
-                                convert_relative_comfyui_path_to_full_path(input_type), "")}"
-                        )
-                    )
+                    # Construct the path and replace the input_type part
+                    path = f"{root}/{subdir}"
+                    relative_path = path.replace(convert_relative_comfyui_path_to_full_path(input_type), "")
+                    formatted_path = f"{input_type}/{relative_path}"
+                    
+                    # Normalize the path and add to valid_dirs
+                    valid_dirs.append(os.path.normpath(formatted_path))
+
 
 
         # This just pulls in whatever's in the /input or /temp /upload_media folders on start
