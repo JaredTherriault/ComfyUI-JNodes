@@ -112,10 +112,14 @@ app.registerExtension({
 
         // Create Settings Widget
         {
-            const recommendedButton = $el("button", { textContent: "Disable Recommended Extensions", onclick: () => { 
-                onClickUseRecommendedSettings(); 
-                recommendedButton.textContent = "Refresh the page!";
-            }});
+            const recommendedButton = $el("button", {
+                textContent: "Disable Recommended Extensions", 
+                title: `Disable these extensions in one click: ${recommendedSettings}`,
+                onclick: () => { 
+                    onClickUseRecommendedSettings(); 
+                    recommendedButton.textContent = "Refresh the page!";
+                }
+            });
             const labelWidget = $el("div", [
                 $el("label", { textContent: "Extension Management:" }),
                 recommendedButton
