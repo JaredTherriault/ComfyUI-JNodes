@@ -124,6 +124,19 @@ def map_to_range(value, input_min, input_max, output_min, output_max):
 
 
 def convert_relative_comfyui_path_to_full_path(relative_path="output"):
+    try:
+        path = folder_paths.get_directory_by_type(relative_path)
+
+        if path:
+            return path
+        else:
+            paths = folder_paths.get_folder_paths(relative_path)
+
+            if len(paths) > 0:
+                return paths[0]
+    except:
+        pass
+   
     return os.path.join(folder_paths.base_path, relative_path)
 
 
