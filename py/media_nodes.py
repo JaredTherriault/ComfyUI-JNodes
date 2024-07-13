@@ -335,6 +335,7 @@ class LoadVisualMediaFromPath:
             )
 
         try:
+            media_path = resolve_file_path(media_path)
             media_cap = cv2.VideoCapture(media_path)
             if not media_cap.isOpened():
                 return retry_with_pil(
@@ -503,7 +504,7 @@ class LoadVisualMediaFromPath_Batch:
             
             return images
 
-        collected_paths = collect_media_paths(media_path, recursive)
+        collected_paths = collect_media_paths(resolve_file_path(media_path), recursive)
 
         images = process_media(collected_paths, **kwargs)
 
