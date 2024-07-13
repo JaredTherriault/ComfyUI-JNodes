@@ -458,8 +458,8 @@ class LoadVisualMediaFromPath_Batch:
     FUNCTION = "load_media"
 
     def load_media(self, **kwargs):
-        media_path = kwargs.get("media_path")
-        recursive = kwargs.pop("recursive", None)
+        media_path = kwargs.get("media_path").strip()
+        recursive = kwargs.pop("recursive", False)
 
         def batch(image1, image2):
             if image1.shape[1:] != image2.shape[1:]:
@@ -469,23 +469,45 @@ class LoadVisualMediaFromPath_Batch:
 
             s = torch.cat((image1, image2), dim=0)
             return (s,)
-        
-        if media_path and os.path.isdir(media_path):
+
+        def collect_media_paths(in_path, recursive):
+
+            collected_paths = []
+
+            if in_path:
+                is_dir = os.path.isdir(in_path)
+                if is_dir:
+                    for path in os.listdir(in_path):
+                        full_path = os.path.join(in_path, path)
+                        if os.path.isfile(full_path):
+                            collected_paths.append(full_path)
+                        elif recursive:  # If it's a directory and recursive flag is True
+                            collected_paths.extend(collect_media_paths(full_path, recursive))
+
+            return collected_paths
+
+
+        def process_media(collected_paths, **kwargs):
+
             images = []
-            for path in os.listdir(media_path):
-                full_path = os.path.join(media_path, path)
-                if os.path.isfile(full_path):
+
+            for path in collected_paths:
+                if os.path.isfile(path):
                     new_kwargs = copy.deepcopy(kwargs)
-                    new_kwargs["media_path"] = full_path
+                    new_kwargs["media_path"] = path
                     return_value = LoadVisualMediaFromPath.load_media_cv(**new_kwargs)
                     if len(images) == 0:
                         images = return_value[0]
                     else:
                         images = batch(images, return_value[0])[0]
+            
+            return images
 
-            return (images,)
-        else:
-            return LoadVisualMediaFromPath.load_media_cv(**kwargs)
+        collected_paths = collect_media_paths(media_path, recursive)
+
+        images = process_media(collected_paths, **kwargs)
+
+        return (images,)
 
 class UploadVisualMedia:
     """
