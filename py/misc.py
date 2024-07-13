@@ -29,6 +29,19 @@ class GetOutputDirectory:
 
     def get_dir(self):
         return (folder_paths.get_output_directory(),)
+    
+    
+class GetComfyDirectory:
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("comfy_dir",)
+    FUNCTION = "get_dir"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {}
+
+    def get_dir(self):
+        return (folder_paths.base_path,)
 
     
 class StringLiteral:
