@@ -116,6 +116,7 @@ NODE_CLASS_MAPPINGS = {
     # misc
     "JNodes_GetTempDirectory": GetTempDirectory,
     "JNodes_GetOutputDirectory": GetOutputDirectory,
+    "JNodes_GetComfyDirectory": GetComfyDirectory,
     "JNodes_StringLiteral" : StringLiteral,
     "JNodes_AnyToString" : AnyToString,
 
@@ -178,6 +179,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     # misc
     "JNodes_GetTempDirectory": "Get Temp Directory",
     "JNodes_GetOutputDirectory": "Get Output Directory",
+    "JNodes_GetComfyDirectory": "Get Comfy Directory",
     "JNodes_StringLiteral" : "String Literal",
     "JNodes_AnyToString" : "Anything To String",
 
