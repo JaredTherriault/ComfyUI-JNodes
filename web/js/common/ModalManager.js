@@ -91,7 +91,7 @@ export class ModalManager {
 		this._modalContainer.addEventListener("wheel", (event) => { this._zoom(event); });
 		this._modalContainer.addEventListener("mousedown", (event) => { this._startPan(event); });
 		this._modalContainer.addEventListener("mousemove", (event) => { this._pan(event); });
-		this._modalContainer.addEventListener("mouseup", (event) => { this._onMouseUp(); });
+		this._modalContainer.addEventListener("mouseup", (event) => { this._onMouseUp(event); });
 		this._modalContainer.addEventListener("mouseleave", (event) => { this._endPan(); });
 
 		// Prevent drag & drop operation
@@ -243,7 +243,7 @@ export class ModalManager {
 		this._getOrCreateModalContainer().style.cursor = "grab";
 	}
 
-	_onMouseUp() {
+	_onMouseUp(event) {
 
 		this._endPan();
 
@@ -257,7 +257,7 @@ export class ModalManager {
 
 			this._bHasPanned = false;
 
-		} else {
+		} else if (event.button == 0) { // Left mouse button only can close
 
 			this._closeModal();
 
