@@ -88,12 +88,16 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 			//calculate coordinates with account for browser zoom
 			const x = transform.e * scale / transform.a;
 			const y = transform.f * scale / transform.a;
+
+			const setting = app.ui.settings.getSettingValue("Comfy.UseNewMenu", false).toLowerCase();
+			const comfyMenuBar = document.querySelector(".comfyui-body-top");
+			const topOffset = comfyMenuBar && setting == "top" ? comfyMenuBar.clientHeight : 0; //Comfy.UseNewMenu
+
 			Object.assign(this.inputEl.style, {
 				left: (x + 15 * scale) + "px",
-				top: (y + widgetY * scale) + "px",
+				top: ((y + widgetY * scale) + topOffset) + "px",
 				width: ((widgetWidth - 30) * scale) + "px",
 				zIndex: 2 + (node.is_selected ? 1 : 0),
-				position: "absolute",
 			});
 			this._boundingCount = 0;
 
@@ -151,6 +155,8 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 			alignItems: "center",
 			draggable: false,
 			maxHeight: "100%",
+			position: "absolute",
+			width: "0px",
 		}
 	});
 
@@ -189,7 +195,7 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 					// console.log(PayloadString);
 
 					jsonString = utilitiesInstance.removeCurlyBracesFromJsonString(jsonString);
-					
+
 					infoTextArea.value = utilitiesInstance.unindentJsonString(jsonString);
 
 					infoTextArea.style.display = "unset";
@@ -248,7 +254,7 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 				currentInfo.textContent = `Current Time: ${mediaElement.currentTime.toFixed(0)}`;
 
 				let fps = displayData?.FramesPerSecond;
-				
+
 				if (fps) {
 					const currentFrame = mediaElement.currentTime * fps;
 					currentInfo.textContent += ` Current Frame: ${currentFrame.toFixed(0)}`;
@@ -279,20 +285,21 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 		}
 	};
 
-	if (infoTextArea || currentInfo) {
+	const originalOnRedraw = app?.canvas?.ds?.onredraw;
+	app.canvas.ds.onredraw = (payload) => {
 
-		const originalOnRedraw = app?.canvas?.ds?.onredraw;
-		app.canvas.ds.onredraw = () => {
+		if (originalOnRedraw && typeof originalOnRedraw === 'function') {
+			originalOnRedraw(payload);
+		}
 
-			if (originalOnRedraw && typeof originalOnRedraw === 'function') {
-				originalOnRedraw();
-			}
+		setFontSizesBasedOnCanvasScale();
 
-			setFontSizesBasedOnCanvasScale();
-		};
+		// Clear leftover images from viewport
+		widget.inputEl.style.top = `${document.body.clientHeight}px`;
+		widget.inputEl.style.left = `${document.body.clientWidth}px`;
+	};
 
-		setFontSizesBasedOnCanvasScale(); // Call it to set font size immediately
-	}
+	setFontSizesBasedOnCanvasScale(); // Call it to set font size immediately
 
 	widget.inputEl = container;
 	widget.parent = node;
