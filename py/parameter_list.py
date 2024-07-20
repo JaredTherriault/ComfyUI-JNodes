@@ -180,3 +180,21 @@ class GetParameterFromList:
             
         return (param,)
     
+NODE_CLASS_MAPPINGS = {
+    
+    # parameter_list
+    # Globals aren't ready yet
+    #"JNodes_ParseParametersToGlobalList": ParseParametersToGlobalList,
+    #"JNodes_GetParameterGlobal": GetParameterGlobal,
+    "JNodes_GetParameterFromList": GetParameterFromList,
+
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    
+    # parameter_list
+    "JNodes_ParseParametersToGlobalList": "Parse Parameters To Global List",
+    "JNodes_GetParameterGlobal": "Get Parameter Global",
+    "JNodes_GetParameterFromList": "Get Parameter From List",
+    
+}

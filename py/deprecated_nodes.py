@@ -321,3 +321,18 @@ class UploadVideo:
         if not os.path.isfile(full_path):
             return f"Invalid video file: {full_path}"
         return True
+
+
+NODE_CLASS_MAPPINGS = {
+
+    "JNodes_OutVideoInfo": OutVideoInfo,
+    "JNodes_LoadVideo": LoadVideo,
+    "JNodes_UploadVideo": UploadVideo,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+
+    "JNodes_OutVideoInfo": "Out Video Info (DEPRECATED, USE JNodes_BreakMediaInfo)",
+    "JNodes_LoadVideo": "Load Video (DEPRECATED, USE JNodes_LoadVisualMediaFromPath)",
+    "JNodes_UploadVideo": "Upload Video (DEPRECATED, USE JNodes_UploadVisualMedia)",
+}

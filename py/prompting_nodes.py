@@ -604,6 +604,80 @@ class RemoveMetaDataKey:
     @classmethod
     def IS_CHANGED(s, key, value, extra_pnginfo=None):
         return return_random_int() # Run every time
+
+class SetMetadataA1111:
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "images_passthrough": ("IMAGE", ),
+            },
+            "optional": {
+                "positive_prompt": ("STRING", {"default": "", "multiline": True}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "seed": ("INT", {"default": 0, "min": 0}),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 10000}),
+                "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0}),
+                "model_name": ("STRING", {"default": "", "multiline": False}),
+                "sampler_name": ("STRING", {"default": "", "multiline": False}),
+                "scheduler_name": ("STRING", {"default": "", "multiline": False}),
+                "vae_name": ("STRING", {"default": "", "multiline": False}),
+                "clip_skip": ("INT", {"default": -1, "max": -1}),
+            },
+            "hidden": {
+                "extra_pnginfo": "EXTRA_PNGINFO"
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "set_meta"
+
+    def set_meta(
+        self, images_passthrough, positive_prompt, negative_prompt, seed, steps, cfg, 
+        model_name, sampler_name, scheduler_name, vae_name, clip_skip, extra_pnginfo=None):
+        if len(images_passthrough) > 0:
+            shape = images_passthrough[0].shape
+            
+            parameters = f"{positive_prompt.strip()}\n"
+
+            if negative_prompt:
+                parameters += f"Negative prompt: {negative_prompt.strip()}\n"
+
+            if steps:
+                parameters += f"Steps: {steps}, "
+
+            if sampler_name:
+                parameters += f"Sampler: {sampler_name}{f' {scheduler_name}' if scheduler_name != 'normal' else ''}, "
+                
+            if cfg:
+                parameters += f"CFG Scale: {cfg}, "
+                
+            if seed:
+                parameters += f"Seed: {seed}, "
+                
+            parameters += f"Size: {shape[1]}x{shape[2]}, "
+            
+            if model_name:
+                ckpt_path = folder_paths.get_full_path("checkpoints", model_name)
+                split_model_name = model_name.split(".")
+                split_model_name = split_model_name[:1]
+                base_model_name = "".join(split_model_name)
+                parameters += f"Model: {base_model_name}, "
+
+            if vae_name:
+                parameters += f"VAE: {vae_name}, "
+
+            if clip_skip:
+                parameters += f"Clip skip: {clip_skip * -1}, "
+
+            if parameters.endswith(", "):
+                parameters = parameters.strip()[:-1]
+
+            if parameters.strip():
+                AddOrSetMetaDataKey().add_or_set_metadata_key("parameters", parameters, extra_pnginfo)
+
+        return (images_passthrough,)
   
 
 class TokenCounter:
@@ -670,3 +744,50 @@ class TokenCounter:
         
         return {"ui": {"text": [count_as_string]}, "result": (count, count_as_string, )}
     
+NODE_CLASS_MAPPINGS = {
+    
+    # prompting_nodes
+    "JNodes_SyncedStringLiteral": SyncedStringLiteral,
+    "JNodes_ParseDynamicPrompts": ParseDynamicPrompts,
+    "JNodes_RemoveCommentedText": RemoveCommentedText,
+    "JNodes_SplitAndJoin": SplitAndJoin,
+    "JNodes_TrimAndStrip": TrimAndStrip,
+    "JNodes_ParseWildcards": ParseWildcards,
+    "JNodes_LoraExtractor": LoraExtractor,
+    "JNodes_RemoveParseableDataForInference": RemoveParseableDataForInference,
+    "JNodes_PromptBuilderSingleSubject": PromptBuilderSingleSubject,
+    "JNodes_SearchAndReplaceFromList": SearchAndReplaceFromList,
+    "JNodes_SearchAndReplaceFromFile": SearchAndReplaceFromFile,
+    "JNodes_SearchAndReplace": SearchAndReplace,
+    "JNodes_AddOrSetMetaDataKey" : AddOrSetMetaDataKey,
+    "JNodes_SetPositivePromptInMetaData": SetPositivePromptInMetaData,
+    "JNodes_SetNegativePromptInMetaData": SetNegativePromptInMetaData,
+    "JNodes_RemoveMetaDataKey" : RemoveMetaDataKey,
+    "JNodes_SetMetadataA1111": SetMetadataA1111,
+    "JNodes_TokenCounter": TokenCounter,
+
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    
+    # prompting_nodes
+    "JNodes_SyncedStringLiteral": "Synced String Literal",
+    "JNodes_ParseDynamicPrompts": "Parse Dynamic Prompts",
+    "JNodes_RemoveCommentedText": "Remove Commented Text",
+    "JNodes_SplitAndJoin": "Split And Join",
+    "JNodes_TrimAndStrip": "Trim And Strip",
+    "JNodes_ParseWildcards": "Parse Wildcards",
+    "JNodes_LoraExtractor": "Lora Extractor",
+    "JNodes_RemoveParseableDataForInference": "Remove Parseable Data For Inference",
+    "JNodes_PromptBuilderSingleSubject": "Prompt Builder Single Subject",
+    "JNodes_SearchAndReplaceFromList": "Search And Replace From List",
+    "JNodes_SearchAndReplaceFromFile": "Search And Replace From File",
+    "JNodes_SearchAndReplace": "Search And Replace",
+    "JNodes_AddOrSetPngInfoKey" : "Add Or Set Png Info Key",
+    "JNodes_SetPositivePromptInMetaData": "Set Positive Prompt In MetaData",
+    "JNodes_SetNegativePromptInMetaData": "Set Negative Prompt In MetaData",
+    "JNodes_RemoveMetaDataKey" : "Remove Metadata Key",
+    "JNodes_SetMetadataA1111": "Set Metadata For A1111",
+    "JNodes_TokenCounter": "Token Counter",
+
+}

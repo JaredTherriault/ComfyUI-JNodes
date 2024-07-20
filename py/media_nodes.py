@@ -666,3 +666,29 @@ class CreateStereoscopicImageFromDepth:
         stereo_image = torch.from_numpy(stereo_image_np).unsqueeze(0)
 
         return (stereo_image,)
+
+NODE_CLASS_MAPPINGS = {
+    
+    # media_nodes
+    "JNodes_MediaInfoToString": MediaInfoToString,
+    "JNodes_BreakMediaInfo": BreakMediaInfo,
+    "JNodes_AppendReversedFrames": AppendReversedFrames,
+    "JNodes_LoadVisualMediaFromPath": LoadVisualMediaFromPath,
+    "JNodes_LoadVisualMediaFromPath_Batch": LoadVisualMediaFromPath_Batch,
+    "JNodes_UploadVisualMedia": UploadVisualMedia,
+    "JNodes_CreateStereoscopicImageFromDepth": CreateStereoscopicImageFromDepth,
+
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    
+    # media_nodes
+    "JNodes_MediaInfoToString": "Media Info To String",
+    "JNodes_BreakMediaInfo": "Break Media Info",
+    "JNodes_AppendReversedFrames": "Append Reversed Frames",
+    "JNodes_LoadVisualMediaFromPath": "Load Visual Media From Path",
+    "JNodes_LoadVisualMediaFromPath_Batch": "Load Visual Media From Path (Batch)",
+    "JNodes_UploadVisualMedia": "Upload Visual Media",
+    "JNodes_CreateStereoscopicImageFromDepth": "Create Stereoscopic Image From Depth (Experimental)",
+
+}

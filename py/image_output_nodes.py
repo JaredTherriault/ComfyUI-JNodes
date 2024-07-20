@@ -460,6 +460,7 @@ class SaveImages1:
         return (previews,)
     
 class SaveImagesOld:
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -617,3 +618,15 @@ class SaveImagesOld:
                 }
             ]
         return (previews,)
+
+NODE_CLASS_MAPPINGS = {
+    
+    "JNodes_SaveVideo": SaveVideo,
+    "JNodes_SaveImageWithOutput": SaveImageWithOutput,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    
+    "JNodes_SaveVideo": "Save Video",
+    "JNodes_SaveImageWithOutput": "Save Image With Output",
+}

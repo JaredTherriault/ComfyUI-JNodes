@@ -250,3 +250,31 @@ class SelectRandomFileFromDirectory:
         selected_file = random.choice(file_paths)
         
         return (selected_file,)
+
+NODE_CLASS_MAPPINGS = {
+    
+    # selector_nodes
+    "JNodes_BooleanSelectorWithString": BooleanSelector,
+    "JNodes_ImageSizeSelector": ImageSizeSelector,
+    "JNodes_CheckpointSelectorWithString": CheckpointSelector,
+    "JNodes_VaeSelectorWithString": VaeSelector,
+    "JNodes_SamplerSelectorWithString": SamplerSelector,
+    "JNodes_SchedulerSelectorWithString": SchedulerSelector,
+    "JNodes_ImageFormatSelector": ImageFormatSelector,
+    "JNodes_SelectRandomFileFromDirectory": SelectRandomFileFromDirectory,
+
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    
+    # selector_nodes
+    "JNodes_BooleanSelectorWithString": "Boolean Selector + String",
+    "JNodes_ImageSizeSelector": "Image Size Selector",
+    "JNodes_CheckpointSelectorWithString": "Checkpoint Selector + String",
+    "JNodes_VaeSelectorWithString": "Vae Selector + String",
+    "JNodes_SamplerSelectorWithString": "Sampler Selector + String",
+    "JNodes_SchedulerSelectorWithString": "Scheduler Selector + String",
+    "JNodes_ImageFormatSelector": "Image Format Selector",
+    "JNodes_SelectRandomFileFromDirectory": "Select Random File From Directory",
+
+}
