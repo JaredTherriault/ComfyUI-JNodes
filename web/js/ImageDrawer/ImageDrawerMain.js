@@ -206,12 +206,9 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		}
 
 		// A button shown in the comfy modal to show the drawer after it's been hidden
-		const showButton = $el("button.comfy-settings-btn", {
+		const showButton = $el("button.comfyui-button.comfy-settings-btn", {
 			textContent: "🖼️",
-			style: {
-				right: "16px",
-				cursor: "pointer",
-			},
+			title: "Display JNodes Image Drawer"
 		});
 		utilitiesInstance.setElementVisible(showButton, !setting_bMasterVisibility.value);
 		showButton.addEventListener("click", () => {
@@ -219,12 +216,74 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			utilitiesInstance.setElementVisible(showButton, false);
 			setting_bMasterVisibility.value = true;
 		});
-		document.querySelector(".comfy-settings-btn").after(showButton); // insert Show after Settings
+
+		const comfyMenuBarPush = document.querySelector(".comfyui-menu-push");
+		if (comfyMenuBarPush) {
+			comfyMenuBarPush.before(showButton); // insert Show after workflow menu
+		} else {
+			document.querySelector(".comfy-settings-btn").after(showButton); // insert Show after Settings
+		}
+
+		// A button shown in the comfy modal to show the drawer after it's been hidden
+		{
+			const baseAutoQueueIntervalButtonTooltipText = "Auto Queue Interval";
+			function startAutomaticQueue(intervalInMs) {
+				if (!isNaN(intervalInMs) && intervalInMs > 1) {
+
+					stopAutomaticQueue; // Stop existing auto mode
+
+					timerQueueButton.lastAutoQueueInterval = intervalInMs;
+
+					timerQueueButton.style.backgroundColor = "red";
+					timerQueueButton.title = `${baseAutoQueueIntervalButtonTooltipText} (currently ${intervalInMs} ms)`;
+					timerQueueButton.timer = setInterval(() => {
+						app.queuePrompt(0, 1);
+					}, intervalInMs);
+				}
+			}
+
+			function stopAutomaticQueue() {
+
+				if (timerQueueButton?.timer) {
+					clearInterval(timerQueueButton.timer);
+					timerQueueButton.timer = 0;
+					timerQueueButton.style.backgroundColor = "";
+					timerQueueButton.title = baseAutoQueueIntervalButtonTooltipText;
+
+					return true;
+				}
+
+				return false;
+			}
+
+			const timerQueueButton = utilitiesInstance.createLongPressableButton(
+				{
+					textContent: "⏲️",
+					title: baseAutoQueueIntervalButtonTooltipText
+				},
+				async () => { // Regular click
+
+					if (!stopAutomaticQueue()) {
+
+						startAutomaticQueue(timerQueueButton.lastAutoQueueInterval);
+					}
+				},
+				async () => { // Long press
+
+					const value = Math.abs(+prompt("Set automatic queue interval in milliseconds:", timerQueueButton.lastAutoQueueInterval));
+					startAutomaticQueue(value);
+				},
+				["JNodes-auto-queue-interval-btn"]);
+
+			timerQueueButton.lastAutoQueueInterval = 60000;
+
+			document.querySelector(".comfy-queue-btn").after(timerQueueButton); // insert Show after Settings
+		}
 
 		// Remove the drawer widget from view, can be re-opened with showButton
 		const hideButton = $el("button.JNodes-image-drawer-btn.hide-btn", {
 			textContent: "❌",
-			title: "Hide the drawer. Show it again by clicking the icon next to the 'Settings' cog icon.",
+			title: "Hide the drawer. Show it again by clicking the image icon on the Comfy menu.",
 			onclick: () => {
 
 				const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
@@ -241,8 +300,9 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		});
 
 		// The main drawer widget
+		const drawerParent = document.querySelector(".comfyui-body-bottom") || document.body;
 		this.imageDrawer = $el("div.JNodes-image-drawer", {
-			parent: document.body
+			parent: drawerParent
 		});
 
 		// Initialize Anchor
