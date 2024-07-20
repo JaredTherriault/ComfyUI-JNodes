@@ -746,7 +746,6 @@ class TokenCounter:
     
 NODE_CLASS_MAPPINGS = {
     
-    # prompting_nodes
     "JNodes_SyncedStringLiteral": SyncedStringLiteral,
     "JNodes_ParseDynamicPrompts": ParseDynamicPrompts,
     "JNodes_RemoveCommentedText": RemoveCommentedText,
@@ -763,14 +762,13 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_SetPositivePromptInMetaData": SetPositivePromptInMetaData,
     "JNodes_SetNegativePromptInMetaData": SetNegativePromptInMetaData,
     "JNodes_RemoveMetaDataKey" : RemoveMetaDataKey,
-    "JNodes_SetMetadataA1111": SetMetadataA1111,
+    #"JNodes_SetMetadataA1111": SetMetadataA1111,
     "JNodes_TokenCounter": TokenCounter,
 
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     
-    # prompting_nodes
     "JNodes_SyncedStringLiteral": "Synced String Literal",
     "JNodes_ParseDynamicPrompts": "Parse Dynamic Prompts",
     "JNodes_RemoveCommentedText": "Remove Commented Text",
@@ -787,7 +785,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_SetPositivePromptInMetaData": "Set Positive Prompt In MetaData",
     "JNodes_SetNegativePromptInMetaData": "Set Negative Prompt In MetaData",
     "JNodes_RemoveMetaDataKey" : "Remove Metadata Key",
-    "JNodes_SetMetadataA1111": "Set Metadata For A1111",
+    #"JNodes_SetMetadataA1111": "Set Metadata For A1111",
     "JNodes_TokenCounter": "Token Counter",
 
 }
