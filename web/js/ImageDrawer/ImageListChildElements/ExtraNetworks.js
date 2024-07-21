@@ -499,7 +499,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 	modelElement.friendlyName = nameToUse;
 	modelElement.file_age = familiars.file_age;
 
-	modelElement.searchTerms = `${nameToUse}, ${trainedWords}, ${tags.join(', ')}`;
+	modelElement.searchTerms = `${familiars.full_name} ${trainedWords} ${tags.join(' ')}`;
 
 	modelElement.draggable = true; // Made draggable to allow image drag and drop onto canvas / nodes / file explorer
 
