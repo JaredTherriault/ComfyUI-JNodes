@@ -76,7 +76,17 @@ class FloatLiteral:
 
     def get_float(self, float):
         return (float,)
-    
+
+class ModelInOut:
+    RETURN_TYPES = ("MODEL",)
+    FUNCTION = "output_val"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"model": ("MODEL",)}}
+
+    def output_val(self, model):
+        return (model,)
     
 class AnyToString:
     RETURN_TYPES = ("STRING",)
@@ -98,6 +108,7 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_StringLiteral" : StringLiteral,
     "JNodes_IntLiteral": IntLiteral,
     "JNodes_FloatLiteral": FloatLiteral,
+    "JNodes_ModelInOut": ModelInOut,
     "JNodes_AnyToString" : AnyToString,
 
 }
@@ -111,6 +122,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_StringLiteral" : "String Literal",
     "JNodes_IntLiteral": "Integer Literal",
     "JNodes_FloatLiteral": "Float Literal",
+    "JNodes_ModelInOut": "Model In, Model Out",
     "JNodes_AnyToString" : "Anything To String",
 
 }
