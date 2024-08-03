@@ -87,6 +87,17 @@ class ModelInOut:
 
     def output_val(self, model):
         return (model,)
+
+class ConditioningInOut:
+    RETURN_TYPES = ("CONDITIONING",)
+    FUNCTION = "output_val"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"conditioning": ("CONDITIONING",)}}
+
+    def output_val(self, conditioning):
+        return (conditioning,)
     
 class AnyToString:
     RETURN_TYPES = ("STRING",)
@@ -109,6 +120,7 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_IntLiteral": IntLiteral,
     "JNodes_FloatLiteral": FloatLiteral,
     "JNodes_ModelInOut": ModelInOut,
+    "JNodes_ConditioningInOut": ConditioningInOut,
     "JNodes_AnyToString" : AnyToString,
 
 }
@@ -123,6 +135,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_IntLiteral": "Integer Literal",
     "JNodes_FloatLiteral": "Float Literal",
     "JNodes_ModelInOut": "Model In, Model Out",
+    "JNodes_ConditioningInOut": "Conditioning In, Conditioning Out",
     "JNodes_AnyToString" : "Anything To String",
 
 }
