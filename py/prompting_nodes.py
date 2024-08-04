@@ -741,6 +741,7 @@ class TokenCounter:
         
         count, count_as_string = self.return_token_count_and_string_representation(cleaned_text, clip)
 
+        # update the text workflow metadata to reflect the change
         if unique_id and extra_pnginfo and "workflow" in extra_pnginfo:
             workflow = extra_pnginfo["workflow"]
             node = next((x for x in workflow["nodes"] if str(x["id"]) == unique_id[0]), None)
