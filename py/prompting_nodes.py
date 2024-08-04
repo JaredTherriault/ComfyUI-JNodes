@@ -5,6 +5,7 @@ from .logger import logger
 
 from .utils import any, AnyType, return_random_int, make_exclusive_list, search_and_replace_from_dict
 
+import math
 import random
 import re
 
@@ -694,7 +695,6 @@ class TokenCounter:
             },
         }
 
-    INPUT_IS_LIST = True
     OUTPUT_NODE = True
     RETURN_TYPES = ("INT", "STRING", )
     RETURN_NAMES = ("COUNT", "COUNT_AS_STRING",)
@@ -717,15 +717,20 @@ class TokenCounter:
     
     def return_token_count_and_string_representation(self, text, clip):
         tokenization = clip.tokenize(text)
-        tokenizer_inner = clip.tokenizer.clip_l
+        tokenizer_inner = clip.tokenizer.clip_g if hasattr(clip.tokenizer, 'clip_g') else clip.tokenizer.clip_l
         count = 0
         for key, value in tokenization.items():
             for list in value:
                 for token in list:
-                    if token[0] != tokenizer_inner.end_token:
+                    if token[0] != tokenizer_inner.start_token and token[0] != tokenizer_inner.end_token and token[0] != tokenizer_inner.pad_token:
                         count += 1
+
+        if count > 1:
+            count = math.ceil(count / len(tokenization))
+        raw_number_of_sections = (count / tokenizer_inner.max_length) or 1
+        number_of_sections = math.ceil(raw_number_of_sections)
         # Calculate how many tokens out of the max of all combined sections (i.e. 30/75 for 1 section or 120/150 for 2 sections, etc)
-        combined_max = len(tokenization) * tokenizer_inner.max_length
+        combined_max = tokenizer_inner.max_length * number_of_sections
         count_as_string = f"{count} / {combined_max}"
         
         return count, count_as_string
@@ -734,10 +739,10 @@ class TokenCounter:
         
         cleaned_text = self.clean_text(text)
         
-        count, count_as_string = self.return_token_count_and_string_representation(cleaned_text, clip[0])
+        count, count_as_string = self.return_token_count_and_string_representation(cleaned_text, clip)
 
-        if unique_id and extra_pnginfo and "workflow" in extra_pnginfo[0]:
-            workflow = extra_pnginfo[0]["workflow"]
+        if unique_id and extra_pnginfo and "workflow" in extra_pnginfo:
+            workflow = extra_pnginfo["workflow"]
             node = next((x for x in workflow["nodes"] if str(x["id"]) == unique_id[0]), None)
             if node:
                 node["widgets_values"] = [count_as_string]
@@ -762,7 +767,6 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_SetPositivePromptInMetaData": SetPositivePromptInMetaData,
     "JNodes_SetNegativePromptInMetaData": SetNegativePromptInMetaData,
     "JNodes_RemoveMetaDataKey" : RemoveMetaDataKey,
-    #"JNodes_SetMetadataA1111": SetMetadataA1111,
     "JNodes_TokenCounter": TokenCounter,
 
 }
@@ -785,7 +789,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_SetPositivePromptInMetaData": "Set Positive Prompt In MetaData",
     "JNodes_SetNegativePromptInMetaData": "Set Negative Prompt In MetaData",
     "JNodes_RemoveMetaDataKey" : "Remove Metadata Key",
-    #"JNodes_SetMetadataA1111": "Set Metadata For A1111",
     "JNodes_TokenCounter": "Token Counter",
 
 }
