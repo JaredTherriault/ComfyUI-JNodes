@@ -63,6 +63,23 @@ export async function createImageElementFromFileInfo(fileInfo) {
 		return bSuccess;
 	};
 
+	imageElement.copyItem = async function (destinationDirectory) {
+
+		const destination = utilitiesInstance.joinPaths([destinationDirectory, fileInfo.filename]);
+		const copyCall = imageElement.fileInfo.href.replace("jnodes_view_image", "jnodes_copy_item") + `&destination=${encodeURIComponent(destination)}`;
+		const response = await api.fetchApi(copyCall, { method: "POST" });
+
+		let jsonResponse;
+		try {
+			const decodedString = await utilitiesInstance.decodeReadableStream(response.body);
+			jsonResponse = JSON.parse(decodedString)
+		} catch (error) { console.error("Could not parse json from response."); }
+
+		let bSuccess = jsonResponse && jsonResponse.success && jsonResponse.success == true;
+
+		return bSuccess;
+	};
+
 	imageElement.removeItemFromImageList = async function (bNotifyImageListChanged = true) {
 
 		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
