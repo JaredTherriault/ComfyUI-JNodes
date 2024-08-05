@@ -350,7 +350,6 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 		// Add click event listener to toggle button
 		CollapseExpandButton.addEventListener('click', function () {
-			const bIsCurrentlyCollapsed = CollapsibleArea.style.visibility === "collapse";
 			const bIsCurrentlyCollapsed = CollapsibleArea.style.display === "none";
 
 			// Toggle content display
