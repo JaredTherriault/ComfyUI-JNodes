@@ -351,27 +351,31 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		// Add click event listener to toggle button
 		CollapseExpandButton.addEventListener('click', function () {
 			const bIsCurrentlyCollapsed = CollapsibleArea.style.visibility === "collapse";
+			const bIsCurrentlyCollapsed = CollapsibleArea.style.display === "none";
 
 			// Toggle content display
-			CollapsibleArea.style.visibility =
-				bIsCurrentlyCollapsed ? 'visible' : 'collapse';
+			CollapsibleArea.style.display =
+				bIsCurrentlyCollapsed ? 'block' : 'none';
 
 			// Toggle button arrow orientation
 			CollapseExpandButton.textContent = bIsCurrentlyCollapsed ? "▼" : "▶";
 		});
 
+		const batchFavouriteManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchFavouriteManager", this.drawerInstanceIndex);
+		const batchFavouriteManagerWidget = batchFavouriteManagerInstance.makeWidget();
 		const batchDeletionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchDeletionManager", this.drawerInstanceIndex);
-		const batchDeletionManagerWidget = batchDeletionManagerInstance.makeWidget()
+		const batchDeletionManagerWidget = batchDeletionManagerInstance.makeWidget();
 		const batchRemovalManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchRemovalManager", this.drawerInstanceIndex);
-		const batchRemovalManagerWidget = batchRemovalManagerInstance.makeWidget()
+		const batchRemovalManagerWidget = batchRemovalManagerInstance.makeWidget();
 		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager", this.drawerInstanceIndex);
-		const batchSelectionManagerWidget = batchSelectionManagerInstance.makeWidget()
+		const batchSelectionManagerWidget = batchSelectionManagerInstance.makeWidget();
 		const RightAffinedControlsGroup = $el("div.JNodes-image-drawer-right-affined-basic-controls-group", {
 			style: {
 				display: "flex",
 				justifycontent: "flex-end",
 			}
-		}, [batchDeletionManagerWidget.container, batchRemovalManagerWidget.container, batchSelectionManagerWidget.container, CollapseExpandButton]);
+		}, [batchFavouriteManagerWidget.container, batchDeletionManagerWidget.container, batchRemovalManagerWidget.container, batchSelectionManagerWidget.container, 
+			CollapseExpandButton]);
 
 		const BasicControlsGroup =
 			$el("div.JNodes-image-drawer-basic-controls-group", {
