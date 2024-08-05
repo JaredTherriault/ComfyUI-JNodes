@@ -80,6 +80,11 @@ class BatchSelectionManager extends BatchOptionManagerButton {
             bNewCheckedState = false;
         }
 
+        this.setSelectedStateOnAll(bNewCheckedState);
+    }
+
+    setSelectedStateOnAll(bNewCheckedState) {
+
         const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
         const listChildren = imageDrawerListInstance.getImageListChildren();
 
