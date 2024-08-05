@@ -43,6 +43,21 @@ class GetComfyDirectory:
     def get_dir(self):
         return (folder_paths.base_path,)
 
+class SubdirectorySelector:
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("out_path",)
+    FUNCTION = "get_dir"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "root_directory": ("STRING", {"default": "", "multiline": False}),
+            "new_directory": ("STRING", {"default": "", "multiline": True})
+            }
+        }
+
+    def get_dir(self, root_directory, new_directory):
+        return (new_directory,)
     
 class StringLiteral:
     RETURN_TYPES = ("STRING",)
@@ -112,10 +127,10 @@ class AnyToString:
 
 NODE_CLASS_MAPPINGS = {
     
-    # misc
     "JNodes_GetTempDirectory": GetTempDirectory,
     "JNodes_GetOutputDirectory": GetOutputDirectory,
     "JNodes_GetComfyDirectory": GetComfyDirectory,
+    "JNodes_SubdirectorySelector": SubdirectorySelector,
     "JNodes_StringLiteral" : StringLiteral,
     "JNodes_IntLiteral": IntLiteral,
     "JNodes_FloatLiteral": FloatLiteral,
@@ -127,10 +142,10 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     
-    # misc
     "JNodes_GetTempDirectory": "Get Temp Directory",
     "JNodes_GetOutputDirectory": "Get Output Directory",
     "JNodes_GetComfyDirectory": "Get Comfy Directory",
+    "JNodes_SubdirectorySelector": "Subdirectory Selector",
     "JNodes_StringLiteral" : "String Literal",
     "JNodes_IntLiteral": "Integer Literal",
     "JNodes_FloatLiteral": "Float Literal",
