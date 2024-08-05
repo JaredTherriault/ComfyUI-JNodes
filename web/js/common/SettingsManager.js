@@ -114,6 +114,8 @@ export let setting_KeyList = new ImageDrawerConfigSetting("ImageVideo.KeyList", 
 export let setting_bKeyListAllowDenyToggle = new ImageDrawerConfigSetting("ImageVideo.bKeyListAllowDenyToggle", false);
 export let setting_bMetadataTooltipToggle = new ImageDrawerConfigSetting("ImageVideo.bMetadataTooltipToggle", true);
 
+export let setting_FavouritesDirectory = new ImageDrawerConfigSetting("Directories.Favourites", "output/Favourites");
+
 export let setting_ModelCardAspectRatio = new ImageDrawerConfigSetting("Models.AspectRatio", 0.67);
 
 export let setting_VideoPlaybackOptions = new ImageDrawerConfigSetting("Video.VideoOptions", new options_VideoPlayback());
@@ -215,6 +217,28 @@ export const setupUiSettings = (onDrawerAnchorInput) => {
         );
 
         const tooltip = `Whether to show a tooltip with metadata when hovering images and videos in the drawer.`;
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+
+    // Favourites directory
+    {
+        const labelWidget = $el("label", {
+            textContent: "Favourites directory:",
+        });
+
+        const settingWidget = $el(
+            "input",
+            {
+                defaultValue: setting_FavouritesDirectory.value,
+                oninput: (e) => {
+                    setting_FavouritesDirectory.value = e.target.value;
+                },
+            },
+        );
+
+        const tooltip = "A directory to which all images marked as a favourite in image overflow menus will be copied. " +
+            "The directory can be relative to the comfy folder ('output/Favourites') or absolute (i.e. 'C:/Favourites' or '/home/Pictures/Favourites') " +
+            "assuming the user and comfy process have sufficient permissions to access these directories.";
         addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
 
