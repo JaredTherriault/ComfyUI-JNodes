@@ -12,6 +12,7 @@ import server
 from PIL import Image
 
 import json
+import shutil
 
 CANCELLATION_REQUESTED = False
 
@@ -130,7 +131,7 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
     familiars.sort()
     return familiars
 
-def list_comfyui_subdirectories(root_directory):
+def list_subdirectories_recursively(root_directory):
     results = []
 
     def walk_through_subdirectories(in_directory):
@@ -161,15 +162,47 @@ def list_comfyui_subdirectories(root_directory):
 
     return results
 
+def list_immediate_subdirectories(root_directory):
+    results = []
+
+    if not os.path.isdir(root_directory):
+        return results
+            
+    items = os.listdir(root_directory)
+
+    for item in items:
+        combined_path = os.path.join(root_directory, item)
+        if os.path.isdir(combined_path):
+            results.append(item)
+
+    results = sorted(results)
+
+    return results
+
 def list_comfyui_subdirectories_request(request):
     CANCELLATION_REQUESTED = False
     try:        
 
         root_directory = convert_relative_comfyui_path_to_full_path(request.rel_url.query["root_directory"])
 
-        results = list_comfyui_subdirectories(root_directory)
+        results = list_subdirectories_recursively(root_directory)
 
-        return web.json_response({"success": True, "payload": results })
+        return web.json_response({"success": len(results) > 0, "payload": results })
+
+    except Exception as e:
+        log_exception("Error listing subdirectories:", e)
+        return web.json_response({"success": False, "error": str(e)})
+
+def list_immediate_subdirectories_request(request):
+
+    try:        
+
+        root_directory = resolve_file_path(request.rel_url.query["root_directory"])
+
+        results = list_immediate_subdirectories(root_directory)
+
+        return web.json_response({"success": len(results) > 0, "payload": results })
+
     except Exception as e:
         log_exception("Error listing subdirectories:", e)
         return web.json_response({"success": False, "error": str(e)})
@@ -331,6 +364,42 @@ async def view_image(request):
             return web.FileResponse(result["payload"]["file"], headers={"Content-Disposition": f'filename="{filename}"'})
 
     return web.Response(status= result["response"] if result["response"] else 404)
+
+async def copy_item(request):
+   
+    def copy_file(path_from, path_to):
+        try:
+            if os.path.isfile(path_from):
+                try:
+                    path_to_dir = os.path.dirname(path_to)
+                    if not os.path.exists(path_to_dir):
+                        os.makedirs(path_to_dir, exist_ok=True)
+                    shutil.copy(path_from, path_to)
+                    logger.info(f"Successfully copied file from '{path_from}' to '{path_to}'")
+                    return web.json_response({"success": True})
+                except Exception as e:
+                    logger.error(f"Error occurred while copying file from '{path_from}' to '{path_to}': {e}")
+                    return web.json_response({"success": False, "message": "Failed to copy file."})
+            else:
+                message = f"'{path_from}' is not a valid file."
+                logger.warning(message)
+                return web.json_response({"success": False, "message": message})
+        except Exception as e:
+            log_exception(f"Error occurred while deleting '{path}':", e)
+            return web.json_response({"success": False, "message": message})
+
+    result = await validate_and_return_file_from_request(request)
+
+    if result["success"] == True:
+        path_from = result["payload"]["file"]
+        if "destination" in request.rel_url.query:
+            path_to = request.rel_url.query["destination"]
+
+        if path_from and path_to:
+            return copy_file(path_from, path_to)
+
+    logger.warning("File could not be copied: file not found or filename and destination not defined")
+    return web.Response(status=404)
 
 async def upload_image(request):
     try:

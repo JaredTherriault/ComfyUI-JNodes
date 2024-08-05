@@ -11,6 +11,10 @@ import server
 async def list_comfyui_subdirectories_wrapper(request):
     return list_comfyui_subdirectories_request(request)
 
+@server.PromptServer.instance.routes.get('/jnodes_list_immediate_subdirectories')
+async def list_immediate_subdirectories_wrapper(request):
+    return list_immediate_subdirectories_request(request)
+
 @server.PromptServer.instance.routes.get('/jnodes_get_comfyui_subdirectory_images')
 async def get_comfyui_subdirectory_images_wrapper(request):
     return get_comfyui_subdirectory_images_request(request)
@@ -26,6 +30,10 @@ async def save_model_config_wrapper(request):
 @server.PromptServer.instance.routes.get("/jnodes_view_image")
 async def view_image_wrapper(request):
     return await view_image(request)
+
+@server.PromptServer.instance.routes.post('/jnodes_copy_item')
+async def copy_item_wrapper(request):
+    return await copy_item(request)
 
 @server.PromptServer.instance.routes.get("/jnodes_load_info")
 async def load_info_wrapper(request):
