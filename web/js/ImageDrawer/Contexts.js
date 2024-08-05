@@ -10,7 +10,8 @@ import { utilitiesInstance } from "../common/Utilities.js"
 
 import {
 	createLabeledCheckboxToggle, createLabeledSliderRange, createVideoPlaybackOptionsFlyout,
-	options_LabeledCheckboxToggle, options_LabeledSliderRange, setting_ModelCardAspectRatio
+	options_LabeledCheckboxToggle, options_LabeledSliderRange, setting_ModelCardAspectRatio,
+	setting_FavouritesDirectory
 } from "../common/SettingsManager.js";
 
 import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
@@ -124,7 +125,7 @@ export class ImageDrawerContext {
 				alignItems: 'normal',
 				display: 'flex',
 				gap: '.5rem',
-				flex: '0 1 fit-content',
+				flex: '0 1 100%',
 				justifyContent: 'flex-end',
 			}
 		});
@@ -186,9 +187,7 @@ export class ImageDrawerContext {
 	onRequestBatchDeletion() {
 		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
 		for (const child of batchSelectionManagerInstance.getValidSelectedItems()) {
-			if (child.deleteItem) {
-				child.deleteItem();
-			}
+			this.onRequestSingleDeletion(child);
 		}
 	}
 
@@ -201,9 +200,20 @@ export class ImageDrawerContext {
 	onRequestBatchRemoval() {
 		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
 		for (const child of batchSelectionManagerInstance.getValidSelectedItems()) {
-			if (child.removeItemFromImageList) {
-				child.removeItemFromImageList();
-			}
+			this.onRequestSingleRemoval(child);
+		}
+	}
+
+	onRequestSingleFavourite(item) {
+		if (item && item.copyItem) {
+			item.copyItem(setting_FavouritesDirectory.value);
+		}
+	}
+
+	onRequestBatchFavourite() {
+		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+		for (const child of batchSelectionManagerInstance.getValidSelectedItems()) {
+			this.onRequestSingleFavourite(child);
 		}
 	}
 
