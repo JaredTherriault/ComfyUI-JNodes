@@ -129,6 +129,25 @@ class JNodesUtilities {
 		}
 	}
 
+	joinPaths(paths) {
+		if (paths.length == 0) {
+			return "";
+		}
+
+		const bStartWithSlash = paths[0].startsWith("/");
+
+		let returnValue = paths
+			.map(path => path.replace(/(^\/+|\/+$)/g, '')) // Remove leading and trailing slashes
+			.filter(Boolean) // Remove empty strings
+			.join('/'); // Join with single slashes
+
+		if (bStartWithSlash) {
+			returnValue = "/" + returnValue;
+		}
+
+		return returnValue;
+	}
+
 	stringifyDisplayData(inDisplayData) {
 		const Stringifier = (key, value) => {
 			// Check if the key is "FileDimensions"
