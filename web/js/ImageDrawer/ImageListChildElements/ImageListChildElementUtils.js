@@ -244,7 +244,37 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
                                 const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
                                 if (currentContextObject) {
-                                    currentContextObject.onRequestSingleRemoval(imageElementToUse);
+                                    currentContextObject.onRequestSingleFavourite(imageElementToUse);
+                                }
+                            }
+                        }
+                    )
+                );
+            }
+
+            // Favourite button
+            {
+                const baseLabelText = "⭐ Copy to Favourites";
+                const confirmLabelText = "⭐ Confirm?";
+                flyout.menu.appendChild(
+                    createButton(
+                        $el("label", {
+                            textContent: baseLabelText,
+                            style: {
+                                color: 'rgb(250,250,250)',
+                            }
+                        }),
+                        "Copy this item to the favourites folder defined in Settings > JNodes Settings.",
+                        function (e) {
+                            const labelElement = e.target.querySelector("label");
+                            if (labelElement.textContent == baseLabelText) {
+                                labelElement.textContent = confirmLabelText;
+                            } else if (labelElement.textContent == confirmLabelText) {
+
+                                const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+                                const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
+                                if (currentContextObject) {
+                                    currentContextObject.onRequestSingleFavourite(imageElementToUse);
                                 }
                             }
                         }
