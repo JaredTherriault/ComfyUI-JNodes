@@ -44,15 +44,57 @@ $el("style", {
 	.JNodes-image-drawer--bottom-left .JNodes-image-drawer-basic-controls-group {
 		align-items: left;
 		justify-content: flex-start;
+		flex-direction: row;
 	}
 	.JNodes-image-drawer--top-right .JNodes-image-drawer-basic-controls-group,
 	.JNodes-image-drawer--bottom-right .JNodes-image-drawer-basic-controls-group {
 		align-items: right;
 		justify-content: flex-end;
+		flex-direction: row-reverse;
 	}
 
-	.JNodes-image-drawer-menu {
+	.JNodes-image-drawer--top-left .JNodes-image-drawer-left-affined-basic-controls-group,
+	.JNodes-image-drawer--bottom-left .JNodes-image-drawer-left-affined-basic-controls-group {
+		flex-direction: row;
+	}
+
+	.JNodes-image-drawer--top-right .JNodes-image-drawer-left-affined-basic-controls-group,
+	.JNodes-image-drawer--bottom-right .JNodes-image-drawer-left-affined-basic-controls-group {
+		flex-direction: row-reverse;
+	}
+
+	.JNodes-image-drawer--top-left .JNodes-image-drawer-right-affined-basic-controls-group,
+	.JNodes-image-drawer--bottom-left .JNodes-image-drawer-right-affined-basic-controls-group {
+		flex-direction: row;
+	}
+
+	.JNodes-image-drawer--top-right .JNodes-image-drawer-right-affined-basic-controls-group,
+	.JNodes-image-drawer--bottom-right .JNodes-image-drawer-right-affined-basic-controls-group {
+		flex-direction: row-reverse;
+	}
+
+	.JNodes-image-drawer--top-right .JNodes-image-drawer-menu,
+	.JNodes-image-drawer--top-left .JNodes-image-drawer-menu {
 		flex-direction: column;
+	}
+
+	.JNodes-image-drawer--bottom-right .JNodes-image-drawer-menu,
+	.JNodes-image-drawer--bottom-left .JNodes-image-drawer-menu {
+		flex-direction: column-reverse;
+	}
+
+	.JNodes-image-drawer-context-toolbar {
+		display: flex;
+	}
+	.JNodes-image-drawer--top-left .JNodes-image-drawer-context-toolbar,
+	.JNodes-image-drawer--bottom-left .JNodes-image-drawer-context-toolbar {
+		align-items: flex-end;
+		justify-content: flex-end;
+	}
+	.JNodes-image-drawer--top-right .JNodes-image-drawer-context-toolbar,
+	.JNodes-image-drawer--bottom-right .JNodes-image-drawer-context-toolbar {
+		align-items: flex-start;
+		justify-content: flex-start;
 	}
 	
 	.JNodes-image-drawer-btn {
