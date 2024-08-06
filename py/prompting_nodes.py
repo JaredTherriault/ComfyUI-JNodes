@@ -531,6 +531,7 @@ class AddOrSetMetaDataKey:
     @classmethod
     def IS_CHANGED(s, key, value, extra_pnginfo=None):
         return return_random_int() # Run every time
+        return float("nan") # Run every time
     
 class SetPositivePromptInMetaData:
 
@@ -604,7 +605,7 @@ class RemoveMetaDataKey:
     
     @classmethod
     def IS_CHANGED(s, key, value, extra_pnginfo=None):
-        return return_random_int() # Run every time
+        return float("nan") # Run every time
 
 class SetMetadataA1111:
 
