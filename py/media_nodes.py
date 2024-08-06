@@ -482,6 +482,8 @@ class LoadVisualMediaFromPath_Batch:
         if shuffle:
             #random.seed(seed)
             random.shuffle(collected_paths)
+        else:
+            collected_paths = sorted(collected_paths)
 
         if len(collected_paths) > image_return_limit and image_return_limit > 0:
             collected_paths = collected_paths[:image_return_limit]
