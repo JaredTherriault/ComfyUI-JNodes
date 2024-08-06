@@ -7,7 +7,9 @@ from .utils import *
 
 import copy
 import cv2
+import hashlib
 import json
+import random
 import re
 import torch
 
@@ -431,6 +433,7 @@ class LoadVisualMediaFromPath:
 class LoadVisualMediaFromPath_Batch:
     """
     A mutation from Kosinkadink's VideoHelperSuite, credits to his repository!
+    This loads all images from a given path, optionally recursively.
     """
 
     FORCE_SIZE_DIMENSIONS = ["Disabled", "256", "512", "768", "1024"]
@@ -451,6 +454,9 @@ class LoadVisualMediaFromPath_Batch:
                 "sample_next_unit": (s.TIME_UNITS,),
                 "frame_skip": ("INT", {"default": 0, "min": 0, "step": 1}),
                 "discard_transparency": ("BOOLEAN", {"default": True}),
+                "image_return_limit": ("INT", {"default": 0, "min": 0, "step": 1}),
+                "shuffle": ("BOOLEAN", {"default": False}),
+                #"seed": ("INT", {"default": 0, "max": 0xffffffffffffffff}),
             },
         }
 
@@ -458,57 +464,94 @@ class LoadVisualMediaFromPath_Batch:
     RETURN_NAMES = ("IMAGE",)
     FUNCTION = "load_media"
 
-    def load_media(self, **kwargs):
+    def collect_media_paths(self, in_path, recursive, image_return_limit, shuffle, seed):
+
+        collected_paths = []
+
+        if in_path:
+            is_dir = os.path.isdir(in_path)
+            if is_dir:
+                for path in os.listdir(in_path):
+                    full_path = os.path.join(in_path, path)
+                    if os.path.isfile(full_path):
+                        collected_paths.append(full_path)
+                    elif recursive:  # If it's a directory and recursive flag is True
+                        # Don't pass shuffle or limit parameters for the recursions, they're a post-process
+                        collected_paths.extend(self.collect_media_paths(full_path, recursive, 0, False, seed))
+
+        if shuffle:
+            random.seed(seed)
+            random.shuffle(collected_paths)
+
+        if len(collected_paths) > image_return_limit and image_return_limit > 0:
+            collected_paths = collected_paths[:image_return_limit]
+
+        return collected_paths
+
+
+    def process_media(self, collected_paths, **kwargs):
+
+        local_kwargs = copy.deepcopy(kwargs)
+
+        del local_kwargs["recursive"]
+        del local_kwargs["image_return_limit"]
+        del local_kwargs["shuffle"]
+        #del local_kwargs["seed"]
+
+        images = []
+
+        for path in collected_paths:
+            if os.path.isfile(path):
+                new_kwargs = copy.deepcopy(local_kwargs)
+                new_kwargs["media_path"] = path
+                return_value = LoadVisualMediaFromPath.load_media_cv(**new_kwargs)
+                if len(images) == 0:
+                    images = return_value[0]
+                else:
+                    images = self.batch(images, return_value[0])
+        
+        return images
+
+    def batch(self, image1, image2):
+        if image1.shape[1:] != image2.shape[1:]:
+        #     image1 = comfy.utils.common_upscale(image1.movedim(-1,1), 512, 512, "bilinear", "none").movedim(1,-1)
+        #     image2 = comfy.utils.common_upscale(image2.movedim(-1,1), 512, 512, "bilinear", "none").movedim(1,-1)
+            image2 = comfy.utils.common_upscale(image2.movedim(-1,1), image1.shape[2], image1.shape[1], "bilinear", "center").movedim(1,-1)
+
+        s = torch.cat((image1, image2), dim=0)
+        return s
+
+    def meta_collect_paths(self, **kwargs):
         media_path = kwargs.get("media_path").strip()
-        recursive = kwargs.pop("recursive", False)
+        recursive = kwargs.get("recursive", False)
+        image_return_limit = kwargs.get("image_return_limit", 0)
+        shuffle = kwargs.get("shuffle", False)
+        seed = kwargs.get("seed", 0)
 
-        def batch(image1, image2):
-            if image1.shape[1:] != image2.shape[1:]:
-            #     image1 = comfy.utils.common_upscale(image1.movedim(-1,1), 512, 512, "bilinear", "none").movedim(1,-1)
-            #     image2 = comfy.utils.common_upscale(image2.movedim(-1,1), 512, 512, "bilinear", "none").movedim(1,-1)
-                image2 = comfy.utils.common_upscale(image2.movedim(-1,1), image1.shape[2], image1.shape[1], "bilinear", "center").movedim(1,-1)
+        return self.collect_media_paths(resolve_file_path(media_path), recursive, image_return_limit, shuffle, 0)
 
-            s = torch.cat((image1, image2), dim=0)
-            return (s,)
+    def load_media(self, **kwargs):
 
-        def collect_media_paths(in_path, recursive):
+        collected_paths = self.meta_collect_paths(**kwargs)
 
-            collected_paths = []
-
-            if in_path:
-                is_dir = os.path.isdir(in_path)
-                if is_dir:
-                    for path in os.listdir(in_path):
-                        full_path = os.path.join(in_path, path)
-                        if os.path.isfile(full_path):
-                            collected_paths.append(full_path)
-                        elif recursive:  # If it's a directory and recursive flag is True
-                            collected_paths.extend(collect_media_paths(full_path, recursive))
-
-            return collected_paths
-
-
-        def process_media(collected_paths, **kwargs):
-
-            images = []
-
-            for path in collected_paths:
-                if os.path.isfile(path):
-                    new_kwargs = copy.deepcopy(kwargs)
-                    new_kwargs["media_path"] = path
-                    return_value = LoadVisualMediaFromPath.load_media_cv(**new_kwargs)
-                    if len(images) == 0:
-                        images = return_value[0]
-                    else:
-                        images = batch(images, return_value[0])[0]
-            
-            return images
-
-        collected_paths = collect_media_paths(resolve_file_path(media_path), recursive)
-
-        images = process_media(collected_paths, **kwargs)
+        images = self.process_media(collected_paths, **kwargs)
 
         return (images,)
+
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        try:
+            instance = cls()
+            collected_paths = instance.meta_collect_paths(**kwargs)
+            joined = ",".join(collected_paths)
+
+            m = hashlib.sha256()
+            m.update(joined.encode())
+            as_hex = m.digest().hex()
+            return as_hex
+        except Exception as e:
+            logger.error(e)
+            return
 
 class UploadVisualMedia:
     """
