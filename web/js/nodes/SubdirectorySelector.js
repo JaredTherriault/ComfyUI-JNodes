@@ -164,6 +164,7 @@ app.registerExtension({
 
 						const newWidgetValue = utilitiesInstance.joinPaths(newStack);
 						this.output_path_widget.value = newWidgetValue;
+						this.setOutputData(0, newWidgetValue);
 					}
 				}
 

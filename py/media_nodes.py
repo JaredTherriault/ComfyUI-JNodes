@@ -443,7 +443,7 @@ class LoadVisualMediaFromPath_Batch:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "media_path": ("STRING", {"default": "/insert/path/here.ext"}),
+                "media_path": ("STRING", {"default": "/insert/path/here"}),
                 "recursive": ("BOOLEAN", {"default": True}),
                 "start_at_n": ("INT", {"default": 0, "min": 0, "step": 1}),
                 "start_at_unit": (s.TIME_UNITS,),
@@ -480,7 +480,7 @@ class LoadVisualMediaFromPath_Batch:
                         collected_paths.extend(self.collect_media_paths(full_path, recursive, 0, False, seed))
 
         if shuffle:
-            random.seed(seed)
+            #random.seed(seed)
             random.shuffle(collected_paths)
 
         if len(collected_paths) > image_return_limit and image_return_limit > 0:
@@ -541,17 +541,13 @@ class LoadVisualMediaFromPath_Batch:
     @classmethod
     def IS_CHANGED(cls, **kwargs):
         try:
-            instance = cls()
-            collected_paths = instance.meta_collect_paths(**kwargs)
-            joined = ",".join(collected_paths)
-
-            m = hashlib.sha256()
-            m.update(joined.encode())
-            as_hex = m.digest().hex()
-            return as_hex
+            if kwargs.get("shuffle", False) == True:
+                return float("nan")
+            else:
+                return ""
         except Exception as e:
             logger.error(e)
-            return
+            return ""
 
 class UploadVisualMedia:
     """
