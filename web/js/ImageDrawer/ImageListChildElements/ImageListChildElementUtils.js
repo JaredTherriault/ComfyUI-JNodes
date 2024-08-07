@@ -276,6 +276,8 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 if (currentContextObject) {
                                     currentContextObject.onRequestSingleFavourite(imageElementToUse);
                                 }
+
+                                labelElement.textContent = baseLabelText;
                             }
                         }
                     )
