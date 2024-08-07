@@ -192,7 +192,7 @@ $el("style", {
 		grid-auto-rows: min-content;
 		grid-template-columns: repeat(var(--column-count, 3), 1fr);
 		transition: 100ms linear;
-		scrollbar-gutter: stable both-edges;
+		scrollbar-gutter: stable;
 		padding: 5px;
 		background: var(--comfy-input-bg);
 		border-radius: 5px;
