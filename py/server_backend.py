@@ -394,6 +394,7 @@ async def copy_item(request):
         path_from = result["payload"]["file"]
         if "destination" in request.rel_url.query:
             path_to = request.rel_url.query["destination"]
+            path_to = resolve_file_path(path_to)
 
         if path_from and path_to:
             return copy_file(path_from, path_to)
