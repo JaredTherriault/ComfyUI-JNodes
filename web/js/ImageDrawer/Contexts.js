@@ -24,6 +24,7 @@ export function initializeContexts() {
 		Contexts = {
 			feed: new ContextFeed(),
 			temp: new ContextTemp(),
+			favoourites: new ContextFavourites(),
 			input: new ContextInput(),
 			output: new ContextOutput(),
 			lora: new ContextLora(),
@@ -803,6 +804,17 @@ export class ContextTemp extends ContextSubdirectoryExplorer {
 
 	getDefaultSortType() {
 		return { type: SortTypes.SortTypeDate, bIsAscending: false };
+	}
+}
+
+export class ContextFavourites extends ContextSubdirectoryExplorer {
+	constructor() {
+		const bShouldForceLoad = true; // These need to be searchable by meta data
+
+		// Update rootDirectoryName when this setting changes
+		setting_FavouritesDirectory.setOnChange((newValue) => { this.rootDirectoryName = newValue; })
+
+		super("Favourites", "The generations you've copied to the Favourites directory defined in Settings > JNodes Settings", setting_FavouritesDirectory.value, bShouldForceLoad);
 	}
 }
 
