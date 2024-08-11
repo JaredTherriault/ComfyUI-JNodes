@@ -88,11 +88,11 @@ export class ModalManager {
 		this._modalContainer.style.overflow = "auto";
 		this._modalContainer.style.backgroundColor = "rgba(0,0,0,0.7)";
 
-		this._modalContainer.addEventListener("wheel", (event) => { this._zoom(event); });
-		this._modalContainer.addEventListener("mousedown", (event) => { this._startPan(event); });
-		this._modalContainer.addEventListener("mousemove", (event) => { this._pan(event); });
-		this._modalContainer.addEventListener("mouseup", (event) => { this._onMouseUp(event); });
-		this._modalContainer.addEventListener("mouseleave", (event) => { this._endPan(); });
+		this._modalContainer.addEventListener("wheel", (event) => { event.preventDefault(); this._zoom(event); });
+		this._modalContainer.addEventListener("mousedown", (event) => { event.preventDefault(); this._startPan(event); });
+		this._modalContainer.addEventListener("mousemove", (event) => { event.preventDefault(); this._pan(event); });
+		this._modalContainer.addEventListener("mouseup", (event) => { event.preventDefault(); this._onMouseUp(event); });
+		this._modalContainer.addEventListener("mouseleave", (event) => { event.preventDefault(); this._endPan(); });
 
 		// Prevent drag & drop operation
 		this._modalContainer.addEventListener("dragstart", (event) => { event.preventDefault(); });
