@@ -1,3 +1,4 @@
+import shutil
 import os
 
 import folder_paths
@@ -244,9 +245,7 @@ class LoadVisualMediaFromPath:
             if discard_transparency and image.mode == "RGBA":
                 image = image.convert("RGB")
             image = ImageOps.exif_transpose(image)
-            image = np.array(image, dtype=np.float32) / 255.0
-            image = torch.from_numpy(image)[None,]
-            images.append(image)
+            image = pil2tensor(image)
 
         if original_frame_time is None:
             raise Exception(f"Could not get original_frame_time from media: {media_path}")
@@ -387,8 +386,7 @@ class LoadVisualMediaFromPath:
                 # convert frame to comfyui's expected format (taken from comfy's load image code)
                 image = Image.fromarray(frame)
                 image = ImageOps.exif_transpose(image)
-                image = np.array(image, dtype=np.float32) / 255.0
-                image = torch.from_numpy(image)[None,]
+                image = pil2tensor(image)
 
                 if discard_transparency and image.mode == "RGBA":
                     image = image.convert("RGB")
