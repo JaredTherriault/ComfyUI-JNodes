@@ -67,6 +67,7 @@ ACCEPTED_BROWSER_VIDEO_EXTENSIONS = [
 
 ACCEPTED_ANIMATED_IMAGE_EXTENSIONS = ["gif", "webp", "apng", "mjpeg"]
 ACCEPTED_STILL_IMAGE_EXTENSIONS = ["gif", "webp", "png", "jpg", "jpeg", "jfif"]
+
 ALL_ACCEPTED_IMAGE_EXTENSIONS = (
     ACCEPTED_STILL_IMAGE_EXTENSIONS + ACCEPTED_ANIMATED_IMAGE_EXTENSIONS
 )
@@ -77,6 +78,10 @@ ALL_ACCEPTED_UPLOAD_VISUAL_EXTENSIONS = (
 
 ALL_ACCEPTED_BROWSER_VISUAL_EXTENSIONS = (
     ACCEPTED_BROWSER_VIDEO_EXTENSIONS + ALL_ACCEPTED_IMAGE_EXTENSIONS
+)
+
+ACCEPTED_IMAGE_AND_VIDEO_EXTENSIONS_COMPENDIUM = (
+    ALL_ACCEPTED_IMAGE_EXTENSIONS + ALL_ACCEPTED_UPLOAD_VISUAL_EXTENSIONS + ALL_ACCEPTED_BROWSER_VISUAL_EXTENSIONS
 )
 
 
@@ -139,6 +144,40 @@ def convert_relative_comfyui_path_to_full_path(relative_path="output"):
    
     return os.path.join(folder_paths.base_path, relative_path)
 
+def replace_all(original_string, to_replace, replacement):
+
+    original_string = str(original_string)
+    to_replace = str(to_replace)
+    replacement = str(replacement)
+    
+    while to_replace in original_string:
+        original_string = original_string.replace(to_replace, replacement)
+
+    return original_string
+
+def replace_all_but_first_in_string(original_string, to_replace, replacement):
+
+    original_string = str(original_string)
+    to_replace = str(to_replace)
+    replacement = str(replacement)
+
+    # Find the first occurrence
+    first_occurrence_index = original_string.find(to_replace)
+    
+    # If the substring to replace is not found, return the original string
+    if first_occurrence_index == -1:
+        return original_string
+    
+    # Split the string into two parts: before and after the first occurrence
+    before_first = original_string[:first_occurrence_index + len(to_replace)]
+    after_first = original_string[first_occurrence_index + len(to_replace):]
+    
+    # Replace all occurrences of to_replace in the part after the first occurrence
+    after_first_replaced = after_first.replace(to_replace, replacement)
+    
+    # Combine the two parts
+    result = before_first + after_first_replaced
+    return result
 
 def resolve_file_path(in_file_path):
     if os.path.isabs(in_file_path):
@@ -146,6 +185,20 @@ def resolve_file_path(in_file_path):
     else:  # Relative path
         return convert_relative_comfyui_path_to_full_path(in_file_path)
 
+def get_clean_filename(file_path):
+    # Get the base name of the file
+    base_name = os.path.basename(file_path)
+    # Split the base name into name and extension
+    name, _ = os.path.splitext(base_name)
+    return name
+
+def get_leaf_directory(path):
+    # Ensure the path is a directory
+    if os.path.isdir(path):
+        return os.path.basename(os.path.normpath(path))
+    else:
+        # If it's a file, get the parent directory and return the basename of that
+        return os.path.basename(os.path.dirname(path))
 
 def highest_common_folder(path1, path2):
     # Split the paths into their components

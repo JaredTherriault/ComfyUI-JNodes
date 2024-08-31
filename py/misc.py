@@ -2,7 +2,7 @@ import os
 
 import folder_paths
 from .logger import logger
-from .utils import any, AnyType
+from .utils import any, AnyType, get_clean_filename, get_leaf_directory
 
 
 class GetTempDirectory:
@@ -125,6 +125,28 @@ class AnyToString:
     def get_string(self, anything):
         return (str(anything),)
 
+class GetCleanFilename:
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "get_string"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"file_path":  ("STRING", {"default": "", "multiline": False})}}
+
+    def get_string(self, file_path):
+        return (get_clean_filename(file_path),)
+
+class GetLeafDirectory:
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "get_string"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"path":  ("STRING", {"default": "", "multiline": False})}}
+
+    def get_string(self, path):
+        return (get_leaf_directory(path),)
+
 NODE_CLASS_MAPPINGS = {
     
     "JNodes_GetTempDirectory": GetTempDirectory,
@@ -137,7 +159,8 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_ModelInOut": ModelInOut,
     "JNodes_ConditioningInOut": ConditioningInOut,
     "JNodes_AnyToString" : AnyToString,
-
+    "JNodes_GetCleanFilename": GetCleanFilename,
+    "JNodes_GetLeafDirectory": GetLeafDirectory,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -152,5 +175,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_ModelInOut": "Model In, Model Out",
     "JNodes_ConditioningInOut": "Conditioning In, Conditioning Out",
     "JNodes_AnyToString" : "Anything To String",
+    "JNodes_GetCleanFilename": "Get Clean Filename",
+    "JNodes_GetLeafDirectory": "Get Leaf Directory",
 
 }
