@@ -320,6 +320,7 @@ const mediaPreview = {
 	name: 'JNodes.media_preview',
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
 		switch (nodeData.name) {
+			case "JNodes_SaveVideoWithOptions":
 			case 'JNodes_SaveVideo': {
 				const onExecuted = nodeType.prototype.onExecuted;
 				nodeType.prototype.onExecuted = function (message) {

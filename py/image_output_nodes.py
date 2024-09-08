@@ -7,8 +7,10 @@ from .logger import logger
 from .misc import *
 from .utils import *
 
+import copy
 import cv2
 import json
+import math
 import random
 import re
 import shutil
@@ -39,11 +41,6 @@ if FFMPEG_PATH is None:
 class SaveVideo():
     '''
     Based on work done by Kosinkadink as a part of the Video Helper Suite.
-    Edited to:
-    -insert metadata directly into videos
-    -return a format compatible with ImageDrawer
-    -set quality on 'image' type outputs
-    -use a filename suffix rather than prefix, simply because I prefer the counter to come first in the filename
     '''
     @classmethod
     def INPUT_TYPES(s):
@@ -59,20 +56,16 @@ class SaveVideo():
         return {
             "required": {
                 "images": ("IMAGE",),
-                "frame_rate": (
-                    "INT",
-                    {"default": 8, "min": 1, "step": 1},
-                ),
+                "frame_rate": ("INT", {"default": 8, "min": 1, "step": 1},),
                 "loop_count": ("INT", {"default": 0, "min": 0, "max": 100, "step": 1}),
-                "filename_suffix": ("STRING", {"default": ""}),
-                "format": (["image/gif", "image/webp", "image/apng"] + video_formats,),
+                "filename_format": ("STRING", {"default": "Comfy%counter%"}),
+                "output_format": (["image/gif", "image/webp", "image/apng"] + video_formats,),
                 "save_to_output_dir": ("BOOLEAN", {"default": True}),
                 "quality": ("INT", {"default": 95, "min": 0, "max": 100, "step": 1}),
-            },
-            "optional": {
                 "save_metadata": ("BOOLEAN", {"default": True}),
                 "save_workflow": ("BOOLEAN", {"default": True}),
                 "audio_file": ("STRING", {"default": ""}),
+                "batch_size": ("INT", {"default": 128, "min": 32, "step": 1}),
             },
             "hidden": {
                 "prompt": "PROMPT",
@@ -87,25 +80,117 @@ class SaveVideo():
     def combine_video(
         self,
         images,
-        quality,
         frame_rate: int,
         loop_count: int,
-        filename_suffix="",
-        format="image/webp",
+        filename_format="Comfy%counter%",
+        output_format="image/webp",
         save_to_output_dir=True,
+        quality=95,
         save_metadata=True,
         save_workflow=True,
+        audio_file="",
+        batch_size=128,
         prompt=None,
-        extra_pnginfo=None,
-        audio_file=""
+        extra_pnginfo=None
     ):
-        # Prevent invalid output for ImageDrawer
-        if filename_suffix is None:
-            filename_suffix = "Video"
+
+        
+        audio_options = {}
+        audio_options["audio_input_path"] = audio_file
+        audio_options["clip_audio"] = False
+
+        return SaveVideoWithOptions().combine_video(
+            images, frame_rate, loop_count,
+            filename_format, output_format,
+            save_to_output_dir, quality,
+            save_metadata, save_workflow,
+            batch_size, audio_options,
+            prompt, extra_pnginfo
+        )
+
+class SaveVideoWithOptions():
+    '''
+    Based on work done by Kosinkadink as a part of the Video Helper Suite.
+    '''
+    @classmethod
+    def INPUT_TYPES(s):
+        # Get the list of filenames (including .json files) in the directory
+        file_names = os.listdir(VIDEO_FORMATS_DIRECTORY)
+
+        # Filter out only the JSON files (those ending with .json)
+        json_files = [filename for filename in file_names if filename.endswith(".json")]
+
+        # Generate the video format names by removing ".json" and prefixing with "video/"
+        video_formats = ["video/" + filename[:-5] for filename in json_files]
+
+        return {
+            "required": {
+                "images": ("IMAGE",),
+                "frame_rate": ("INT", {"default": 8, "min": 1, "step": 1},),
+                "loop_count": ("INT", {"default": 0, "min": 0, "max": 100, "step": 1}),
+                "filename_format": ("STRING", {"default": "Comfy%counter%"}),
+                "output_format": (["image/gif", "image/webp", "image/apng"] + video_formats,),
+                "save_to_output_dir": ("BOOLEAN", {"default": True}),
+                "quality": ("INT", {"default": 95, "min": 0, "max": 100, "step": 1}),
+                "save_metadata": ("BOOLEAN", {"default": True}),
+                "save_workflow": ("BOOLEAN", {"default": True}),
+                "batch_size": ("INT", {"default": 128, "min": 32, "step": 1}),
+            },
+            "optional": {
+                "audio_options": ("AUDIO_INPUT_OPTIONS",),
+            },
+            "hidden": {
+                "prompt": "PROMPT",
+                "extra_pnginfo": "EXTRA_PNGINFO",
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    OUTPUT_NODE = True
+    FUNCTION = "combine_video"
+
+    @staticmethod
+    def determine_file_name(filename, full_output_folder, output_format):
+
+        format_type, format_ext_mime = output_format.split("/")
+        format_ext = format_ext_mime
+
+        for ext in ACCEPTED_IMAGE_AND_VIDEO_EXTENSIONS_COMPENDIUM:
+            if ext in format_ext_mime:
+                format_ext = ext 
+                break
+ 
+        file_path = os.path.join(full_output_folder, f"{filename}.{format_ext}")
+
+        counter_token = "%counter%"
+        if counter_token in filename:
+            counter = len(os.listdir(full_output_folder)) + 1
+            new_filename = filename.replace(counter_token, str(counter).zfill(5))
+            file_path = os.path.join(full_output_folder, f"{new_filename}.{format_ext}")
             
-        # convert images to numpy
-        images = images.cpu().numpy() * 255.0
-        images = np.clip(images, 0, 255).astype(np.uint8)
+            while os.path.exists(file_path):
+                counter += 1
+                new_filename = filename.replace(counter_token, str(counter).zfill(5))
+                file_path = os.path.join(full_output_folder, f"{new_filename}.{format_ext}")
+
+        return file_path, format_type, format_ext_mime, format_ext
+
+    def combine_video(
+        self,
+        images,
+        frame_rate: int,
+        loop_count: int,
+        filename_format="Comfy%counter%",
+        output_format="image/webp",
+        save_to_output_dir=True,
+        quality=95,
+        save_metadata=True,
+        save_workflow=True,
+        batch_size=128,
+        audio_options=None,
+        prompt=None,
+        extra_pnginfo=None
+    ):
 
         # get output information
         output_dir = (
@@ -119,7 +204,11 @@ class SaveVideo():
             _,
             subfolder,
             _,
-        ) = folder_paths.get_save_image_path(filename_suffix, output_dir)
+        ) = folder_paths.get_save_image_path(filename_format, output_dir)
+                
+        file_path, format_type, format_ext_mime, format_ext = self.determine_file_name(
+            filename, full_output_folder, output_format
+        )
 
         metadata = PngInfo()
         video_metadata = {}
@@ -133,20 +222,10 @@ class SaveVideo():
                 value = f'"{extra_pnginfo[key]}"'
                 metadata.add_text(key, json.dumps(value))
                 video_metadata[key] = value
-                
-        counter = len(os.listdir(full_output_folder)) + 1
-
-        format_type, format_ext = format.split("/")
-        file = f"{counter:05}_{filename}.{format_ext}"
-        file_path = os.path.join(full_output_folder, file)
-        while os.path.exists(file_path):
-            counter += 1
-            file = f"{counter:05}_{filename}.{format_ext}"
-            file_path = os.path.join(full_output_folder, file)
             
         if format_type == "image":
             
-            frames = [Image.fromarray(f) for f in images]
+            frames = [tensor2pil(f)[0] for f in images]
             
             args = {
                 "format":format_ext.upper(),
@@ -183,11 +262,11 @@ class SaveVideo():
                 #Should never be reachable
                 raise ProcessLookupError("Could not find ffmpeg")
 
-            video_format_path = os.path.join(VIDEO_FORMATS_DIRECTORY, format_ext + ".json")
+            video_format_path = os.path.join(VIDEO_FORMATS_DIRECTORY, format_ext_mime + ".json")
             with open(video_format_path, 'r') as stream:
                 video_format = json.load(stream)
-            file = f"{counter:05}_{filename}.{video_format['extension']}"
-            file_path = os.path.join(full_output_folder, file)
+                if "extension" in video_format:
+                    format_ext = video_format["extension"]
             dimensions = f"{len(images[0][0])}x{len(images[0])}"
             output_quality = map_to_range(quality, 0, 100, 50, 1) # ffmpeg quality maps from 50 (worst) to 1 (best)
             args = [FFMPEG_PATH, "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
@@ -197,95 +276,339 @@ class SaveVideo():
             env=os.environ.copy()
             if  "environment" in video_format:
                 env.update(video_format["environment"])
-            res = None
-            if save_metadata:
-                os.makedirs(folder_paths.get_temp_directory(), exist_ok=True)
-                metadata = json.dumps(video_metadata)
-                metadata_path = os.path.join(folder_paths.get_temp_directory(), "metadata.txt")
-                #metadata from file should  escape = ; # \ and newline
-                metadata = metadata.replace("\\","\\\\")
-                metadata = metadata.replace(";","\\;")
-                metadata = metadata.replace("#","\\#")
-                metadata = metadata.replace("=","\\=")
-                metadata = metadata.replace("\n","\\\n")
-                metadata = "comment=" + metadata
-                with open(metadata_path, "w") as f:
-                    f.write(";FFMETADATA1\n")
-                    f.write(metadata)
-                m_args = args[:1] + ["-i", metadata_path] + args[1:]
-                try:
-                    res = subprocess.run(m_args + [file_path], input=images.tobytes(),
-                                         capture_output=True, check=True, env=env)
-                except subprocess.CalledProcessError as e:
-                    #Res was not set
-                    print(e.stderr.decode("utf-8"), end="", file=sys.stderr)
-                    logger.warn("An error occurred when saving with metadata")
 
-            if not res:
-                try:
-                    res = subprocess.run(args + [file_path], input=images.tobytes(),
-                                         capture_output=True, check=True, env=env)
-                except subprocess.CalledProcessError as e:
-                    raise Exception("An error occured in the ffmpeg subprocess:\n" \
-                            + e.stderr.decode("utf-8"))
-            if res.stderr:
-                print(res.stderr.decode("utf-8"), end="", file=sys.stderr)
+            full_output_folder_temp = f"{full_output_folder}/temp"
+            os.makedirs(full_output_folder_temp, exist_ok=True)
 
+            interim_file_paths = []
+            total_passes = math.ceil(float(len(images)) / float(batch_size))
+            total_passes_digit_count = len(str(total_passes))
+            join_videos_instance = JoinVideosInDirectory()
+            for start in range(0, len(images), batch_size):
 
-            # Audio Injection ater video is created, saves additional video with -audio.mp4
-            # Accepts mp3 and wav formats
-            # TODO test unix and windows paths to make sure it works properly. Path module is Used
+                batch_count = len(interim_file_paths) + 1
+                logger.info(f"SaveVideo: Processing batch {str(batch_count).zfill(total_passes_digit_count)} of {total_passes}")
 
-            audio_file_path = Path(audio_file)
-            file_path = Path(file_path)
-
-            # Check if 'audio_file' is not empty and the file exists
-            if audio_file and audio_file_path.exists() and audio_file_path.suffix.lower() in ['.wav', '.mp3']:
+                end = min(start + batch_size, len(images))
+                image_batch = images[start:end]
                 
-                # Mapping of input extensions to output settings (extension, audio codec)
-                format_settings = {
-                    '.mov': ('.mov', 'pcm_s16le'),  # ProRes codec in .mov container
-                    '.mp4': ('.mp4', 'aac'),        # H.264/H.265 in .mp4 container
-                    '.mkv': ('.mkv', 'aac'),        # H.265 in .mkv container
-                    '.webp': ('.webp', 'libvorbis'),
-                    '.webm': ('.webm', 'libvorbis'),
-                    '.av1': ('.webm', 'libvorbis')
-                }
+                # convert images to numpy
+                image_batch = (image_batch.cpu().numpy() * 255.0).astype(np.uint8)
 
-                output_extension, audio_codec = format_settings.get(file_path.suffix.lower(), (None, None))
+                interim_file_path = f"{full_output_folder_temp}/{get_clean_filename(file_path)}_{len(interim_file_paths)}.{format_ext}"
+                interim_file_paths.append(interim_file_path)
 
-                if output_extension and audio_codec:
-                    # Modify output file name
-                    output_file_with_audio_path = file_path.with_stem(file_path.stem + "-audio").with_suffix(output_extension)
+                res = None
+                # images = images.tobytes()
+                if save_metadata:
+                    os.makedirs(folder_paths.get_temp_directory(), exist_ok=True)
+                    metadata = json.dumps(video_metadata)
+                    metadata_path = os.path.join(folder_paths.get_temp_directory(), "metadata.txt")
+                    #metadata from file should  escape = ; # \ and newline
+                    metadata = metadata.replace("\\","\\\\")
+                    metadata = metadata.replace(";","\\;")
+                    metadata = metadata.replace("#","\\#")
+                    metadata = metadata.replace("=","\\=")
+                    metadata = metadata.replace("\n","\\\n")
+                    metadata = "comment=" + metadata
+                    with open(metadata_path, "w") as f:
+                        f.write(";FFMETADATA1\n")
+                        f.write(metadata)
+                    m_args = args[:1] + ["-i", metadata_path] + args[1:]
+                    try:
+                        res = subprocess.run(m_args + [interim_file_path], input=image_batch.tobytes(),
+                                            capture_output=True, check=True, env=env)
+                    except subprocess.CalledProcessError as e:
+                        #Res was not set
+                        print(e.stderr.decode("utf-8"), end="", file=sys.stderr)
+                        logger.warn("An error occurred when saving with metadata")
 
-                    # FFmpeg command with audio re-encoding
-                    mux_args = [
-                        FFMPEG_PATH, "-y", "-i", str(file_path), "-i", str(audio_file_path),
-                        "-c:v", "copy", "-c:a", audio_codec, "-b:a", "192k", "-strict", "experimental", "-shortest", str(output_file_with_audio_path)
-                    ]
-                    
-                    subprocess.run(mux_args, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
-                # Else block for unsupported video format can be added if necessar
+                if not res:
+                    try:
+                        res = subprocess.run(args + [interim_file_path], input=image_batch.tobytes(),
+                                            capture_output=True, check=True, env=env)
+                    except subprocess.CalledProcessError as e:
+                        raise Exception("An error occured in the ffmpeg subprocess:\n" \
+                                + e.stderr.decode("utf-8"))
+                if res.stderr:
+                    print(res.stderr.decode("utf-8"), end="", file=sys.stderr)
+
+            join_videos_instance.join_videos_in_directory(full_output_folder_temp, file_path, audio_options, True)
 
         previews = [
             {
-                "filename": file,
+                "filename": f"{get_clean_filename(file_path)}.{format_ext}",
                 "subfolder": subfolder,
                 "type": "output" if save_to_output_dir else "temp",
-                "format": format,
+                "format": output_format,
             }
         ]
         return {"ui": {"images": previews}}
+
+class AudioInputOptions:
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": 
+                    {
+                        "audio_input_path": ("STRING", {"default": "/path/"}),
+                        "clip_audio": ("BOOLEAN", {"default": False}),
+                        "audio_clip_start_seconds": ("FLOAT", {"default": 0, "min": 0}),
+                        "audio_clip_duration": ("FLOAT", {"default": 0, "min": 0}),
+                     },
+                "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
+        }
+        
+    RETURN_TYPES = ("AUDIO_INPUT_OPTIONS",)
+    FUNCTION = "execute"
+
+    def execute(self, **kwargs):
+        kwargs_copy = copy.deepcopy(kwargs)
+        kwargs_copy["audio_input_path"] = resolve_file_path(kwargs["audio_input_path"])
+        return (kwargs_copy,)
+
+class JoinVideosInDirectory:
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": 
+                    {
+                        "directory_containing_videos": ("STRING", {"default": "/path/"}),
+                        "output_file_path": ("STRING", {"default": "/path/"}),
+                        "audio_input_options": ("AUDIO_INPUT_OPTIONS",),
+                        "delete_directory_containing_videos": ("BOOLEAN", {"default": False}),
+                     },
+                "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
+        }
+        
+    RETURN_TYPES = ()
+    OUTPUT_NODE = True
+    FUNCTION = "join_videos_in_directory"
+
+    def join_videos_in_directory(
+        self, directory_containing_videos, output_file_path, audio_input_options, delete_directory_containing_videos=False
+    ):
+
+        directory_containing_videos = resolve_file_path(directory_containing_videos)
+        output_file_path = resolve_file_path(output_file_path)
+
+        full_output_directory = os.path.dirname(output_file_path)
+        os.makedirs(full_output_directory, exist_ok=True)         
+
+        # Get a list of video files in the folder
+        video_files = [f for f in os.listdir(directory_containing_videos) if is_video(os.path.join(directory_containing_videos, f))]
+
+        if not video_files:
+            print("No video files found in the folder.")
+            return
+
+        should_apply_audio = False
+        if audio_input_options:
+            audio_input_path = audio_input_options.get("audio_input_path")
+            should_apply_audio = os.path.isfile(audio_input_path) and self.has_audio_track(audio_input_path)
+
+        if not should_apply_audio and len(video_files) == 1:
+            source_file = os.path.join(directory_containing_videos, video_files[0])
+
+            if source_file != output_file_path:
+                try:
+                    shutil.copy(source_file, output_file_path)
+                    print(f"Single video file copied from {source_file} to {output_file_path}")
+                except IOError as e:
+                    print(f"An error occurred while copying the file: {e}")
+        else:
+
+            def alphanumeric_sort_key(filename):
+                """Sort filenames alphanumerically."""
+                return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', filename)]
+
+            # Sort video files to maintain order
+            video_files.sort(key=alphanumeric_sort_key)
+
+            # Create a file to list video files
+            list_file_path = os.path.join(directory_containing_videos, 'video_list.txt')
+
+            with open(list_file_path, 'w') as list_file:
+                for video_file in video_files:
+                    list_file.write(f"file '{os.path.join(directory_containing_videos, video_file)}'\n")       
+            
+            # Preemptively create trimmed audio path even if we don't need it 
+            trimmed_audio_path = os.path.join(directory_containing_videos, 'trimmed_audio.aac')
+
+            # Build the ffmpeg command to concatenate videos and apply audio
+            if should_apply_audio:
+                audio_codec = 'aac'
+                if output_file_path.endswith("webm"):
+                    audio_codec = 'libopus'
+                audio_input_path = audio_input_options.get("audio_input_path")                
+                clip_audio = audio_input_options.get("clip_audio", False)
+                audio_clip_start_seconds = audio_input_options.get("audio_clip_start_seconds", 0)
+                audio_clip_duration = audio_input_options.get("audio_clip_duration", 0)
+
+                use_whole_audio = audio_clip_start_seconds == 0 and audio_clip_duration == 0
+
+                if clip_audio and not use_whole_audio:
+                    # Trim the audio first
+                    audio_duration = self.get_audio_duration(audio_input_path)
+                    if audio_clip_duration == 0 or audio_clip_start_seconds + audio_clip_duration > audio_duration:
+                        audio_clip_duration = audio_duration - audio_clip_start_seconds
+                    audio_trim_command = [
+                        'ffmpeg',
+                        '-i', audio_input_path,
+                        '-ss', str(audio_clip_start_seconds),
+                        '-t', str(audio_clip_duration),
+                        '-c:a', 'aac',
+                        trimmed_audio_path
+                    ]
+                    try:
+                        subprocess.run(audio_trim_command, check=True)
+                        print(f"Trimmed audio saved to {trimmed_audio_path}")
+                    except subprocess.CalledProcessError as e:
+                        print(f"An error occurred during audio trimming: {e}")
+                        return
+                    audio_path_to_use = trimmed_audio_path
+                else:
+                    audio_path_to_use = audio_input_path
+
+                ffmpeg_command_final = [
+                    'ffmpeg',
+                    '-f', 'concat',
+                    '-safe', '0',
+                    '-i', list_file_path,
+                    '-i', audio_path_to_use,
+                    '-c:v', 'copy',
+                    '-c:a', audio_codec,
+                    '-strict', 'experimental',
+                    # '-loglevel', 'debug',  # Add this for detailed logs
+                    output_file_path
+                ]
+
+            else:
+                # No audio file provided
+                ffmpeg_command_final = [
+                    'ffmpeg',
+                    '-f', 'concat',
+                    '-safe', '0',
+                    '-i', list_file_path,
+                    '-c:v', 'copy',
+                    '-strict', 'experimental',
+                    output_file_path
+                ]
+
+            try:
+                # Run ffmpeg to concatenate videos and optionally apply audio
+                process_final = subprocess.Popen(
+                    ffmpeg_command_final, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True
+                )
+
+                # Read the output and error streams
+                stdout, stderr = process_final.communicate()
+
+                # Wait for the process to finish
+                process_final.wait()
+                if process_final.returncode == 0:
+                    print(f"\nProcessing complete. Output file: {output_file_path}")
+                else:
+                    print(f"\nAn error occurred during processing: ffmpeg process returned non-zero exit code {process_final.returncode}")
+                    print(stdout)
+                    print(stderr)
+                    return
+
+            except subprocess.CalledProcessError as e:
+                print(f"\nAn error occurred: {e}")
+
+            finally:
+                # Clean up
+                if os.path.exists(list_file_path):
+                    os.remove(list_file_path)
+                if os.path.exists(trimmed_audio_path):
+                    os.remove(trimmed_audio_path)
+
+        # Clean up video directory if desired
+        if delete_directory_containing_videos:
+            shutil.rmtree(directory_containing_videos)
+
+        output_directory = folder_paths.get_output_directory()
+        temp_directory = folder_paths.get_temp_directory()
+
+        save_to_output_dir = output_file_path.startswith(output_directory)
+        save_to_temp_dir = output_file_path.startswith(temp_directory)
+
+        # While saving anywhere is supported, we can only display temp/output types
+        if save_to_output_dir or save_to_temp_dir:
+            filename = get_clean_filename(output_file_path)     
+            format_ext = get_file_extension_without_dot(output_file_path)       
+            subfolder = full_output_directory.replace(
+                output_directory if save_to_output_dir else temp_directory,""
+            )
+            if subfolder.startswith("/"):
+                subfolder = subfolder[1:]
+            output_format = f"video/{format_ext}"
+            
+            previews = [
+                {
+                    "filename": f"{filename}.{format_ext}",
+                    "subfolder": subfolder,
+                    "type": "output" if save_to_output_dir else "temp",
+                    "format": output_format,
+                }
+            ]
+            return {"ui": {"images": previews}}
+
+        return {}
+
+    def get_audio_duration(self, file_path):
+        """Get the duration of an audio file in seconds."""
+        result = subprocess.run(
+            ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'json', file_path],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        info = json.loads(result.stdout)
+        return float(info['format']['duration'])
+
+    def has_audio_track(self, file_path):
+        try:
+            # Run ffprobe command to get stream information in JSON format
+            result = subprocess.run(
+                [
+                    'ffprobe',
+                    '-v', 'error',
+                    '-show_entries', 'stream=codec_type',
+                    '-of', 'json',
+                    file_path
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True,
+                text=True
+            )
+
+            # Parse the JSON output
+            output = json.loads(result.stdout)
+            streams = output.get('streams', [])
+
+            # Check if any of the streams are of type 'audio'
+            for stream in streams:
+                if stream.get('codec_type') == 'audio':
+                    return True
+            
+            return False
+
+        except subprocess.CalledProcessError as e:
+            print(f"An error occurred while running ffprobe: {e}")
+            return False
 
 class SaveImageWithOutput(SaveImage):
     @classmethod
     def INPUT_TYPES(s):
         return {"required": 
-                    {"images": ("IMAGE", ),
-                     "save_to_output": ("BOOLEAN", {"default": False}),
-                     "filename_prefix": ("STRING", {"default": "ComfyUI"})},
+                    {
+                        "images": ("IMAGE", ),
+                        "save_to_output": ("BOOLEAN", {"default": False}),
+                        "filename_prefix": ("STRING", {"default": "ComfyUI"})
+                     },
                 "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
-                }
+        }
         
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "save_images_with_output"
@@ -299,334 +622,21 @@ class SaveImageWithOutput(SaveImage):
 
         return self.save_images(images, filename_prefix, prompt, extra_pnginfo)
         
-class SaveImages1:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "images": ("IMAGE",),
-                "frame_rate": ("INT", {"default": 8, "min": 1, "step": 1}),
-                "loop_count": ("INT", {"default": 0, "min": 0, "max": 100, "step": 1}),
-                "file_name": ("STRING", {"default": "AnimateDiff"}),
-                "save_to_output": ("BOOLEAN", {"default": False}),
-                "save_directory_override": ("STRING",),
-                "format": (JNODES_IMAGE_FORMAT_TYPES,),
-                "output_quality": ("INT", {"default": 95, "min": 1, "max": 100, "step": 1}),
-                "show_preview": ("BOOLEAN", {"default": False}),
-                "preview_quality": ("INT", {"default": 25, "min": 1, "max": 100, "step": 1}),
-                "save_meta_data": (["None", "output_and_json", "output_and_first_frame_of_video", "output_only"],),
-            },
-            "hidden": {
-                "prompt": "PROMPT",
-                "extra_pnginfo": "EXTRA_PNGINFO",
-            },
-        }
-
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "save_to_output_dirs"
-
-    def save_to_output_dirs(
-        self,
-        images,
-        frame_rate: int,
-        loop_count: int,
-        file_name="{counter} - AnimateDiff",
-        save_to_output=True,
-        format="video/webp",
-        output_quality=95,
-        show_preview=True,
-        preview_quality=95,
-        save_meta_data = "None",
-        prompt=None,
-        extra_pnginfo=None,
-    ):
-        # convert images to numpy
-        frames: List[Image.Image] = []
-        for image in images:
-            img = 255.0 * image.cpu().numpy()
-            img = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
-            frames.append(img)
-            
-        # get output information (full_output_folder, filename, counter, subfolder, _,)
-        temp_output_info = folder_paths.get_save_to_output_dir_path(file_name, folder_paths.get_temp_directory())
-        save_output_info = folder_paths.get_save_to_output_dir_path(file_name, folder_paths.get_output_directory())
-        
-        format_type, format_ext = format.split("/")
-        file_name_with_temp_counter = file_name.replace("{counter}", f"{temp_output_info[2]}")
-        file_name_with_save_counter = file_name.replace("{counter}", f"{save_output_info[2]}")
-        
-        duration = round(1000 / frame_rate)
-        
-        if show_preview:
-            preview_path = os.path.join(temp_output_info[0], f"{file_name_with_temp_counter}.webp")
-            frames[0].save(
-                    preview_path,
-                    format="webp",
-                    save_all=True,
-                    append_images=frames[1:],
-                    duration=duration,
-                    loop=loop_count,
-                    quality=preview_quality
-                )
-        
-        should_save_metadata = save_meta_data != "None"
-        
-        full_output_folder, filename, counter, subfolder, _, = save_output_info if save_to_output else temp_output_info
-
-        if should_save_metadata:
-            metadata = PngInfo()
-            if prompt is not None:
-                metadata.add_text("prompt", json.dumps(prompt))
-            if extra_pnginfo is not None:
-                for x in extra_pnginfo:
-                    metadata.add_text(x, json.dumps(extra_pnginfo[x]))
-    
-            if save_meta_data == "output_and_json":
-                # save first frame as png to keep metadata
-                file = f"{file_name}.json"
-                file_path = os.path.join(full_output_folder, file)
-                with open(file_path, 'w') as json_file:
-                    json.dump(metadata, json_file)
-            elif save_meta_data == "output_and_first_frame_of_video" and format_type != "image":
-                # save first frame as png to keep metadata
-                file = f"{file_name}.png"
-                file_path = os.path.join(full_output_folder, file)
-                frames[0].save(
-                    file_path,
-                    pnginfo=metadata,
-                    compress_level=4,
-                )
-        
-        file_path = os.path.join(full_output_folder, file)
-        if format_type == "image":
-            # Use pillow directly to save an animated image
-            if format_ext == "webp":
-                frames[0].save(
-                    file_path, 
-                    format=format_ext.upper(),
-                    save_all=True,
-                    append_images=frames[1:], 
-                    duration=round(1000 / frame_rate), 
-                    loop=loop_count, 
-                    quality=95,
-                    exif=metadata
-                )
-            else:
-                frames[0].save(
-                    file_path,
-                    format=format_ext.upper(),
-                    save_all=True,
-                    append_images=frames[1:],
-                    duration=round(1000 / frame_rate),
-                    loop=loop_count,
-                    compress_level=4,
-                    comment=metadata
-                )
-        else:
-            # Use ffmpeg to save a video
-            ffmpeg_path = shutil.which("ffmpeg")
-            if ffmpeg_path is None:
-                #Should never be reachable
-                raise ProcessLookupError("Could not find ffmpeg")
-
-            video_format_path = folder_paths.get_full_path("video_formats", format_ext + ".json")
-            with open(video_format_path, 'r') as stream:
-                video_format = json.load(stream)
-            file = f"{filename}_{counter:05}_.{video_format['extension']}"
-            file_path = os.path.join(full_output_folder, file)
-            dimensions = f"{frames[0].width}x{frames[0].height}"
-            args = [ffmpeg_path, "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
-                    "-s", dimensions, "-r", str(frame_rate), "-i", "-"] \
-                    + video_format['main_pass'] + [file_path]
-
-            env=os.environ.copy()
-            if  "environment" in video_format:
-                env.update(video_format["environment"])
-            with subprocess.Popen(args, stdin=subprocess.PIPE, env=env) as proc:
-                for frame in frames:
-                    proc.stdin.write(frame.tobytes())
-
-        previews = []
-        
-        if show_preview:
-            previews = [
-                {
-                    "filename": file,
-                    "subfolder": subfolder,
-                    "type": "output" if save_to_output_dir else "temp",
-                    "format": format,
-                }
-            ]
-        return (previews,)
-    
-class SaveImagesOld:
-
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "images": ("IMAGE",),
-                "frame_rate": ("FLOAT", {"default": 8, "min": 1, "step": 1}),
-                "loop_count": ("INT", {"default": 0, "min": 0, "max": 100, "step": 1}),
-                "file_name": ("STRING", {"default": "AnimateDiff"}),
-                "save_to_output": ("BOOLEAN", {"default": False}),
-                "format": (JNODES_IMAGE_FORMAT_TYPES,),
-                "output_quality": ("INT", {"default": 95, "min": 1, "max": 100, "step": 1}),
-                "show_preview": ("BOOLEAN", {"default": False}),
-                "preview_quality": ("INT", {"default": 25, "min": 1, "max": 100, "step": 1}),
-                "save_meta_data": (["None", "output_and_json", "output_and_first_frame_of_video", "output_only"],),
-            },
-            "hidden": {
-                "prompt": "PROMPT",
-                "extra_pnginfo": "EXTRA_PNGINFO",
-            },
-        }
-
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "save_to_output_dirs"
-
-    def save_to_output_dirs(
-        self,
-        images,
-        frame_rate: float,
-        loop_count: int,
-        file_name="{counter} - AnimateDiff",
-        save_to_output=True,
-        format="video/webp",
-        output_quality=95,
-        show_preview=True,
-        preview_quality=95,
-        save_meta_data = "None",
-        prompt=None,
-        extra_pnginfo=None,
-    ):
-        # convert images to numpy
-        frames: List[Image.Image] = []
-        for image in images:
-            img = 255.0 * image.cpu().numpy()
-            img = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
-            frames.append(img)
-            
-        # get output information (full_output_folder, filename, counter, subfolder, _,)
-        temp_output_info = folder_paths.get_save_to_output_dir_path(file_name, folder_paths.get_temp_directory())
-        save_output_info = folder_paths.get_save_to_output_dir_path(file_name, folder_paths.get_output_directory())
-        
-        format_type, format_ext = format.split("/")
-        file_name_with_temp_counter = file_name.replace("{counter}", f"{temp_output_info[2]}")
-        file_name_with_save_counter = file_name.replace("{counter}", f"{save_output_info[2]}")
-        
-        duration = round(1000 / frame_rate)
-        
-        if show_preview:
-            preview_path = os.path.join(temp_output_info[0], f"{file_name_with_temp_counter}.webp")
-            frames[0].save(
-                    preview_path,
-                    format="webp",
-                    save_all=True,
-                    append_images=frames[1:],
-                    duration=duration,
-                    loop=loop_count,
-                    quality=preview_quality
-                )
-        
-        should_save_metadata = save_meta_data != "None"
-        
-        full_output_folder, filename, counter, subfolder, _, = save_output_info if save_to_output else temp_output_info
-
-        if should_save_metadata:
-            metadata = PngInfo()
-            if prompt is not None:
-                metadata.add_text("prompt", json.dumps(prompt))
-            if extra_pnginfo is not None:
-                for x in extra_pnginfo:
-                    metadata.add_text(x, json.dumps(extra_pnginfo[x]))
-    
-            if save_meta_data == "output_and_json":
-                # save first frame as png to keep metadata
-                file = f"{file_name}.json"
-                file_path = os.path.join(full_output_folder, file)
-                with open(file_path, 'w') as json_file:
-                    json.dump(metadata, json_file)
-            elif save_meta_data == "output_and_first_frame_of_video" and format_type != "image":
-                # save first frame as png to keep metadata
-                file = f"{file_name}.png"
-                file_path = os.path.join(full_output_folder, file)
-                frames[0].save(
-                    file_path,
-                    pnginfo=metadata,
-                    compress_level=4,
-                )
-        
-        file_path = os.path.join(full_output_folder, file)
-        if format_type == "image":
-            # Use pillow directly to save an animated image
-            if format_ext == "webp":
-                frames[0].save(
-                    file_path, 
-                    format=format_ext.upper(),
-                    save_all=True,
-                    append_images=frames[1:], 
-                    duration=round(1000 / frame_rate), 
-                    loop=loop_count, 
-                    quality=95,
-                    exif=metadata
-                )
-            else:
-                frames[0].save(
-                    file_path,
-                    format=format_ext.upper(),
-                    save_all=True,
-                    append_images=frames[1:],
-                    duration=round(1000 / frame_rate),
-                    loop=loop_count,
-                    compress_level=4,
-                    comment=metadata
-                )
-        else:
-            # Use ffmpeg to save a video
-            ffmpeg_path = shutil.which("ffmpeg")
-            if ffmpeg_path is None:
-                #Should never be reachable
-                raise ProcessLookupError("Could not find ffmpeg")
-
-            video_format_path = folder_paths.get_full_path("video_formats", format_ext + ".json")
-            with open(video_format_path, 'r') as stream:
-                video_format = json.load(stream)
-            file = f"{filename}_{counter:05}_.{video_format['extension']}"
-            file_path = os.path.join(full_output_folder, file)
-            dimensions = f"{frames[0].width}x{frames[0].height}"
-            args = [ffmpeg_path, "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
-                    "-s", dimensions, "-r", str(frame_rate), "-i", "-"] \
-                    + video_format['main_pass'] + [file_path]
-
-            env=os.environ.copy()
-            if  "environment" in video_format:
-                env.update(video_format["environment"])
-            with subprocess.Popen(args, stdin=subprocess.PIPE, env=env) as proc:
-                for frame in frames:
-                    proc.stdin.write(frame.tobytes())
-
-        previews = []
-        
-        if show_preview:
-            previews = [
-                {
-                    "filename": file,
-                    "subfolder": subfolder,
-                    "type": "output" if save_to_output_dir else "temp",
-                    "format": format,
-                }
-            ]
-        return (previews,)
 
 NODE_CLASS_MAPPINGS = {
     
     "JNodes_SaveVideo": SaveVideo,
+    "JNodes_SaveVideoWithOptions": SaveVideoWithOptions,
+    "JNodes_AudioInputOptions": AudioInputOptions,
+    "JNodes_JoinVideosInDirectory": JoinVideosInDirectory,
     "JNodes_SaveImageWithOutput": SaveImageWithOutput,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     
-    "JNodes_SaveVideo": "Save Video",
+    "JNodes_SaveVideo": "Save Video (DEPRECATED, USE 'JNodes_SaveVideoWithOptions')",
+    "JNodes_SaveVideoWithOptions": "Save Video (With Options)",
+    "JNodes_AudioInputOptions": "Audio Input Options (For Video Output)",
+    "JNodes_JoinVideosInDirectory": "Join Videos In Directory",
     "JNodes_SaveImageWithOutput": "Save Image With Output",
 }

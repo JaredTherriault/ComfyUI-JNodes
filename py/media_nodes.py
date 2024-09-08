@@ -207,7 +207,7 @@ class LoadVisualMediaFromPath:
         )
 
     @staticmethod
-    def get_unit_as_frames(n: int, unit: str, fps: float):
+    def get_unit_as_frames(n: int, unit: str, fps: float, frame_skip: int):
         if unit == "seconds":
             return int(n * fps)
 
@@ -262,7 +262,7 @@ class LoadVisualMediaFromPath:
             if start_at_n == 0
             else clamp(
                 LoadVisualMediaFromPath.get_unit_as_frames(
-                    start_at_n, start_at_unit, original_fps
+                    start_at_n, start_at_unit, original_fps, frame_skip
                 ),
                 0,
                 original_frame_count - 1,
@@ -272,7 +272,7 @@ class LoadVisualMediaFromPath:
             0
             if sample_next_n == 0
             else LoadVisualMediaFromPath.get_unit_as_frames(
-                sample_next_n, sample_next_unit, original_fps
+                sample_next_n, sample_next_unit, original_fps, frame_skip
             )
         )
 
@@ -360,11 +360,11 @@ class LoadVisualMediaFromPath:
             total_frames_evaluated = -1
 
             start_at_frame = LoadVisualMediaFromPath.get_unit_as_frames(
-                start_at_n, start_at_unit, original_fps
+                start_at_n, start_at_unit, original_fps, frame_skip
             )
 
             sample_next_frames = LoadVisualMediaFromPath.get_unit_as_frames(
-                sample_next_n, sample_next_unit, original_fps
+                sample_next_n, sample_next_unit, original_fps, frame_skip
             )
 
             while media_cap.isOpened():
@@ -421,7 +421,7 @@ class LoadVisualMediaFromPath:
                 frame_skip,
                 len(images),
                 LoadVisualMediaFromPath.get_unit_as_frames(
-                    start_at_n, start_at_unit, original_fps
+                    start_at_n, start_at_unit, original_fps, frame_skip
                 ),
                 width,
                 height,

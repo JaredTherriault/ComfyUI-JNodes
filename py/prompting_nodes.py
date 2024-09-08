@@ -768,6 +768,7 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_SetPositivePromptInMetaData": SetPositivePromptInMetaData,
     "JNodes_SetNegativePromptInMetaData": SetNegativePromptInMetaData,
     "JNodes_RemoveMetaDataKey" : RemoveMetaDataKey,
+    "JNodes_SetMetadataA1111": SetMetadataA1111,
     "JNodes_TokenCounter": TokenCounter,
 
 }
@@ -790,6 +791,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_SetPositivePromptInMetaData": "Set Positive Prompt In MetaData",
     "JNodes_SetNegativePromptInMetaData": "Set Negative Prompt In MetaData",
     "JNodes_RemoveMetaDataKey" : "Remove Metadata Key",
+    "JNodes_SetMetadataA1111": "Set Metadata For A1111",
     "JNodes_TokenCounter": "Token Counter",
 
 }

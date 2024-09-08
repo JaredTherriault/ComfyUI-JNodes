@@ -29,7 +29,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 	href += `t=${+new Date()}`; // Add Timestamp
 
 	fileInfo.href = href;
-	const bIsVideoFormat = fileInfo.file?.is_video || fileInfo.filename.endsWith(".mp4"); // todo: fetch acceptable video types from python
+	const bIsVideoFormat = fileInfo.file?.is_video || fileInfo.filename.endsWith(".mp4") || fileInfo.filename.endsWith(".webm"); // todo: fetch acceptable video types from python
 
 	const imageElement =
 		$el("div.imageElement", {

@@ -1,4 +1,5 @@
-import { $el } from "../../../../scripts/ui.js";
+import { $el } from "/scripts/ui.js";
+import { api } from "/scripts/api.js";
 
 class JNodesUtilities {
 
@@ -362,6 +363,18 @@ class JNodesUtilities {
 		const SortedObject = Object.fromEntries(Entries);
 
 		return SortedObject;
+	}
+
+	async tryFreeMemory(bShowError = false, bUnloadModels = true, bFreeMemory = true) {
+		const response = await api.fetchApi(`/free`, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: `{"unload_models": ${bUnloadModels}, "free_memory": ${bFreeMemory}}`
+						});
+	
+		if(bShowError && response.status != 200) {
+			show_message(`Unable to free memory using "/free" api call! Status: ${response.status}`)
+		}
 	}
 
 	getKeyList() {
