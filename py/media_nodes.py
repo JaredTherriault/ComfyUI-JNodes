@@ -20,7 +20,6 @@ import comfy.sd
 from comfy.utils import common_upscale
 
 from PIL import Image, ImageSequence, ImageOps
-from torchvision.transforms import ToTensor
 from typing import List
 from pathlib import Path
 
@@ -336,8 +335,6 @@ class LoadVisualMediaFromPath:
                 discard_transparency,
             )
 
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
         try:
             media_path = resolve_file_path(media_path)
             media_cap = cv2.VideoCapture(media_path)
@@ -351,7 +348,7 @@ class LoadVisualMediaFromPath:
                     frame_skip,
                     discard_transparency,
                 )
-            
+            # set media_cap to look at start_index frame
             images = []
             original_frame_count = media_cap.get(cv2.CAP_PROP_FRAME_COUNT)
             original_fps = media_cap.get(cv2.CAP_PROP_FPS)
@@ -372,33 +369,31 @@ class LoadVisualMediaFromPath:
 
             while media_cap.isOpened():
                 is_returned, frame = media_cap.read()
+                # if no return frame, video has ended
                 if not is_returned:
                     break
-                
+                # if not at start_index, skip doing anything with frame
                 total_frames_evaluated += 1
                 if total_frames_evaluated < start_at_frame:
                     continue
 
+                # if should not be selected, skip doing anything with frame
                 if total_frames_evaluated % (frame_skip + 1) != 0:
                     continue
 
-                # Convert BGR to RGB and then to a PyTorch tensor
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame_tensor = ToTensor()(frame_rgb).unsqueeze(0).to(device)  # Shape: (1, C, H, W)
-                
-                # Convert to desired shape (1, H, W, C)
-                frame_tensor = frame_tensor.permute(0, 2, 3, 1)  # Rearrange to (1, H, W, C)
-            
-                # If needed, handle RGBA images
-                if discard_transparency and frame.shape[2] == 4:
-                    image = Image.fromarray(frame_rgb)
+                # opencv loads images in BGR format (yuck), so need to convert to RGB for ComfyUI use
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                # convert frame to comfyui's expected format (taken from comfy's load image code)
+                image = Image.fromarray(frame)
+                image = ImageOps.exif_transpose(image)
+                image = pil2tensor(image)
+
+                if discard_transparency and image.mode == "RGBA":
                     image = image.convert("RGB")
-                    frame_tensor = ToTensor()(image).unsqueeze(0).to(device)
-                    frame_tensor = frame_tensor.permute(0, 2, 3, 1)  # Rearrange to (1, H, W, C)
 
+                images.append(image)
 
-                images.append(frame_tensor)
-
+                # if frame limit exists and we've reached it, stop processing frames
                 if sample_next_frames > 0 and len(images) >= sample_next_frames:
                     break
         finally:
