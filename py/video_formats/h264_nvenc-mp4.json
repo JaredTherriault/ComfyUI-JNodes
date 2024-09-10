@@ -1,0 +1,8 @@
+{
+    "main_pass":
+    [
+        "-n", "-c:v", "h264_nvenc",
+        "-pix_fmt", "yuv420p"
+    ],
+     "extension": "mp4"
+}
