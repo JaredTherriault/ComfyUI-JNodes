@@ -15,7 +15,7 @@ JNODES_PARAMETER_LIST = {}
 
 RETURN_TYPES = ["auto", "string"]
 
-PARAMETER_LIST_HINT_TEXT = "<jnodes_param:my_string_variable:string>\n<jnodes_param:my_number_variable: 0.5>"
+PARAMETER_LIST_HINT_TEXT = "<params:my_string_variable:string>\n<params:my_number_variable: 0.5>"
 
 def parse_parameter_list(parameter_list, parsing_key, break_on_finding_term : str = None):
 
