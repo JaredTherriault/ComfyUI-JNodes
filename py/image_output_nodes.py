@@ -353,8 +353,8 @@ class AudioInputOptions:
                     {
                         "audio_input_path": ("STRING", {"default": "/path/"}),
                         "clip_audio": ("BOOLEAN", {"default": False}),
-                        "audio_clip_start_seconds": ("FLOAT", {"default": 0, "min": 0}),
-                        "audio_clip_duration": ("FLOAT", {"default": 0, "min": 0}),
+                        "audio_clip_start_seconds": ("FLOAT", {"default": 0, "min": 0, "max": 3.402823466e+38}),
+                        "audio_clip_duration": ("FLOAT", {"default": 0, "min": 0, "max": 3.402823466e+38}),
                      },
                 "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
@@ -457,6 +457,7 @@ class JoinVideosInDirectory:
                         '-i', audio_input_path,
                         '-ss', str(audio_clip_start_seconds),
                         '-t', str(audio_clip_duration),
+                        '-ac', '2', # Force stereo for now
                         '-c:a', 'aac',
                         trimmed_audio_path
                     ]
@@ -476,6 +477,8 @@ class JoinVideosInDirectory:
                     '-safe', '0',
                     '-i', list_file_path,
                     '-i', audio_path_to_use,
+                    '-map', '0:v', 
+                    '-map', '1:a',
                     '-c:v', 'copy',
                     '-c:a', audio_codec,
                     '-strict', 'experimental',
