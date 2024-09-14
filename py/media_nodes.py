@@ -357,8 +357,6 @@ class LoadVisualMediaFromPath:
 
             original_frame_time = 1 / original_fps
 
-            total_frames_evaluated = -1
-
             start_at_frame = LoadVisualMediaFromPath.get_unit_as_frames(
                 start_at_n, start_at_unit, original_fps, frame_skip
             )
@@ -367,15 +365,21 @@ class LoadVisualMediaFromPath:
                 sample_next_n, sample_next_unit, original_fps, frame_skip
             )
 
+            # Set the starting frame
+            media_cap.set(cv2.CAP_PROP_POS_FRAMES, start_at_frame)
+
+            total_frames_evaluated = start_at_frame - 1
+
             while media_cap.isOpened():
+
                 is_returned, frame = media_cap.read()
+
                 # if no return frame, video has ended
                 if not is_returned:
                     break
+
                 # if not at start_index, skip doing anything with frame
                 total_frames_evaluated += 1
-                if total_frames_evaluated < start_at_frame:
-                    continue
 
                 # if should not be selected, skip doing anything with frame
                 if total_frames_evaluated % (frame_skip + 1) != 0:
