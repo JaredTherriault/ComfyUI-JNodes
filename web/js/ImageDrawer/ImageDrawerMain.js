@@ -4,7 +4,8 @@ import { $el } from "/scripts/ui.js";
 import {
 	ImageDrawerConfigSetting, setupUiSettings, createDrawerSelectionWidget,
 	setting_bEnabled, setting_bMasterVisibility, setting_DrawerAnchor,
-	createFlyoutHandle, createLabeledSliderRange, options_LabeledSliderRange
+	createFlyoutHandle, createLabeledSliderRange, options_LabeledSliderRange,
+	setting_bQueueTimerEnabled
 } from "../common/SettingsManager.js";
 
 import { ImageDrawerComponent, ClassInstanceFactory, imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
@@ -223,6 +224,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		}
 
 		// A button shown in the comfy modal to show the drawer after it's been hidden
+		if (setting_bQueueTimerEnabled.value)
 		{
 			const baseAutoQueueIntervalButtonTooltipText = "Auto Queue Interval";
 			function startAutomaticQueue(intervalInMs) {

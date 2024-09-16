@@ -120,6 +120,8 @@ export let setting_ModelCardAspectRatio = new ImageDrawerConfigSetting("Models.A
 
 export let setting_VideoPlaybackOptions = new ImageDrawerConfigSetting("Video.VideoOptions", new options_VideoPlayback());
 
+export let setting_bQueueTimerEnabled = new ImageDrawerConfigSetting("bQueueTimerEnabled", false);
+
 // Button setup
 
 export const setupUiSettings = (onDrawerAnchorInput) => {
@@ -239,6 +241,28 @@ export const setupUiSettings = (onDrawerAnchorInput) => {
         const tooltip = "A directory to which all images marked as a favourite in image overflow menus will be copied. " +
             "The directory can be relative to the comfy folder ('output/Favourites') or absolute (i.e. 'C:/Favourites' or '/home/Pictures/Favourites') " +
             "assuming the user and comfy process have sufficient permissions to access these directories.";
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+
+    // Enable/disable queue timer
+    {
+        const labelWidget = $el("label", {
+            textContent: "Queue Timer Enabled (experimental):",
+        });
+
+        const settingWidget = $el(
+            "input",
+            {
+                type: "checkbox",
+                checked: setting_bQueueTimerEnabled.value,
+                oninput: (e) => {
+                    setting_bQueueTimerEnabled.value = e.target.checked;
+                },
+            },
+        );
+
+        const tooltip = "Whether to show the Queue Timer widget which can be long-clicked to automatically " +
+            "send prompt queues at a set interval (requires page reload, requires old UI)";
         addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
 
