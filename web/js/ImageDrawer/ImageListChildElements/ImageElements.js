@@ -6,12 +6,11 @@ import { utilitiesInstance } from "../../common/Utilities.js";
 import { ModalManager } from "../../common/ModalManager.js";
 
 import { setting_VideoPlaybackOptions } from "../../common/SettingsManager.js";
-import { setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen } from "../../common/VideoControl.js";
+import { setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen, toggleVideoPlayback } from "../../common/VideoControl.js";
 
 import * as ImageElementUtils from "./ImageListChildElementUtils.js";
 
 import { imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
-
 
 export async function createImageElementFromFileInfo(fileInfo) {
 	if (!fileInfo) { return; }
@@ -221,8 +220,8 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 				if (bIsVideoFormat) {
 
-					if (img && img.togglePlayback) {
-						img.togglePlayback();
+					if (img && toggleVideoPlayback) {
+						toggleVideoPlayback(img);
 					}
 
 				} else {
