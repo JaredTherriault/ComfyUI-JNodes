@@ -269,9 +269,18 @@ class SaveVideoWithOptions():
                     format_ext = video_format["extension"]
             dimensions = f"{len(images[0][0])}x{len(images[0])}"
             output_quality = map_to_range(quality, 0, 100, 50, 1) # ffmpeg quality maps from 50 (worst) to 1 (best)
-            args = [FFMPEG_PATH, "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
-                    "-s", dimensions, "-r", str(frame_rate), "-i", "-", "-crf", str(output_quality) ] \
-                    + video_format['main_pass']
+            args = [
+                FFMPEG_PATH, 
+                "-v", "error", 
+                "-f", "rawvideo", 
+                "-pix_fmt", "rgb24", 
+                '-loglevel', 'quiet',
+                "-s", dimensions, 
+                "-r", str(frame_rate), 
+                "-i", "-", 
+                "-crf", str(output_quality) 
+                ] \
+                + video_format['main_pass']
 
             env=os.environ.copy()
             if  "environment" in video_format:
@@ -459,6 +468,7 @@ class JoinVideosInDirectory:
                         '-t', str(audio_clip_duration),
                         '-ac', '2', # Force stereo for now
                         '-c:a', 'aac',
+                        '-loglevel', 'quiet',
                         trimmed_audio_path
                     ]
                     try:
@@ -482,6 +492,7 @@ class JoinVideosInDirectory:
                     '-c:v', 'copy',
                     '-c:a', audio_codec,
                     '-strict', 'experimental',
+                    '-loglevel', 'quiet',
                     # '-loglevel', 'debug',  # Add this for detailed logs
                     output_file_path
                 ]
