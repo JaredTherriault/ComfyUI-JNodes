@@ -4,7 +4,8 @@ import { $el } from "/scripts/ui.js";
 import {
 	ImageDrawerConfigSetting, setupUiSettings, createDrawerSelectionWidget,
 	setting_bEnabled, setting_bMasterVisibility, setting_DrawerAnchor,
-	createFlyoutHandle, createLabeledSliderRange, options_LabeledSliderRange
+	createFlyoutHandle, createLabeledSliderRange, options_LabeledSliderRange,
+	setting_bQueueTimerEnabled
 } from "../common/SettingsManager.js";
 
 import { ImageDrawerComponent, ClassInstanceFactory, imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
@@ -223,60 +224,61 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		}
 
 		// A button shown in the comfy modal to show the drawer after it's been hidden
-		// {
-		// 	const baseAutoQueueIntervalButtonTooltipText = "Auto Queue Interval";
-		// 	function startAutomaticQueue(intervalInMs) {
-		// 		if (!isNaN(intervalInMs) && intervalInMs > 1) {
+		if (setting_bQueueTimerEnabled.value)
+		{
+			const baseAutoQueueIntervalButtonTooltipText = "Auto Queue Interval";
+			function startAutomaticQueue(intervalInMs) {
+				if (!isNaN(intervalInMs) && intervalInMs > 1) {
 
-		// 			stopAutomaticQueue; // Stop existing auto mode
+					stopAutomaticQueue; // Stop existing auto mode
 
-		// 			timerQueueButton.lastAutoQueueInterval = intervalInMs;
+					timerQueueButton.lastAutoQueueInterval = intervalInMs;
 
-		// 			timerQueueButton.style.backgroundColor = "red";
-		// 			timerQueueButton.title = `${baseAutoQueueIntervalButtonTooltipText} (currently ${intervalInMs} ms)`;
-		// 			timerQueueButton.timer = setInterval(() => {
-		// 				app.queuePrompt(0, 1);
-		// 			}, intervalInMs);
-		// 		}
-		// 	}
+					timerQueueButton.style.backgroundColor = "red";
+					timerQueueButton.title = `${baseAutoQueueIntervalButtonTooltipText} (currently ${intervalInMs} ms)`;
+					timerQueueButton.timer = setInterval(() => {
+						app.queuePrompt(0, 1);
+					}, intervalInMs);
+				}
+			}
 
-		// 	function stopAutomaticQueue() {
+			function stopAutomaticQueue() {
 
-		// 		if (timerQueueButton?.timer) {
-		// 			clearInterval(timerQueueButton.timer);
-		// 			timerQueueButton.timer = 0;
-		// 			timerQueueButton.style.backgroundColor = "";
-		// 			timerQueueButton.title = baseAutoQueueIntervalButtonTooltipText;
+				if (timerQueueButton?.timer) {
+					clearInterval(timerQueueButton.timer);
+					timerQueueButton.timer = 0;
+					timerQueueButton.style.backgroundColor = "";
+					timerQueueButton.title = baseAutoQueueIntervalButtonTooltipText;
 
-		// 			return true;
-		// 		}
+					return true;
+				}
 
-		// 		return false;
-		// 	}
+				return false;
+			}
 
-		// 	const timerQueueButton = utilitiesInstance.createLongPressableButton(
-		// 		{
-		// 			textContent: "⏲️",
-		// 			title: baseAutoQueueIntervalButtonTooltipText
-		// 		},
-		// 		async () => { // Regular click
+			const timerQueueButton = utilitiesInstance.createLongPressableButton(
+				{
+					textContent: "⏲️",
+					title: baseAutoQueueIntervalButtonTooltipText
+				},
+				async () => { // Regular click
 
-		// 			if (!stopAutomaticQueue()) {
+					if (!stopAutomaticQueue()) {
 
-		// 				startAutomaticQueue(timerQueueButton.lastAutoQueueInterval);
-		// 			}
-		// 		},
-		// 		async () => { // Long press
+						startAutomaticQueue(timerQueueButton.lastAutoQueueInterval);
+					}
+				},
+				async () => { // Long press
 
-		// 			const value = Math.abs(+prompt("Set automatic queue interval in milliseconds:", timerQueueButton.lastAutoQueueInterval));
-		// 			startAutomaticQueue(value);
-		// 		},
-		// 		["JNodes-auto-queue-interval-btn"]);
+					const value = Math.abs(+prompt("Set automatic queue interval in milliseconds:", timerQueueButton.lastAutoQueueInterval));
+					startAutomaticQueue(value);
+				},
+				["JNodes-auto-queue-interval-btn"]);
 
-		// 	timerQueueButton.lastAutoQueueInterval = 60000;
+			timerQueueButton.lastAutoQueueInterval = 60000;
 
-		// 	document.querySelector(".comfy-queue-btn").after(timerQueueButton); // insert Show after Settings
-		// }
+			document.querySelector(".comfy-queue-btn").after(timerQueueButton); // insert Show after Settings
+		}
 
 		// Remove the drawer widget from view, can be re-opened with showButton
 		const hideButton = $el("button.JNodes-image-drawer-btn.hide-btn", {

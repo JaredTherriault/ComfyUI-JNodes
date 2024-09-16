@@ -7,7 +7,6 @@ from .utils import *
 import comfy.sd
 
 from typing import Dict, List
-from numba.tests.test_typeof import Custom
 
 
 class BooleanSelector:

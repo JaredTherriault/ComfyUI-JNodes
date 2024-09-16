@@ -704,6 +704,8 @@ export class ContextFeed extends ContextClearable {
 				if (imageDrawerContextSelectorInstance.getCurrentContextName() == this.name) {
 					await this.addNewUncachedFeedImages();
 				}
+
+				utilitiesInstance.tryFreeMemory(false, true, false);
 			}
 		});
 	}
