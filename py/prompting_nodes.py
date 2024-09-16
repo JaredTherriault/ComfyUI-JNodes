@@ -768,7 +768,7 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_SetPositivePromptInMetaData": SetPositivePromptInMetaData,
     "JNodes_SetNegativePromptInMetaData": SetNegativePromptInMetaData,
     "JNodes_RemoveMetaDataKey" : RemoveMetaDataKey,
-    "JNodes_SetMetadataA1111": SetMetadataA1111,
+    # "JNodes_SetMetadataA1111": SetMetadataA1111,
     "JNodes_TokenCounter": TokenCounter,
 
 }
