@@ -133,8 +133,8 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		this.drawerOptionsFlyout = flyout.handle;
 
 		flyout.menu.appendChild(
-			$el("tr.size-control.drawer-width-control", [
-				$el('td', [$el("span", {
+			$el("tr.drawer-size-control.drawer-width-control", [
+				$el('td', [$el("a", {
 					textContent: 'Drawer Width',
 					style: {
 						cursor: "pointer",
@@ -150,8 +150,8 @@ class ImageDrawerMain extends ImageDrawerComponent {
 				$el('td', [this.drawerWidthSlider])
 			]));
 		flyout.menu.appendChild(
-			$el("tr.size-control.drawer-height-control", [
-				$el('td', [$el("span", {
+			$el("tr.drawer-size-control.drawer-height-control", [
+				$el('td', [$el("a", {
 					textContent: 'Drawer Height',
 					style: {
 						cursor: "pointer",
@@ -167,7 +167,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 				$el('td', [this.drawerHeightSlider])
 			]));
 		flyout.menu.appendChild(
-			$el("tr.size-control.column-count-control", [
+			$el("tr.drawer-size-control.column-count-control", [
 				$el('td', [$el("a", {
 					textContent: "Column count",
 					style: {
@@ -223,7 +223,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			document.querySelector(".comfy-settings-btn").after(showButton); // insert Show after Settings
 		}
 
-		// A button shown in the comfy modal to show the drawer after it's been hidden
+		// A button to queue at a set interval with the current workflow
 		if (setting_bQueueTimerEnabled.value)
 		{
 			const baseAutoQueueIntervalButtonTooltipText = "Auto Queue Interval";
