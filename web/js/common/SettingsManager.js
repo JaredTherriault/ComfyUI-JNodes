@@ -554,7 +554,7 @@ export function createVideoPlaybackOptionsFlyout() {
 }
 
 class options_BaseLabeledWidget {
-    id = undefined;
+    id = "labeledWidget";
     labelTextContent = undefined;
     oninput = undefined;
     onchange = undefined;
