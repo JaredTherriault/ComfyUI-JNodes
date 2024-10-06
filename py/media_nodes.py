@@ -232,25 +232,21 @@ class LoadVisualMediaFromPath:
         except Exception as e:
             raise Exception(f"Unable to open media with pil fallback: {media_path}")
 
-        frames = ImageSequence.Iterator(loaded_media)
+        frames = list(ImageSequence.Iterator(loaded_media))
 
-        images = []
+        # Short loop to get needed metadata
         original_frame_time = None
         for image in frames:
             if original_frame_time is None:
                 if "duration" not in image.info:
                     image.load()
                 original_frame_time = image.info.get("duration", None)
-            # Ensure the image does not have an alpha channel
-            if discard_transparency and image.mode == "RGBA":
-                image = image.convert("RGB")
-            image = ImageOps.exif_transpose(image)
-            image = pil2tensor(image)
+                break
 
         if original_frame_time is None:
             raise Exception(f"Could not get original_frame_time from media: {media_path}")
 
-        original_frame_count = len(images)
+        original_frame_count = len(frames)
 
         original_fps = 1000 / original_frame_time
         width = loaded_media.width
@@ -277,19 +273,26 @@ class LoadVisualMediaFromPath:
         )
 
         if start_at_frame > 0:
-            images = images[start_at_frame:]
+            frames = frames[start_at_frame:]
         if (
             sample_next_n > 0
             and start_at_frame + sample_next_frame_count < original_frame_count
         ):
-            images = images[:sample_next_frame_count]
+            frames = frames[:sample_next_frame_count]
 
+        # Actual image extraction loop
         out_images = []
-        for i, image in enumerate(images):
+        for i, image in enumerate(frames):
             if i % (frame_skip + 1) == 0:
+                # Ensure the image does not have an alpha channel
+                if discard_transparency and image.mode == "RGBA":
+                    image = image.convert("RGB")
+                image = ImageOps.exif_transpose(image)
+                image = pil2tensor(image)
                 out_images.append(image)
 
-        out_images = torch.cat(out_images, dim=0)
+        if len(out_images) > 0:
+            out_images = torch.cat(out_images, dim=0)
 
         return (
             out_images,
@@ -435,7 +438,8 @@ class LoadVisualMediaFromPath:
 class LoadVisualMediaFromPath_Batch:
     """
     A mutation from Kosinkadink's VideoHelperSuite, credits to his repository!
-    This loads all images from a given path, optionally recursively.
+    This loads all images from a given path, optionally recursively,
+    into a single tensor batch, meaning all images are of the same size.
     """
 
     FORCE_SIZE_DIMENSIONS = ["Disabled", "256", "512", "768", "1024"]
@@ -511,15 +515,13 @@ class LoadVisualMediaFromPath_Batch:
                 return_value = LoadVisualMediaFromPath.load_media_cv(**new_kwargs)
                 if len(images) == 0:
                     images = return_value[0]
-                else:
+                elif len(return_value[0]) == 1:
                     images = self.batch(images, return_value[0])
         
         return images
 
     def batch(self, image1, image2):
         if image1.shape[1:] != image2.shape[1:]:
-        #     image1 = comfy.utils.common_upscale(image1.movedim(-1,1), 512, 512, "bilinear", "none").movedim(1,-1)
-        #     image2 = comfy.utils.common_upscale(image2.movedim(-1,1), 512, 512, "bilinear", "none").movedim(1,-1)
             image2 = comfy.utils.common_upscale(image2.movedim(-1,1), image1.shape[2], image1.shape[1], "bilinear", "center").movedim(1,-1)
 
         s = torch.cat((image1, image2), dim=0)
@@ -552,6 +554,35 @@ class LoadVisualMediaFromPath_Batch:
         except Exception as e:
             logger.error(e)
             return ""
+
+class LoadVisualMediaFromPath_List(LoadVisualMediaFromPath_Batch):
+    """
+    A mutation from Kosinkadink's VideoHelperSuite, credits to his repository!
+    This loads all images from a given path, optionally recursively,
+    into a list of images that may be of varying shape and size.
+    """
+
+    OUTPUT_IS_LIST = (True,)
+
+    def process_media(self, collected_paths, **kwargs):
+
+        local_kwargs = copy.deepcopy(kwargs)
+
+        del local_kwargs["recursive"]
+        del local_kwargs["image_return_limit"]
+        del local_kwargs["shuffle"]
+        #del local_kwargs["seed"]
+
+        images = []
+
+        for path in collected_paths:
+            if os.path.isfile(path):
+                new_kwargs = copy.deepcopy(local_kwargs)
+                new_kwargs["media_path"] = path
+                return_value = LoadVisualMediaFromPath.load_media_cv(**new_kwargs)[0]
+                images.append(return_value)
+        
+        return images
 
 class UploadVisualMedia:
     """
@@ -718,6 +749,7 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_AppendReversedFrames": AppendReversedFrames,
     "JNodes_LoadVisualMediaFromPath": LoadVisualMediaFromPath,
     "JNodes_LoadVisualMediaFromPath_Batch": LoadVisualMediaFromPath_Batch,
+    "JNodes_LoadVisualMediaFromPath_List": LoadVisualMediaFromPath_List,
     "JNodes_UploadVisualMedia": UploadVisualMedia,
     "JNodes_CreateStereoscopicImageFromDepth": CreateStereoscopicImageFromDepth,
 
@@ -731,6 +763,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_AppendReversedFrames": "Append Reversed Frames",
     "JNodes_LoadVisualMediaFromPath": "Load Visual Media From Path",
     "JNodes_LoadVisualMediaFromPath_Batch": "Load Visual Media From Path (Batch)",
+    "JNodes_LoadVisualMediaFromPath_List": "Load Visual Media From Path (List)",
     "JNodes_UploadVisualMedia": "Upload Visual Media",
     "JNodes_CreateStereoscopicImageFromDepth": "Create Stereoscopic Image From Depth (Experimental)",
 
