@@ -120,12 +120,12 @@ app.registerExtension({
                     recommendedButton.textContent = "Refresh the page!";
                 }
             });
-            const labelWidget = $el("div", [
-                $el("label", { textContent: "Extension Management:" }),
+            const labelWidget = $el("label", { textContent: "Extension Management:" });
+
+            const settingWidget = $el("div", [
+                createExtensionManagerWidget(),
                 recommendedButton
             ]);
-
-            const settingWidget = createExtensionManagerWidget();
 
             const tooltip = "Deselect any unwanted web extensions to disable them. Select them again to re-enable them. Refresh your browser to see changes. Be extremely careful which extensions you disable.";
             addJNodesSetting(labelWidget, settingWidget, tooltip);

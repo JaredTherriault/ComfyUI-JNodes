@@ -353,52 +353,61 @@ function createExpandableSettingsArea() {
     });
 }
 
-export function addJNodesSetting(nameWidget, settingWidget, tooltip) {
-    if (!underButtonContent) {
-        createExpandableSettingsArea();
-    }
+export function addJNodesSetting(nameWidget, settingWidget, tooltip, bUseExpandableArea = false) {
 
-    function sortTable() {
-        const rows = Array.from(underButtonContent.children);
-
-        // Sort the rows based on the text in the left cell
-        rows.sort((a, b) => {
-            const textA = a.children[0].textContent.trim().toLowerCase();
-            const textB = b.children[0].textContent.trim().toLowerCase();
-            return textA.localeCompare(textB);
+    if (!bUseExpandableArea){
+        app.ui.settings.addSetting({
+            id: `JNodes.SettingsContainer.${nameWidget.textContent.replace(" ","")}`,
+            name: nameWidget.textContent,
+            type: () => { return settingWidget} 
         });
+    } else {
+        if (!underButtonContent) {
+            createExpandableSettingsArea();
+        }
 
-        underButtonContent.innerHTML = "";
+        function sortTable() {
+            const rows = Array.from(underButtonContent.children);
 
-        // Update the table with the sorted rows
-        rows.forEach(row => underButtonContent.appendChild(row));
-    }
+            // Sort the rows based on the text in the left cell
+            rows.sort((a, b) => {
+                const textA = a.children[0].textContent.trim().toLowerCase();
+                const textB = b.children[0].textContent.trim().toLowerCase();
+                return textA.localeCompare(textB);
+            });
 
-    let title = tooltip ? tooltip.toString() : "";
-    nameWidget.title = nameWidget.title ? nameWidget.title : title;
-    settingWidget.title = settingWidget.title ? settingWidget.title : title;
+            underButtonContent.innerHTML = "";
 
-    underButtonContent.appendChild(
-        $el("tr", [
-            $el("td", {
-                style: {
-                    verticalAlign: "middle",
-                }
-            }, [
-                nameWidget ? nameWidget : $el("div")
-            ]),
-            $el("td", {
-                style: {
-                    verticalAlign: "middle",
-                    textAlign: "left",
-                }
-            }, [
-                settingWidget ? settingWidget : $el("div")
+            // Update the table with the sorted rows
+            rows.forEach(row => underButtonContent.appendChild(row));
+        }
+
+        let title = tooltip ? tooltip.toString() : "";
+        nameWidget.title = nameWidget.title ? nameWidget.title : title;
+        settingWidget.title = settingWidget.title ? settingWidget.title : title;
+
+        underButtonContent.appendChild(
+            $el("tr", [
+                $el("td", {
+                    style: {
+                        verticalAlign: "middle",
+                    }
+                }, [
+                    nameWidget ? nameWidget : $el("div")
+                ]),
+                $el("td", {
+                    style: {
+                        verticalAlign: "middle",
+                        textAlign: "left",
+                    }
+                }, [
+                    settingWidget ? settingWidget : $el("div")
+                ])
             ])
-        ])
-    );
+        );
 
-    sortTable();
+        sortTable();
+    }
 }
 
 export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClassSuffix = "", parentRect = window) {
