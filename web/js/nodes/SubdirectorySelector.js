@@ -46,7 +46,7 @@ app.registerExtension({
 
 				this.fetchSubdirectories = async function (fromPath) {
 
-					const response = await api.fetchApi(`jnodes_list_immediate_subdirectories?root_directory=${fromPath}`, { method: "GET", cache: "no-store" });
+					const response = await api.fetchApi(`/jnodes_list_immediate_subdirectories?root_directory=${fromPath}`, { method: "GET", cache: "no-store" });
 
 					try {
 						// Decode into a string
