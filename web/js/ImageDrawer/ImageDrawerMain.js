@@ -209,17 +209,29 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			textContent: "🖼️",
 			title: "Display JNodes Image Drawer"
 		});
-		utilitiesInstance.setElementVisible(showButton, !setting_bMasterVisibility.value);
-		showButton.addEventListener("click", () => {
+		const showButtonClickListener = () => {
 			utilitiesInstance.setElementVisible(this.imageDrawer, true, "flex");
 			utilitiesInstance.setElementVisible(showButton, false);
+			utilitiesInstance.setElementVisible(showButtonClone, false);
 			setting_bMasterVisibility.value = true;
-		});
+		};
+		utilitiesInstance.setElementVisible(showButton, !setting_bMasterVisibility.value);
+		showButton.addEventListener("click", showButtonClickListener);
+
+		const showButtonClone = showButton.cloneNode(true);
+		utilitiesInstance.setElementVisible(showButtonClone, !setting_bMasterVisibility.value);
+		showButtonClone.addEventListener("click", showButtonClickListener);
 
 		try {
 			app.menu?.settingsGroup.element.after(showButton); // insert Show after comfy buttons menu
 		} catch {
-			document.querySelector(".comfy-settings-btn").after(showButton); // insert Show after Settings
+			console.warn("Could not add showButton to app.menu.settingsGroup.element")
+		}
+
+		try {
+			document.querySelector(".comfy-settings-btn").after(showButtonClone); // insert Show after Settings
+		} catch {
+			console.warn("Could not add showButton beside comfy-settings-btn")
 		}
 
 		// A button to queue at a set interval with the current workflow
@@ -290,6 +302,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 				utilitiesInstance.setElementVisible(this.imageDrawer, false);
 				utilitiesInstance.setElementVisible(showButton, true);
+				utilitiesInstance.setElementVisible(showButtonClone, true);
 				setting_bMasterVisibility.value = false;
 			},
 			style: {
