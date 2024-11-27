@@ -216,10 +216,9 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			setting_bMasterVisibility.value = true;
 		});
 
-		const comfyMenuBarPush = document.querySelector(".comfyui-menu-push");
-		if (comfyMenuBarPush) {
-			comfyMenuBarPush.before(showButton); // insert Show after workflow menu
-		} else {
+		try {
+			app.menu?.settingsGroup.element.after(showButton); // insert Show after comfy buttons menu
+		} catch {
 			document.querySelector(".comfy-settings-btn").after(showButton); // insert Show after Settings
 		}
 
