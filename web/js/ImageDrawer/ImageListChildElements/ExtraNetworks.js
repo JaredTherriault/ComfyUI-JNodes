@@ -57,7 +57,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 	console.log(familiars);
 
 	let nameToUse = nameText;
-	let trainedWords = [];
+	let trainedWords = "";
 	let tags = [];
 	let modelId; // The base model ID for civit.ai. Not specific to any version of the model.
 	let lastViewedImageIndex = 0;
@@ -88,6 +88,9 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 
 	async function parseFamiliarInfos() {
 		let infoMap = {};
+		if (familiars?.metadata) {
+			infoMap["lora_meta"] = familiars.metadata;
+		}
 		if (familiars?.familiar_infos?.length > 0) {
 			for (const familiar_info of familiars.familiar_infos) {
 				try {
@@ -105,10 +108,22 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			}
 		}
 
-		// Prefer user set friendlyName over data from civit.ai
+		// Prefer user set friendlyName over meta or data from civit.ai
 		if (infoMap.friendlyName) {
 			if (infoMap.friendlyName.trim() != nameToUse.trim()) {
 				nameToUse = `${infoMap.friendlyName} (${nameToUse})`;
+			}
+		} else if (infoMap.lora_meta) {
+			if (infoMap.lora_meta?.modelspec?.title
+				&& infoMap.lora_meta.modelspec.title.trim() != ""
+				&& infoMap.lora_meta.modelspec.title.trim() != nameToUse.trim()
+			) {
+				nameToUse = `${infoMap.friendlyName.modelspec.title} (${nameToUse})`;
+			} else if (infoMap.ss_output_name 
+				&& infoMap.ss_output_name.trim() != ""
+				&& infoMap.ss_output_name.trim() != nameToUse.trim()
+			) {
+				nameToUse = `${infoMap.ss_output_name} (${nameToUse})`;
 			}
 		} else if (infoMap.model && infoMap.model.name) {
 			if (infoMap.model.name.trim() != nameToUse.trim()) {
@@ -127,15 +142,60 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			}
 		}
 
-		// Prefer user set trainedWords over data from civit.ai
+		// Prefer user set trainedWords over data from civit.ai over meta
 		if (infoMap.userTrainedWords) {
-			trainedWords = (`${infoMap.userTrainedWords}`).trim();
-			if (!trainedWords.endsWith(",")) {
-				trainedWords += ",";
+
+			if (Array.isArray(infoMap.userTrainedWords)) {
+				trainedWords = infoMap.userTrainedWords.join(", ")
+			} else {
+				trainedWords = infoMap.userTrainedWords;
 			}
-			trainedWords = trainedWords.replace("\\(", "(").replace("\\)", ")").replace('\\"', '"');
-		} else if (infoMap.trainedWords) {
-			trainedWords = (`${infoMap.trainedWords}`).trim();
+
+		} else if (infoMap.trainedWords && infoMap.trainedWords.length > 0) {
+			
+			if (Array.isArray(infoMap.trainedWords)) {
+				trainedWords = infoMap.trainedWords.join(", ")
+			} else {
+				trainedWords = infoMap.trainedWords;
+			}
+
+		} else {
+
+			let tagMap = {};
+
+			if (infoMap.lora_meta?.ss_tag_frequency) {
+				const tagObject = JSON.parse(infoMap.lora_meta.ss_tag_frequency)
+				for (const key of Object.keys(tagObject)) {
+					for (const tag of Object.keys(tagObject[key])) {
+						let trimmedTag = tag.trim();
+						if (trimmedTag != "") {
+							let frequency = tagObject[key][tag];
+							tagMap[trimmedTag] = frequency;
+						}
+					}
+				}
+			} 
+
+			if (Object.keys(tagMap).length > 1) {
+				Object.entries(tagMap).sort(([keyA, valueA], [keyB, valueB]) => {
+					// First, sort by value (numeric)
+					if (valueA !== valueB) {
+						return valueA - valueB;
+					}
+					// If values are the same, sort by key (alphabetically)
+					return keyA.localeCompare(keyB);
+				});
+			}
+
+			for (const tag of Object.keys(tagMap)) {
+
+				trainedWords += ` ${tag},`;
+			}
+		}
+
+		if (trainedWords) {
+			trainedWords = trainedWords.trim()
+
 			if (!trainedWords.endsWith(",")) {
 				trainedWords += ",";
 			}
@@ -498,8 +558,9 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 	modelElement.filename = nameText;
 	modelElement.friendlyName = nameToUse;
 	modelElement.file_age = familiars.file_age;
+	modelElement.lora_meta = familiars.metadata
 
-	modelElement.searchTerms = `${familiars.full_name} ${trainedWords} ${tags.join(' ')}`;
+	modelElement.searchTerms = `${familiars.full_name} ${trainedWords} ${tags.join(' ')} ${modelElement.lora_meta}`;
 
 	modelElement.draggable = true; // Made draggable to allow image drag and drop onto canvas / nodes / file explorer
 

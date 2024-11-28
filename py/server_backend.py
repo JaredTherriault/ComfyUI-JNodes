@@ -14,6 +14,8 @@ from PIL import Image
 import json
 import shutil
 
+from safetensors import safe_open
+
 CANCELLATION_REQUESTED = False
 
 def should_cancel_task():
@@ -51,12 +53,25 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
     familiar_dictionaries = {}
     for item_name in names:
 
-        item_name = item_name.replace("\\", "/")
-
         if should_cancel_task():
             break
+
+        item_name = item_name.replace("\\", "/")
             
         try:
+
+            metadata = {}
+            # Open the safetensors file
+            with safe_open(folder_paths.models_dir + "/loras/" + item_name, framework="pt") as file:
+
+                metadata = file.metadata()
+
+            if metadata:
+                try: # Sorted dictionaries only available in py 3.7+
+                    metadata = {k: metadata[k] for k in sorted(metadata)}
+                except:
+                    pass
+
             # logger.info(f"item_name: {item_name}")
             file_name_no_ext, file_ext = os.path.splitext(item_name)
             # logger.info(f"file_name_no_ext, file_ext: {file_name_no_ext, file_ext}")
@@ -94,6 +109,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
                 "full_name": item_name, 
                 "file_age": file_age, 
                 "file_ext": file_ext,
+                "metadata": metadata,
                 "familiar_images": familiar_images, 
                 "familiar_infos": familiar_infos
             }
