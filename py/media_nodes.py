@@ -282,14 +282,15 @@ class LoadVisualMediaFromPath:
 
         # Actual image extraction loop
         out_images = []
-        for i, image in enumerate(frames):
+        for i, frame in enumerate(frames):
+            loaded_media.seek(i)
             if i % (frame_skip + 1) == 0:
                 # Ensure the image does not have an alpha channel
-                if discard_transparency and image.mode == "RGBA":
-                    image = image.convert("RGB")
-                image = ImageOps.exif_transpose(image)
-                image = pil2tensor(image)
-                out_images.append(image)
+                if discard_transparency and frame.mode == "RGBA":
+                    frame = frame.convert("RGB")
+                frame = ImageOps.exif_transpose(frame)
+                frame = pil2tensor(frame)
+                out_images.append(frame)
 
         if len(out_images) > 0:
             out_images = torch.cat(out_images, dim=0)
