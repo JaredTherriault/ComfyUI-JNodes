@@ -410,7 +410,7 @@ export function addJNodesSetting(nameWidget, settingWidget, tooltip, bUseExpanda
     }
 }
 
-export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClassSuffix = "", parentRect = window) {
+export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClassSuffix = "", parentRect = window, forcedAnchor = "") {
     let handle = $el(`section.flyout-handle${handleClassSuffix}`, [
         $el("label.flyout-handle-label", { textContent: handleText })
     ]);
@@ -428,7 +428,7 @@ export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClass
 
         const halfHeight = (parentRect.innerHeight || parentRect.height) / 2;
 
-        const bIsHandleInTopHalf = handleRect.top < halfHeight;
+        const bIsHandleInTopHalf = (handleRect.top < halfHeight || forcedAnchor.includes("n")) && !forcedAnchor.includes("s");
         if (bIsHandleInTopHalf) {
             // Menu is in the top half of the viewport
             menu.style.top = "0";
@@ -444,7 +444,7 @@ export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClass
 
         const halfWidth = (parentRect.innerWidth || parentRect.width) / 2;
 
-        const bIsHandleInLeftHalf = handleRect.left < halfWidth;
+        const bIsHandleInLeftHalf = (handleRect.left < halfWidth || forcedAnchor.includes("e")) && !forcedAnchor.includes("w");
         if (bIsHandleInLeftHalf) {
             // Menu is in the left half of the viewport
             menu.style.left = "0";
