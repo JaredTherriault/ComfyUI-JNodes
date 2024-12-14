@@ -617,7 +617,7 @@ class SetMetadataA1111:
             "optional": {
                 "positive_prompt": ("STRING", {"default": "", "multiline": True}),
                 "negative_prompt": ("STRING", {"default": "", "multiline": True}),
-                "seed": ("INT", {"default": 0, "min": 0}),
+                "seed_number": ("INT", {"default": 0, "min": 0}),
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000}),
                 "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0}),
                 "model_name": ("STRING", {"default": "", "multiline": False}),
@@ -625,6 +625,8 @@ class SetMetadataA1111:
                 "scheduler_name": ("STRING", {"default": "", "multiline": False}),
                 "vae_name": ("STRING", {"default": "", "multiline": False}),
                 "clip_skip": ("INT", {"default": -1, "max": -1}),
+                "image_width": ("INT", {"default": 0}),
+                "image_height": ("INT", {"default": 0}),
             },
             "hidden": {
                 "extra_pnginfo": "EXTRA_PNGINFO"
@@ -635,8 +637,8 @@ class SetMetadataA1111:
     FUNCTION = "set_meta"
 
     def set_meta(
-        self, images_passthrough, positive_prompt, negative_prompt, seed, steps, cfg, 
-        model_name, sampler_name, scheduler_name, vae_name, clip_skip, extra_pnginfo=None):
+        self, images_passthrough, positive_prompt, negative_prompt, seed_number, steps, cfg, 
+        model_name, sampler_name, scheduler_name, vae_name, clip_skip, image_width, image_height, extra_pnginfo=None):
         if len(images_passthrough) > 0:
             shape = images_passthrough[0].shape
             
@@ -654,17 +656,13 @@ class SetMetadataA1111:
             if cfg:
                 parameters += f"CFG Scale: {cfg}, "
                 
-            if seed:
-                parameters += f"Seed: {seed}, "
+            if seed_number:
+                parameters += f"Seed: {seed_number}, "
                 
-            parameters += f"Size: {shape[1]}x{shape[2]}, "
-            
+            parameters += f"Size: {image_width if image_width > 0 else shape[1]}x{image_height if image_height > 0 else shape[0]}, "
+
             if model_name:
-                ckpt_path = folder_paths.get_full_path("checkpoints", model_name)
-                split_model_name = model_name.split(".")
-                split_model_name = split_model_name[:1]
-                base_model_name = "".join(split_model_name)
-                parameters += f"Model: {base_model_name}, "
+                parameters += f"Model: {model_name}, "
 
             if vae_name:
                 parameters += f"VAE: {vae_name}, "
