@@ -497,13 +497,15 @@ export async function onLoadImageElement(imageElement) {
                 metadata = await pngInfo.getPngMetadata(blob);
 
                 if (metadata.parameters) {
-                    metadata = makeMetaDataFromA111(metadata.parameters);
+                    let a111Metadata = makeMetaDataFromA111(metadata.parameters);
+                    metadata = { ...metadata, ...a111Metadata };
                 }
             } else if (isVideoFile(blob)) {
                 metadata = await getVideoMetadata(blob);
 
                 if (metadata.parameters) {
-                    metadata = makeMetaDataFromA111(metadata.parameters);
+                    let a111Metadata = makeMetaDataFromA111(metadata.parameters);
+                    metadata = { ...metadata, ...a111Metadata };
                 }
             } else if (blob.type === "image/webp" || blob.type === "image/jpeg" || blob.type === "image/gif") {
 
@@ -534,6 +536,11 @@ export async function onLoadImageElement(imageElement) {
 
                         metadata = JSON.parse(jsonReadyString);
 
+                        if (metadata.parameters) {
+                            let a111Metadata = makeMetaDataFromA111(metadata.parameters);
+                            metadata = { ...metadata, ...a111Metadata };
+                        }
+
                     } catch (error) {
 
                         // see if it's an a111 prompt
@@ -562,28 +569,34 @@ export async function onLoadImageElement(imageElement) {
 export function makeMetaDataFromA111(inString) {
 
     let metadata = null;
-    const p = inString.lastIndexOf("\nSteps:");
+    if (inString.startsWith("\"")) {
+        inString = inString.substring(1);  // Remove the leading quote
+    }
+
+    if (inString.endsWith("\"")) {
+        inString = inString.substring(0, inString.length - 1);  // Remove the trailing quote
+    }
+
+    const p = inString.lastIndexOf("Steps:");
     if (p > -1) {
-        metadata = inString
-            .substring(p)
-            .split("\n")[1]
-            .match(new RegExp("\\s*([^:]+:\\s*([^\"\\{].*?|\".*?\"|\\{.*?\\}))\\s*(,|$)", "g"))
-            .reduce((p, n) => {
-                const s = n.split(":");
-                if (s[1].endsWith(',')) {
-                    s[1] = s[1].substring(0, s[1].length - 1);
-                }
-                p[s[0].trim()] = s[1].trim();
-                return p;
-            }, {});
-        const p2 = inString.lastIndexOf("\nNegative prompt:", p);
+        let substring = inString.substring(p);
+        let match = substring.match(new RegExp("\\s*([^:]+:\\s*([^\"\\{].*?|\".*?\"|\\{.*?\\}))\\s*(,|$)", "g"))
+        metadata = match.reduce((p, n) => {
+            const s = n.split(":");
+            if (s[1].endsWith(',')) {
+                s[1] = s[1].substring(0, s[1].length - 1);
+            }
+            p[s[0].trim()] = s[1].trim();
+            return p;
+        }, {});
+        const p2 = inString.lastIndexOf("Negative prompt:", p);
         if (p2 > -1) {
 
             const positivePromptKey = "Positive prompt";
             const negativePromptKey = "Negative prompt";
 
-            metadata[positivePromptKey] = inString.substring(0, p2).trim();
-            metadata[negativePromptKey] = inString.substring(p2 + 18, p).trim();
+            metadata[positivePromptKey] = inString.substring(0, p2).trim().replace("\n", '').replace("\\n", ''); // Trim whitespace and newlines
+            metadata[negativePromptKey] = inString.substring(p2 + negativePromptKey.length + 1, p).trim().replace("\n", '').replace("\\n", '');
         }
 
         metadata["parameters"] = inString;
