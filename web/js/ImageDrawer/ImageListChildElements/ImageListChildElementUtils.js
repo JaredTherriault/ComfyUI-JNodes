@@ -141,11 +141,19 @@ export function getOrCreateToolButton(imageElementToUse) {
                     background: "none",
                     border: "none",
                     padding: 0,
-                    width: "max-content",
+                    width: "100%",
+                    display: "block",
                     cursor: "pointer",
                 }
             }, [
-                foregroundElement
+                $el("div", {
+                        style: {
+                            width: "max-content"
+                        }
+                    }, [
+                        foregroundElement
+                    ]
+                )
             ]);
 
             foregroundElement.style.pointerEvents = "none";
@@ -373,7 +381,7 @@ export function getOrCreateToolButton(imageElementToUse) {
     const menuClassSuffix = '.imageElement-flyout-menu';
     const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
     const parentRect = imageDrawerListInstance.getImageListElement().getBoundingClientRect();
-    const flyout = createFlyoutHandle("⋮", handleClassSuffix, menuClassSuffix, parentRect);
+    const flyout = createFlyoutHandle("⋮", handleClassSuffix, menuClassSuffix, parentRect, imageElementToUse.bIsVideoFormat ? "w" : "");
 
     toolButtonContainer.style.top = '2%';
     toolButtonContainer.style.right = '2%';
