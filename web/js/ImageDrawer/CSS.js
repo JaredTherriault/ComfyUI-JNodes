@@ -129,10 +129,14 @@ $el("style", {
 		border: 2px solid var(--border-color);
 	}
 	.flyout-handle .flyout-menu tr {
-		width: 100%
+		width: 100%;
 	}
 	.flyout-handle .flyout-menu td {
-		width: 100%
+		width: 100%;
+	}
+	.imageElement-flyout-handle .imageElement-flyout-menu td {
+		width: 100%;
+		display: block;
 	}
 	.flyout-handle tr span,
 	.flyout-handle tr a {
