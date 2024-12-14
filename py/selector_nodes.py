@@ -115,7 +115,7 @@ class CheckpointSelector(BaseListSelector):
 
 class VaeSelector(BaseListSelector):
     
-    RETURN_TYPES = (JNODES_VAE_LIST, "STRING",)
+    RETURN_TYPES = (folder_paths.get_filename_list("vae"), "STRING",)
     RETURN_NAMES = ("vae_name", "STRING",)
     FUNCTION = "get_names"
 
