@@ -91,6 +91,18 @@ class JNodesUtilities {
 		return button;
 	}
 
+	hasAncestor(element, ancestor) {
+		let currentElement = element.parentNode;
+	
+		while (currentElement) {
+			if (currentElement == ancestor) {
+				return true; 
+			}
+			currentElement = currentElement.parentNode;
+		}
+		return false; // No matching ancestor was found
+	}
+
 	setElementVisible(element, bNewVisible, customVisibleType = "unset") {
 		if (!element) { return; }
 		element.style.display = bNewVisible ? customVisibleType : "none";
