@@ -742,6 +742,68 @@ class TokenCounter:
         count, count_as_string = self.return_token_count_and_string_representation(cleaned_text, clip)
         
         return {"ui": {"text": (count_as_string,)}, "result": (count, count_as_string,)}
+
+class SeparateStringByDelimiters:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "input_string": ("STRING", {"forceInput": True}),
+                "delimiter_a": ("STRING",),
+                "delimiter_b": ("STRING",),
+                "delimiter_c": ("STRING",),
+            },
+        }
+
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING",)
+    RETURN_NAMES = ("string_all", "string_a", "string_b", "string_c",)
+    FUNCTION = "separate_string_by_delimiters"
+    DESCRIPTION = "This function processes a multiline string and separates it into four different strings based on the given delimiters."
+
+    def separate_string_by_delimiters(self, input_string, delimiter_a, delimiter_b, delimiter_c):
+
+        """
+        This function processes a multiline string and separates it into four different strings based on 
+        the given delimiters. The string is split into lines, and each line is checked to see if it starts 
+        with one of the delimiters. The function removes the delimiter from each line and retains the newline 
+        character so that the output strings maintain the original formatting.
+
+        Parameters:
+        - input_string (str): The multiline string that needs to be processed.
+        - delimiter_a (str): The delimiter to check for the first category.
+        - delimiter_b (str): The delimiter to check for the second category.
+        - delimiter_c (str): The delimiter to check for the third category.
+
+        Returns:
+        - tuple: A tuple containing four strings:
+            - string_all (str): Lines that do not start with any of the delimiters.
+            - string_a (str): Lines that start with delimiter_a, with the delimiter removed.
+            - string_b (str): Lines that start with delimiter_b, with the delimiter removed.
+            - string_c (str): Lines that start with delimiter_c, with the delimiter removed.
+        """
+
+        # Initialize the four result strings
+        string_all = ""
+        string_a = ""
+        string_b = ""
+        string_c = ""
+
+        # Split the input string into lines
+        lines = input_string.splitlines()
+
+        # Process each line
+        for line in lines:
+            line = line.strip()
+            if line.startswith(delimiter_a):
+                string_a += line[len(delimiter_a):] + "\n"  # Remove delimiter_a and retain the newline
+            elif line.startswith(delimiter_b):
+                string_b += line[len(delimiter_b):] + "\n"  # Remove delimiter_b and retain the newline
+            elif line.startswith(delimiter_c):
+                string_c += line[len(delimiter_c):] + "\n"  # Remove delimiter_c and retain the newline
+            else:
+                string_all += line + "\n"  # For lines not starting with any delimiter
+
+        return (string_all, string_a, string_b, string_c,)
     
 NODE_CLASS_MAPPINGS = {
     
@@ -761,9 +823,9 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_SetPositivePromptInMetaData": SetPositivePromptInMetaData,
     "JNodes_SetNegativePromptInMetaData": SetNegativePromptInMetaData,
     "JNodes_RemoveMetaDataKey" : RemoveMetaDataKey,
-    # "JNodes_SetMetadataA1111": SetMetadataA1111,
+    "JNodes_SetMetadataA1111": SetMetadataA1111,
     "JNodes_TokenCounter": TokenCounter,
-
+    "JNodes_SeparateStringByDelimiters": SeparateStringByDelimiters,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -786,5 +848,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_RemoveMetaDataKey" : "Remove Metadata Key",
     "JNodes_SetMetadataA1111": "Set Metadata For A1111",
     "JNodes_TokenCounter": "Token Counter",
+    "JNodes_SeparateStringByDelimiters": "Separate String By Delimiters",
 
 }
