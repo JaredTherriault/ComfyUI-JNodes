@@ -257,6 +257,10 @@ export class ContextClearable extends ImageDrawerContext {
 
 		finalWidget.insertBefore(clearButton, finalWidget.firstChild);
 
+		const flyoutHandle = createVideoPlaybackOptionsFlyout().handle;
+
+		finalWidget.insertBefore(flyoutHandle, finalWidget.firstChild);
+
 		return finalWidget;
 	}
 
