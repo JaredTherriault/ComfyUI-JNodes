@@ -505,7 +505,7 @@ export async function onLoadImageElement(imageElement) {
                 if (metadata.parameters) {
                     metadata = makeMetaDataFromA111(metadata.parameters);
                 }
-            } else if (blob.type === "image/webp" || blob.type === "image/jpeg") {
+            } else if (blob.type === "image/webp" || blob.type === "image/jpeg" || blob.type === "image/gif") {
 
                 const webpArrayBuffer = await blob.arrayBuffer();
 
