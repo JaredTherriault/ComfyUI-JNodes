@@ -558,6 +558,7 @@ export async function onLoadImageElement(imageElement) {
         }
 
         setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata);
+		imageElement.style.aspectRatio = `${imageElement.img.clientWidth / imageElement.img.clientHeight}`;
 
         imageElement.bComplete = true;
     }
