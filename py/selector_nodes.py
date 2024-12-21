@@ -1,4 +1,5 @@
 import os
+import re
 
 import folder_paths
 from .logger import logger
@@ -6,7 +7,7 @@ from .utils import *
 
 import comfy.sd
 
-from typing import Dict, List
+from typing import Dict, List, Set
 
 
 class BooleanSelector:
@@ -25,19 +26,108 @@ class BooleanSelector:
         return (boolean, f"{boolean}",)
     
 class ImageSizeSelector:
+
+    @staticmethod
+    def remove_parentheses(resolution_str):
+        # Use a regular expression to remove the part in parentheses
+        return re.sub(r'\s*\(.*\)', '', resolution_str)
+
+    @staticmethod
+    def get_resolution_list():
+
+        hardcoded = [
+            # 1:1 Aspect Ratio (Square)
+            "128x128 (1:1)", "256x256 (1:1)", "480x480 (1:1)", "512x512 (1:1)", "768x768 (1:1)", "1024x1024 (1:1)", "2048x2048 (1:1)", "4096x4096 (1:1)",  # Square resolutions
+
+            # 16:9 Aspect Ratio (Widescreen HD Resolutions)
+            "512x400 (16:9)", "720x480 (16:9)", "768x512 (16:9)",  # Widescreen resolutions (lower resolutions, often used in standard video)
+            "854x480 (16:9)", "960x540 (16:9)",  # qHD and WVGA resolutions
+            "1280x720 (16:9)",  # HD resolution
+            "1600x900 (16:9)",  # HD+ resolution
+            "1920x1080 (16:9)", # Full HD resolution (1080p)
+            "2560x1440 (16:9)", # 2K resolution (Quad HD)
+            "3840x2160 (16:9)", # 4K resolution (Ultra HD)
+            "7680x4320 (16:9)", # 8K resolution (Ultra High Definition)
+            
+            # 16:9 Aspect Ratio (Additional Widescreen Variants)
+            "1152x896 (16:9)",  # A variant used in some widescreen monitors (slightly different aspect ratio)
+
+            # 16:9 Aspect Ratio (Other Video Resolutions)
+            "512x320 (16:9)", "720x512 (16:9)", "848x480 (16:9)",  # Other popular video resolutions
+
+            # 16:10 Aspect Ratio Resolutions
+            "1280x800 (16:10)",  # Standard 16:10 resolution, commonly used in laptops and displays
+            "1440x900 (16:10)",  # WXGA+ resolution, often used in older laptops
+            "1680x1050 (16:10)", # WSXGA+ resolution, used in some older wide monitors
+            "1920x1200 (16:10)", # WUXGA resolution, a common resolution for professional monitors
+            "2560x1600 (16:10)", # WQXGA resolution, high-end resolution for large displays
+            "3840x2400 (16:10)", # 4K 16:10 resolution
+
+            # 4:3 Aspect Ratio Resolutions
+            "640x480 (4:3)",   # VGA resolution (Standard for many older monitors and video displays)
+            "800x600 (4:3)",   # SVGA resolution (Common for older PC monitors)
+            "1024x768 (4:3)",  # XGA resolution (Standard for many projectors and displays)
+            "1280x960 (4:3)",  # SXGA resolution (Used in some mid-range monitors)
+            "1400x1050 (4:3)", # SXGA+ resolution (Slightly larger than SXGA)
+            "1600x1200 (4:3)", # UXGA resolution (Used in high-end displays)
+            "2048x1536 (4:3)", # QXGA resolution (Very high resolution used in professional monitors)
+            "2560x1920 (4:3)", # WQXGA resolution (Ultra high resolution)
+            
+            # Smaller 4:3 Resolutions (for mobile or older systems)
+            "320x240 (4:3)",   # QVGA resolution (Common for small devices and early mobile phones)
+            "400x300 (4:3)",   # CIF resolution (Used in early video surveillance and mobile devices)
+            "960x720 (4:3)",   # 4:3 resolution variant (non-standard, but sometimes used in certain displays)
+
+            # Standard iPhones (non-Retina displays)
+            "480x320 (Mobile)",   # iPhone 3G / 3GS (First generation non-Retina display)
+
+            # Retina Displays (High Resolution)
+            "960x640 (Mobile)",   # iPhone 4 / 4S (Retina display)
+            "1334x750 (Mobile)",  # iPhone 6 / 6S / 7 / 8 (Retina HD display)
+            "2436x1125 (Mobile)", # iPhone X / XS / 11 Pro (Super Retina display)
+            "2208x1242 (Mobile)", # iPhone 6 Plus / 6S Plus / 7 Plus / 8 Plus (Retina HD display)
+            "2778x1284 (Mobile)", # iPhone 12 Pro Max / 13 Pro Max / 14 Pro Max (Super Retina XDR display)
+            "1624x750 (Mobile)",  # iPhone 12 / 12 mini / 13 mini / 14 / 14 Plus (Super Retina XDR display)
+            "2532x1170 (Mobile)", # iPhone 12 / 12 Pro / 13 / 13 Pro / 14 Pro / 15 Pro (Super Retina XDR display)
+            "1778x1284 (Mobile)", # iPhone 12 / 12 mini (Super Retina display, 16:9 aspect ratio)
+            "1792x828 (Mobile)",  # iPhone 11 (Liquid Retina display)
+            "2224x1668 (Mobile)", # iPhone X (Retina display)
+            "2436x1125 (Mobile)", # iPhone XS / iPhone XS Max
+            "2160x1180 (Mobile)", # iPhone 6 Plus (landscape)
+        ]
+
+        # look for "ImageSizeSelectorResolutions.txt" in JNodes folder
+        filepath = resolve_file_path("JNodes/ImageSizeSelectorResolutions.txt")
+        if os.path.exists(filepath):
+            with open(filepath, "r") as file:
+                file_string = file.read()
+
+                if "," in file_string:
+                    hardcoded.extend(file_string.split(","))
+                else:
+                    hardcoded.append(file_string)
+
+        resolution_set = set()
+
+        for x in hardcoded:
+            cleaned_string = ImageSizeSelector.remove_parentheses(x.lower().replace(" ", ""))
+            split = cleaned_string.split("x")
+
+            if len(split) == 2 and split[0].isdigit() and split[1].isdigit():
+                resolution_set.add(x)
+
+        # Return sorted by height
+        return sorted(list(resolution_set), key=lambda x: (int(ImageSizeSelector.remove_parentheses(x.split('x')[1])), int(x.split('x')[0])))
+
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "image_size": ([
-                    "128x128", "256x256", "480x480", "512x512", "768x768", "1024x1024", "2048x2048", "4096x4096", 
-                    "512x400", "720x480", "768x512", 
-                    "854x480", "960x540", "1280x720", "1600x900", "1920x1080", "2560x1440", "3840x2160", "7680x4320",
-                    "1152x896"],),
-                "use_custom_size": ("BOOLEAN", {"default": False}),
-                "custom_size_x": ("INT", {"default": 512, "minimum": 2}),
-                "custom_size_y": ("INT", {"default": 512, "minimum": 2}),
-                "flip_width_and_height": ("BOOLEAN", {"default": False}),
+                "image_size": (s.get_resolution_list(), {"tooltip": "You can add to this list by creating a text file named 'ImageSizeSelectorResolutions.txt' in the 'ComfyUI/JNodes' folder (create it if it doesn't exist) and add new resolutions there in this format: '1280x720 (16:9), 1600x1000 (16:10), 848x480 (16:9)'. Giving an aspect ratio is optional. Ensure you always have at least one comma, even with only one added resolution."},),
+                "use_custom_size": ("BOOLEAN", {"default": False, "tooltip": "If you want to hardcode a custom size, set this to True."}),
+                "custom_size_x": ("INT", {"default": 512, "minimum": 2, "tooltip": "Hardcoded width"}),
+                "custom_size_y": ("INT", {"default": 512, "minimum": 2, "tooltip": "Hardcoded height"}),
+                "flip_width_and_height": ("BOOLEAN", {"default": False, "tooltip": "Set to True to flip the dimensions, for instance to create a vertical image instead of a horizontal one."}),
             },
         }
 
@@ -56,7 +146,7 @@ class ImageSizeSelector:
         """
         
         def split_size(size_string):
-            x_str, y_str = size_string.split("x")
+            x_str, y_str = ImageSizeSelector.remove_parentheses(size_string).split("x")
             x = int(y_str if flip_width_and_height else x_str)
             y = int(x_str if flip_width_and_height else y_str)
             return x,y
@@ -111,7 +201,28 @@ class CheckpointSelector(BaseListSelector):
         else:
             return self.return_array_element_by_index_or_seed(
                 mode, seed, folder_paths.get_filename_list("checkpoints"))
-    
+
+class DiffusionModelSelector(BaseListSelector):
+    RETURN_TYPES = (folder_paths.get_filename_list("diffusion_models"), "STRING",)
+    RETURN_NAMES = ("unet_name", "STRING",)
+    FUNCTION = "get_names"
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "unet_name": (folder_paths.get_filename_list("diffusion_models"), ),
+                "mode": (["select", "seed", "index"],),
+                "seed": ("INT", {"default": 0, "max": 0xffffffffffffffff}),
+                }
+            }
+
+    def get_names(self, unet_name, mode, seed):
+        if mode == "select":
+            return (unet_name, f"{unet_name}",)
+        else:
+            return self.return_array_element_by_index_or_seed(
+                mode, seed, folder_paths.get_filename_list("diffusion_models"))
 
 class VaeSelector(BaseListSelector):
     
@@ -256,6 +367,7 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_BooleanSelectorWithString": BooleanSelector,
     "JNodes_ImageSizeSelector": ImageSizeSelector,
     "JNodes_CheckpointSelectorWithString": CheckpointSelector,
+    "JNodes_DiffusionModelSelector": DiffusionModelSelector,
     "JNodes_VaeSelectorWithString": VaeSelector,
     "JNodes_SamplerSelectorWithString": SamplerSelector,
     "JNodes_SchedulerSelectorWithString": SchedulerSelector,
@@ -270,6 +382,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_BooleanSelectorWithString": "Boolean Selector + String",
     "JNodes_ImageSizeSelector": "Image Size Selector",
     "JNodes_CheckpointSelectorWithString": "Checkpoint Selector + String",
+    "JNodes_DiffusionModelSelector": "Diffusion Model Selector + String",
     "JNodes_VaeSelectorWithString": "Vae Selector + String",
     "JNodes_SamplerSelectorWithString": "Sampler Selector + String",
     "JNodes_SchedulerSelectorWithString": "Scheduler Selector + String",
