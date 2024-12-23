@@ -1,4 +1,5 @@
 import { app } from '/scripts/app.js'
+import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 
 export function getVideoMetadata(file) {
     return new Promise((r) => {
@@ -86,19 +87,68 @@ export function isVideoFile(file) {
 }
 
 async function handleFile(file) {
+
+    let bShouldCallOriginal = true;
+
     if (file?.type?.startsWith("video/") || isVideoFile(file)) {
         const videoInfo = await getVideoMetadata(file);
         if (videoInfo) {
             if (videoInfo.workflow) {
 
                 app.loadGraphData(videoInfo.workflow);
+                bShouldCallOriginal = false;
             }
             //Potentially check for/parse A1111 metadata here.
         }
-    } else {
-        if (app.originalHandleFile) {
-            await app.originalHandleFile(file);
+    } else if (file?.type?.endsWith("/webp")) {
+        const webpArrayBuffer = await file.arrayBuffer();
+
+        // Use the exif library to extract Exif data
+        const exifData = ExifReader.load(webpArrayBuffer);
+        //console.log("exif: " + JSON.stringify(exifData));
+
+        const exif = exifData['UserComment'];
+
+        if (exif) {
+
+            // Convert the byte array to a Uint16Array
+            const uint16Array = new Uint16Array(exif.value);
+
+            // Create a TextDecoder for UTF-16 little-endian
+            const textDecoder = new TextDecoder('utf-16le');
+
+            // Decode the Uint16Array to a string
+            const decodedString = textDecoder.decode(uint16Array);
+
+            // Remove null characters
+            const cleanedString = decodedString.replace(/\u0000/g, '');
+            const jsonReadyString = cleanedString.replace("UNICODE", "")
+
+            try {
+
+                let metadata = JSON.parse(jsonReadyString);
+
+                if (metadata?.workflow) {
+
+                    let workflow = metadata.workflow;
+
+                    if (typeof workflow === "string") {
+                        workflow = JSON.parse(workflow);
+                    }
+
+                    app.loadGraphData(workflow);
+
+                    bShouldCallOriginal = false;
+                }
+            } catch (error) {
+
+                console.log(`${error} (${file.name})`);
+            }
         }
+    } 
+
+    if (bShouldCallOriginal && app.originalHandleFile) {
+        await app.originalHandleFile(file);
     }
 }
 

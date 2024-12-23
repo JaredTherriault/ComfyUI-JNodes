@@ -493,7 +493,7 @@ export async function onLoadImageElement(imageElement) {
         //console.log(imageElement.fileInfo.href);
         let metadata = null;
         try {
-            if (blob.type === "image/png") {
+            if (imageElement.fileInfo.format === "image/png") {
                 metadata = await pngInfo.getPngMetadata(blob);
 
                 if (metadata.parameters) {
@@ -507,7 +507,9 @@ export async function onLoadImageElement(imageElement) {
                     let a111Metadata = makeMetaDataFromA111(metadata.parameters);
                     metadata = { ...metadata, ...a111Metadata };
                 }
-            } else if (blob.type === "image/webp" || blob.type === "image/jpeg" || blob.type === "image/gif") {
+            } else if (imageElement.fileInfo.format === "image/webp" || 
+                imageElement.fileInfo.format === "image/jpeg" || 
+                imageElement.fileInfo.format === "image/gif") {
 
                 const webpArrayBuffer = await blob.arrayBuffer();
 

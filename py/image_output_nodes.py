@@ -212,15 +212,13 @@ class SaveVideoWithOptions():
 
         metadata = PngInfo()
         video_metadata = {}
-        if save_workflow and prompt is not None:
-            metadata.add_text("prompt", json.dumps(prompt))
-            video_metadata["prompt"] = prompt
         if extra_pnginfo is not None:
             for key in extra_pnginfo:
                 if not save_workflow and key == "workflow":
                     continue
-                value = f'"{extra_pnginfo[key]}"'
-                metadata.add_text(key, json.dumps(value))
+                
+                value = json.dumps(extra_pnginfo[key])    
+                metadata.add_text(key, value)
                 video_metadata[key] = value
             
         if format_type == "image":
@@ -319,6 +317,7 @@ class SaveVideoWithOptions():
                     metadata = metadata.replace("#","\\#")
                     metadata = metadata.replace("=","\\=")
                     metadata = metadata.replace("\n","\\\n")
+                    metadata = metadata.replace(": NaN}", ": \"NaN\"}")
                     metadata = "comment=" + metadata
                     with open(metadata_path, "w") as f:
                         f.write(";FFMETADATA1\n")
