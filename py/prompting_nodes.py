@@ -517,13 +517,16 @@ class AddOrSetMetaDataKey:
     FUNCTION = "add_or_set_metadata_key"
     
     OUTPUT_NODE = True
+    
+    def add_param_to_png_info(self, extra_pnginfo, parameter_name, param):
+        if extra_pnginfo:
+            extra_pnginfo[parameter_name] = str(param).strip()
 
     def add_or_set_metadata_key(self, key, value, extra_pnginfo=None):
         return_true = False
         try:
-            if extra_pnginfo:
-                extra_pnginfo[key] = value.strip()
-                return_true = True
+            self.add_param_to_png_info(extra_pnginfo, key, value)
+            return_true = True
         except Exception as e:
             logger.error(f'{e}')
         return (return_true,)
