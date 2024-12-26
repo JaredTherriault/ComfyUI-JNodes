@@ -140,7 +140,6 @@ class SaveVideoWithOptions():
                 "audio_options": ("AUDIO_INPUT_OPTIONS",),
             },
             "hidden": {
-                "prompt": "PROMPT",
                 "extra_pnginfo": "EXTRA_PNGINFO",
             },
         }
@@ -188,7 +187,6 @@ class SaveVideoWithOptions():
         save_workflow=True,
         batch_size=128,
         audio_options=None,
-        prompt=None,
         extra_pnginfo=None
     ):
 
