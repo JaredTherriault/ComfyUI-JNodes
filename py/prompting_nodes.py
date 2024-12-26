@@ -636,6 +636,7 @@ class SetMetadataA1111:
             },
         }
 
+    DESCRIPTION = "A node that adds basic generation data to an image's meta in a manner compatible with A1111. This node runs every generation to ensure the meta is always added, so ensure it's the last node before saving the image or video to avoid unnecessary node execution for any nodes after this node."
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "set_meta"
 
