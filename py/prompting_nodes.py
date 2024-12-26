@@ -681,6 +681,10 @@ class SetMetadataA1111:
                 AddOrSetMetaDataKey().add_or_set_metadata_key("parameters", parameters, extra_pnginfo)
 
         return (images_passthrough,)
+    
+    @classmethod
+    def IS_CHANGED(s, **kwargs):
+        return float("nan") # Run every time
   
 
 class TokenCounter:
