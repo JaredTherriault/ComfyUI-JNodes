@@ -66,6 +66,11 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 		}
 		// Check if the video is intersecting with the viewport
 		if (entry.isIntersecting) {
+
+			if (element.onObserve) {
+				element.onObserve();
+			}
+			
 			if (!element.src || element.src === '') {
 				element.forceLoad();
 
@@ -79,6 +84,11 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 				tryPlayVideo(element);
 			}
 		} else {
+
+			if (element.onUnobserve) {
+				element.onUnobserve();
+			}
+
 			if (element.tagName === 'VIDEO') {
 				// Pause the video if it's not intersecting with the viewport
 				tryStopVideo(element);

@@ -32,6 +32,13 @@ class JNodesUtilities {
 		return timeAsString;
 	}
 
+	isHrefVideo(href) {
+		if (typeof(href) !== "string") {
+			return false;
+		}
+		return href.includes(".mp4") || href.includes(".webm");
+	}
+
 	getDarkColor() {
 		return "rgba(0,0,0,0.5)";
 	}

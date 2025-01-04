@@ -54,7 +54,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 		return;
 	}
 
-	console.log(familiars);
+	// console.log(familiars);
 
 	let nameToUse = nameText;
 	let trainedWords = "";
@@ -219,24 +219,44 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			return;
 		}
 
-		function onClickLeft(e) {
-			backgroundImage.lastViewedImageIndex -= 1;
-			if (backgroundImage.lastViewedImageIndex < 0) {
-				backgroundImage.lastViewedImageIndex = familiars.familiar_images.length - 1;
+		function updateBackgroundImageContainer() {
+
+			backgroundImageContainer.backgroundImage.style.display = "none";
+			backgroundImageContainer.backgroundVideo.style.display = "none";
+
+			let newHref = getHrefForFamiliarImage(backgroundImageContainer.lastViewedImageIndex);
+			let bIsVideoPreview = utilitiesInstance.isHrefVideo(newHref);
+
+			if (bIsVideoPreview) {
+
+				backgroundImageContainer.backgroundVideo.style.display = "block";
+				backgroundImageContainer.backgroundVideo.src = newHref;
+			} else {
+
+				backgroundImageContainer.backgroundImage.style.display = "block";
+				backgroundImageContainer.backgroundImage.src = newHref;
 			}
-			backgroundImage.src = getHrefForFamiliarImage(backgroundImage.lastViewedImageIndex);
 
 			updateImageCounterText();
 		}
 
-		function onClickRight(e) {
-			backgroundImage.lastViewedImageIndex += 1;
-			if (backgroundImage.lastViewedImageIndex == familiars.familiar_images.length) {
-				backgroundImage.lastViewedImageIndex = 0;
+		function onClickLeft(e) {
+			backgroundImageContainer.lastViewedImageIndex -= 1;
+			if (backgroundImageContainer.lastViewedImageIndex < 0) {
+				backgroundImageContainer.lastViewedImageIndex = familiars.familiar_images.length - 1;
 			}
-			backgroundImage.src = getHrefForFamiliarImage(backgroundImage.lastViewedImageIndex);
+		
+			updateBackgroundImageContainer();
+		}
 
-			updateImageCounterText();
+
+		function onClickRight(e) {
+			backgroundImageContainer.lastViewedImageIndex += 1;
+			if (backgroundImageContainer.lastViewedImageIndex == familiars.familiar_images.length) {
+				backgroundImageContainer.lastViewedImageIndex = 0;
+			}
+		
+			updateBackgroundImageContainer();
 		}
 
 		return $el('button', {
@@ -255,16 +275,35 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 		]);
 	}
 
-	const backgroundImage =
-		$el("img", {
-			lastViewedImageIndex: lastViewedImageIndex,
-			style: {
-				objectFit: "cover",
-				width: "100%",
-				height: "100%",
-			}
-		});
-	backgroundImage.dataSrc = getHrefForFamiliarImage(lastViewedImageIndex);
+	const backgroundImageContainer =
+		$el("div", {
+				id: "backgroundImageContainer",
+				lastViewedImageIndex: lastViewedImageIndex,
+				style: {
+					width: "100%",
+					height: "100%",
+				}
+			},
+		);
+	backgroundImageContainer.dataSrc = getHrefForFamiliarImage(lastViewedImageIndex);
+
+	backgroundImageContainer.backgroundImage = $el("img");
+	backgroundImageContainer.appendChild(backgroundImageContainer.backgroundImage);
+	Object.assign(backgroundImageContainer.backgroundImage.style, {
+		objectFit: "cover",
+		width: "100%",
+		height: "100%",
+		display: "none"
+	});
+
+	backgroundImageContainer.backgroundVideo = $el("video");
+	backgroundImageContainer.appendChild(backgroundImageContainer.backgroundVideo);
+	Object.assign(backgroundImageContainer.backgroundVideo.style, {
+		objectFit: "cover",
+		width: "100%",
+		height: "100%",
+		display: "none"
+	});
 
 	let imageCounterLabel;
 
@@ -274,7 +313,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 				return;
 			}
 			const CurrentImageIndex =
-				parseInt(backgroundImage.lastViewedImageIndex);
+				parseInt(backgroundImageContainer.lastViewedImageIndex);
 			imageCounterLabel.textContent =
 				`${CurrentImageIndex + 1}/${familiars.familiar_images.length}`
 		}
@@ -517,33 +556,45 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 		return mainContainer;
 	}
 
-	backgroundImage.forceLoad = function () {
-		backgroundImage.src = backgroundImage.dataSrc;
+	backgroundImageContainer.backgroundImage.forceLoad = function () {
 
-		const bIsVideoFormat = false;
-		if (bIsVideoFormat) {
-			setVideoPlaybackRate(backgroundImage, setting_VideoPlaybackOptions.value.defaultPlaybackRate); // This gets reset when src is reset
+		backgroundImageContainer.backgroundVideo.style.display = "none";
+		backgroundImageContainer.backgroundImage.src = backgroundImageContainer.dataSrc;
+		backgroundImageContainer.backgroundImage.style.display = "block";
+	}
+
+	backgroundImageContainer.backgroundVideo.forceLoad = function () {
+
+		backgroundImageContainer.backgroundImage.style.display = "none";
+		backgroundImageContainer.backgroundVideo.src = backgroundImageContainer.dataSrc;
+		backgroundImageContainer.backgroundVideo.style.display = "block";
+	}
+
+	backgroundImageContainer.initVideo = function () {
+
+		backgroundImageContainer.backgroundVideo.autoplay = true;
+		backgroundImageContainer.backgroundVideo.loop = true;
+		backgroundImageContainer.backgroundVideo.controls = false;
+		backgroundImageContainer.backgroundVideo.muted = true;
+	}
+	backgroundImageContainer.initVideo();
+
+	modelElement.forceLoad = function () {
+
+		if (utilitiesInstance.isHrefVideo(backgroundImageContainer.dataSrc)) {
+			backgroundImageContainer.backgroundVideo.forceLoad();
+		} else {
+			backgroundImageContainer.backgroundImage.forceLoad();
 		}
 	}
 
-	backgroundImage.initVideo = function () {
-
-		backgroundImage.type = fileInfo.file?.format || undefined;
-		backgroundImage.autoplay = false; // Start false, will autoplay via observer
-		backgroundImage.loop = setting_VideoPlaybackOptions.value.loop;
-		backgroundImage.controls = setting_VideoPlaybackOptions.value.controls;
-		backgroundImage.muted = setting_VideoPlaybackOptions.value.muted;
-		setVideoVolume(backgroundImage, setting_VideoPlaybackOptions.value.defaultVolume);
-		setVideoPlaybackRate(backgroundImage, setting_VideoPlaybackOptions.value.defaultPlaybackRate);
-	}
-
-	modelElement.forceLoad = function () {
-		backgroundImage.forceLoad();
+	modelElement.onObserve = function () {
+		modelElement.forceLoad();
 	}
 
 	//console.log("nameToUse: " + nameToUse);
 
-	modelElement.appendChild(backgroundImage);
+	modelElement.appendChild(backgroundImageContainer);
 	const leftImageSwitchButton = createImageSwitchButton(true);
 	if (leftImageSwitchButton) { modelElement.appendChild(leftImageSwitchButton); }
 	const rightImageSwitchButton = createImageSwitchButton(false);

@@ -101,18 +101,22 @@ class ImageDrawerList extends ImageDrawerComponent {
 	async removeElementFromImageList(element, bHandleSearch = true) {
 		if (element != undefined) {
 			//console.log("removing element: " + element);
-			for (let visualElement of utilitiesInstance.getVisualElements(element)) {
-				unobserveVisualElement(visualElement);
+			if (element.onObserve) {
+				observeVisualElement(element);
+			} else {
+				for (let visualElement of utilitiesInstance.getVisualElements(element)) {
+					unobserveVisualElement(visualElement);
 
-				if (visualElement.tagName === 'VIDEO') {
-					// Try to pause the video before unloading
-					try {
-						visualElement.pause();
-					} catch { }
+					if (visualElement.tagName === 'VIDEO') {
+						// Try to pause the video before unloading
+						try {
+							visualElement.pause();
+						} catch { }
 
-					if ('src' in visualElement) {
-						visualElement.removeAttribute('src'); // Unload video
-						if (visualElement.load) { visualElement.load(); } // Release memory
+						if ('src' in visualElement) {
+							visualElement.removeAttribute('src'); // Unload video
+							if (visualElement.load) { visualElement.load(); } // Release memory
+						}
 					}
 				}
 			}
@@ -130,8 +134,12 @@ class ImageDrawerList extends ImageDrawerComponent {
 		//console.log("adding element: " + element);
 		if (element != undefined) {
 			this.imageList.appendChild(element);
-			for (let visualElement of utilitiesInstance.getVisualElements(element)) {
-				observeVisualElement(visualElement);
+			if (element.onObserve) {
+				observeVisualElement(element);
+			} else {
+				for (let visualElement of utilitiesInstance.getVisualElements(element)) {
+					observeVisualElement(visualElement);
+				}
 			}
 			if (bHandleSearch) {
 				const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");

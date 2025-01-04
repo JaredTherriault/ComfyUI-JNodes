@@ -35,7 +35,7 @@ def get_model_items(request):
         type = request.rel_url.query["type"]
     file_list = folder_paths.get_filename_list(type)
     
-    image_extension_filter = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
+    image_extension_filter = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.webm'}
     info_extension_filter = {'.info', '.txt', '.json'}
     
     familiar_dictionaries = create_familiar_dictionaries(file_list, type, image_extension_filter, info_extension_filter)
