@@ -252,7 +252,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
                                 const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
                                 if (currentContextObject) {
-                                    currentContextObject.onRequestSingleFavourite(imageElementToUse);
+                                    currentContextObject.onRequestSingleRemoval(imageElementToUse);
                                 }
                             }
                         }
@@ -560,7 +560,9 @@ export async function onLoadImageElement(imageElement) {
         }
 
         setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata);
-		imageElement.style.aspectRatio = `${imageElement.img.clientWidth / imageElement.img.clientHeight}`;
+		imageElement.style.aspectRatio = 
+            imageElement.displayData.AspectRatio ? imageElement.displayData.AspectRatio : 
+            `${imageElement.img.offsetWidth / imageElement.img.offsetHeight}`;
 
         imageElement.bComplete = true;
     }
