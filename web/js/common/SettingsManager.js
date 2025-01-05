@@ -46,7 +46,7 @@ export class ConfigSetting {
 
         try {
 
-            val = app.ui.settings.getSettingValue(id, null);
+            // val = app.ui.settings.getSettingValue(id);
             //console.log(`comfy.settings: ${id}: ${val}`);
 
         } catch {
@@ -83,7 +83,7 @@ export class ConfigSetting {
         const id = "JNodes.Settings." + name;
 
         localStorage.setItem(id, JSON.stringify(val)); // Backup solution
-        app.ui.settings.setSettingValue(id, val); // Not necessary to stringify beforehand
+        // app.ui.settings.setSettingValue(id, val); // Not necessary to stringify beforehand
     };
 
     // Usage Example
