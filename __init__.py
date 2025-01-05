@@ -51,9 +51,25 @@ async def request_task_cancellation_wrapper(request):
 async def save_text_wrapper(request):
     return await save_text(request)
 
-@server.PromptServer.instance.routes.post('/jnodes_load_text')
+@server.PromptServer.instance.routes.get('/jnodes_load_text')
 async def load_text_wrapper(request):
     return await load_text(request)
+
+@server.PromptServer.instance.routes.post('/jnodes_post_setting')
+async def post_setting_wrapper(request):
+    return await post_setting(request)
+
+@server.PromptServer.instance.routes.post('/jnodes_post_all_settings')
+async def post_all_settings_wrapper(request):
+    return await post_all_settings(request)
+
+@server.PromptServer.instance.routes.get('/jnodes_get_setting')
+async def get_setting_wrapper(request):
+    return await get_setting(request)
+
+@server.PromptServer.instance.routes.get('/jnodes_get_all_settings')
+async def get_all_settings_wrapper(request):
+    return await get_all_settings(request)
 
 @server.PromptServer.instance.routes.post("/jnodes_upload_image")
 async def upload_image_wrapper(request):

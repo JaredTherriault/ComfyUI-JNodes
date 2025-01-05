@@ -1,6 +1,7 @@
 // A script governing savable user settings and the creation of user interfaces for those settings
 
 import { $el } from "/scripts/ui.js";
+import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
 
 import { info_VideoPlaybackOptions, options_VideoPlayback } from "../common/VideoOptions.js";
@@ -11,6 +12,8 @@ import { imageDrawerComponentManagerInstance } from "../ImageDrawer/Core/ImageDr
 export const defaultKeyList = "prompt, workflow, parameters";
 
 var underButtonContent;
+
+let settingsCache = {};
 
 // A class that saves and loads its given value via localStorage automatically. 
 // Use it for any setting that should have its data saved.
@@ -47,13 +50,14 @@ export class ConfigSetting {
         try {
 
             // val = app.ui.settings.getSettingValue(id);
+            val = settingsCache[id];
             //console.log(`comfy.settings: ${id}: ${val}`);
 
         } catch {
 
         }
 
-        if (val === null) {
+        if (val === null || val == undefined) {
 
             val = localStorage.getItem(id); // Backup solution
             // console.log(`localstorage: ${id}: ${val}`);
@@ -78,12 +82,14 @@ export class ConfigSetting {
         }
     };
 
-    _setValue(name, val) {
+    async _setValue(name, val) {
 
         const id = "JNodes.Settings." + name;
+        const asString = JSON.stringify(val);
 
-        localStorage.setItem(id, JSON.stringify(val)); // Backup solution
-        // app.ui.settings.setSettingValue(id, val); // Not necessary to stringify beforehand
+        settingsCache[id] = asString;
+        localStorage.setItem(id, asString); // Backup solution
+        await api.fetchApi("/jnodes_post_all_settings", { method: "POST", body: JSON.stringify({settings: settingsCache})}); // Not necessary to stringify beforehand
     };
 
     // Usage Example
@@ -124,7 +130,17 @@ export let setting_bQueueTimerEnabled = new ImageDrawerConfigSetting("bQueueTime
 
 // Button setup
 
-export const setupUiSettings = (onDrawerAnchorInput) => {
+export const setupUiSettings = async (onDrawerAnchorInput) => {
+
+    let response = await api.fetchApi("/jnodes_get_all_settings", { method: "GET", cache: "no-store" });
+
+    const decodedString = await utilitiesInstance.decodeReadableStream(response.body);
+    const jsonResponse = JSON.parse(decodedString)
+
+    if (jsonResponse?.success && jsonResponse?.payload) {
+        settingsCache = JSON.parse(jsonResponse.payload);
+    }
+
     // Enable/disable
     {
         const labelWidget = $el("label", {

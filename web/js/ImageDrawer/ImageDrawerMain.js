@@ -198,7 +198,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
 		const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
 
-		setupUiSettings((e) => { this.setDrawerAnchor(e.target.value); });
+		await setupUiSettings((e) => { this.setDrawerAnchor(e.target.value); });
 
 		if (!setting_bEnabled.value) {
 			return;

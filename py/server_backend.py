@@ -4,6 +4,7 @@ import re
 from .logger import *
 from .utils import *
 from .server_backend_get_subdirectory_images import GetSubdirectoryImages
+from app.user_manager import UserManager
 
 import folder_paths
 from aiohttp import web
@@ -560,6 +561,95 @@ async def load_text(request):
                 loaded_text = file.read()
     
             return web.json_response({"success": True, "payload" : loaded_text})
+    except Exception as e:
+        log_exception("Error loading text:", e)
+        return web.json_response({"success": False, "error": str(e)})
+
+def save_settings(request, settings):
+    um = UserManager()
+    file = um.get_request_user_filepath(
+        request, "jnodes.settings.json")
+    with open(file, "w") as f:
+        f.write(json.dumps(settings, indent=4))
+
+async def post_setting(request):
+    try:
+        request_data = await read_we_request_content(request.content)
+        request_json = json.loads(request_data)
+
+        setting_id = None
+        if "id" in request_json:
+            setting_id = request_json["id"]
+        if not setting_id:
+            return web.json_response({"success": False, "error": "No 'id' found in request!"})
+
+        setting_value = None
+        if "value" in request_json:
+            setting_value = request_json["value"]
+        if not setting_value:
+            return web.json_response({"success": False, "error": "No 'value' found in request!"})
+            
+        if setting_id and setting_value:
+            settings = get_settings(request)
+            settings[setting_id] = setting_value
+            save_settings(request, settings)
+    
+            return web.json_response({"success": True})
+
+    except Exception as e:
+        log_exception("Error saving text:", e)
+        return web.json_response({"success": False, "error": str(e)})
+
+async def post_all_settings(request):
+    try:
+        request_data = await read_we_request_content(request.content)
+        request_json = json.loads(request_data)
+
+        settings = None
+        if "settings" in request_json:
+            settings = request_json["settings"]
+
+        if settings:
+            save_settings(request, settings)
+            return web.json_response({"success": True})
+        else:
+            return web.json_response({"success": False, "error": "No 'settings' found in request!"})
+
+    except Exception as e:
+        log_exception("Error saving text:", e)
+        return web.json_response({"success": False, "error": str(e)})
+
+def get_settings(request):
+    um = UserManager()
+    file = um.get_request_user_filepath(
+        request, "jnodes.settings.json")
+    if os.path.isfile(file):
+        with open(file) as f:
+            return json.load(f)
+    else:
+        return {}
+
+async def get_setting(request):
+    try:
+        request_data = await read_we_request_content(request.content)
+        request_json = json.loads(request_data)
+
+        setting_id = None
+        if "id" in request_json:
+            setting_id = request_json["id"]
+
+        settings = get_settings(request)
+        return web.json_response({"success": True, "payload" : settings[setting_id]})
+    
+    except Exception as e:
+        log_exception("Error loading text:", e)
+        return web.json_response({"success": False, "error": str(e)})
+
+async def get_all_settings(request):
+    try:       
+        settings = get_settings(request)
+        return web.json_response({"success": True, "payload" : json.dumps(settings)})
+
     except Exception as e:
         log_exception("Error loading text:", e)
         return web.json_response({"success": False, "error": str(e)})
