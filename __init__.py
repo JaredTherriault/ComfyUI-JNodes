@@ -51,7 +51,7 @@ async def request_task_cancellation_wrapper(request):
 async def save_text_wrapper(request):
     return await save_text(request)
 
-@server.PromptServer.instance.routes.get('/jnodes_load_text')
+@server.PromptServer.instance.routes.post('/jnodes_load_text')
 async def load_text_wrapper(request):
     return await load_text(request)
 
