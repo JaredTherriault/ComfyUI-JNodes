@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-jnodes"
+description = "python and web UX improvements for ComfyUI.\n[w/'DynamicPrompts.js' and 'EditAttention.js' from the core, along with 'ImageFeed.js' and 'favicon.js' from the custom scripts of pythongosssss, are not compatible. Therefore, manual deletion of these files is required to use this web extension.]"
+version = "1.0.0"
+license = "LICENSE"
+dependencies = ["opencv-python", "piexif", "imageio_ffmpeg", "token_count", "aiofiles", "numba", "send2trash"]
+
+[project.urls]
+Repository = "https://github.com/JaredTherriault/ComfyUI-JNodes"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-JNodes"
+Icon = ""
