@@ -139,13 +139,13 @@ def find_items_with_similar_names(folder_path, containing_directory, base_name, 
                 try: 
                     with open(folder_path + "/" + file_name, 'r', encoding='utf-8') as opened_file:
                         loaded_text = opened_file.read()
-                        familiars.append(loaded_text)
+                        familiars.append({"file_name": file_name, "loaded_text": loaded_text})
                         continue
                 except Exception as e:
                     log_exception("Error loading text, will append familiar file name. Error:", e)
-            familiars.append(containing_directory + "/" + file_name if containing_directory is not None else file_name)
+            familiars.append({"file_name": containing_directory + "/" + file_name if containing_directory is not None else file_name, "loaded_text": ""})
 
-    familiars.sort()
+    familiars.sort(key=lambda x: x["file_name"])
     return familiars
 
 def list_subdirectories_recursively(root_directory):

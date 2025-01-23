@@ -60,6 +60,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 	let trainedWords = "";
 	let tags = [];
 	let modelId; // The base model ID for civit.ai. Not specific to any version of the model.
+	let modelVersionId; // The model version ID, specific to a certain version of the model.
 	let lastViewedImageIndex = 0;
 
 	const bIsLora = type == "loras";
@@ -81,7 +82,7 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 	// If one does not exist, fall back to placeholder image.
 	function getHrefForFamiliarImage(index) {
 		if (familiars?.familiar_images?.length > 0) {
-			return `/jnodes_view_image?filename=${encodeURIComponent(familiars.familiar_images[index])}&type=${type}`;
+			return `/jnodes_view_image?filename=${encodeURIComponent(familiars.familiar_images[index].file_name)}&type=${type}`;
 		}
 		return NoImagePlaceholder;
 	}
@@ -94,16 +95,27 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 		if (familiars?.familiar_infos?.length > 0) {
 			for (const familiar_info of familiars.familiar_infos) {
 				try {
-					let loadedJson = JSON.parse(familiar_info);
+					const bIsFullInfo = familiar_info.file_name.includes("civit.full.info");
+					let loadedJson = JSON.parse(familiar_info.loaded_text);
 					if (loadedJson) {
 						let jsonKeys = Object.keys(loadedJson);
 
 						for (const key of jsonKeys) {
-							infoMap[key] = loadedJson[key];
+
+							let keyTouse = key;
+
+							if (key == "id") {
+								if (bIsFullInfo) {
+									keyTouse = "modelId";
+								} else {
+									keyTouse = "modelVersionId";
+								}
+							}
+							infoMap[keyTouse] = loadedJson[key];
 						}
 					}
 				} catch (jsonError) {
-					console.error(`Error parsing JSON: ${jsonError}, orginal text: ${familiar_info}`);
+					console.error(`Error parsing JSON: ${jsonError} for item: ${familiar_info.file_name}, orginal text: ${familiar_info.loaded_text}`);
 				}
 			}
 		}
@@ -206,7 +218,8 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 			lastViewedImageIndex = infoMap.lastViewedImageIndex;
 		}
 
-		modelId = infoMap.modelId || infoMap.id || undefined;
+		modelVersionId = infoMap.modelVersionId || undefined;
+		modelId = infoMap.modelId || modelVersionId || undefined;
 
 		return infoMap;
 	}
@@ -447,7 +460,10 @@ export async function createExtraNetworkCard(nameText, familiars, type) {
 
 			// Go to civit.ai link
 			if (modelId) {
-				const href = `https://civitai.com/models/${modelId}`;
+				let href = `https://civitai.com/models/${modelId}`;
+				if (modelVersionId) {
+					href = href + `?modelVersionId=${modelVersionId}`;
+				}
 				buttonsRow.appendChild(
 					createButton(
 						$el("a", {
