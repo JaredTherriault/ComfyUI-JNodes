@@ -23,9 +23,9 @@ async def get_comfyui_subdirectory_images_wrapper(request):
 async def get_model_items_wrapper(request):
     return get_model_items(request)
 
-@server.PromptServer.instance.routes.get('/jnodes_save_model_config')
-async def save_model_config_wrapper(request):
-    return save_model_config(request)
+@server.PromptServer.instance.routes.post('/jnodes_save_model_user_info')
+async def save_model_user_info_wrapper(request):
+    return await save_model_user_info(request)
 
 @server.PromptServer.instance.routes.get("/jnodes_view_image")
 async def view_image_wrapper(request):
