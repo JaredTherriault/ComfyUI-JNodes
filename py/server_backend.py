@@ -465,33 +465,39 @@ async def upload_image(request):
         log_exception("Error uploading image:", e)
         return web.json_response({"success": False, "error": str(e)})
 
-async def save_model_config(request):
-    type = "loras"
-    if "type" in request.rel_url.query:
-        type = request.rel_url.query["type"]
-    if "item_name" in request.rel_url.query:
-        item_name = request.rel_url.query["item_name"]
-    if "subfolder" in request.rel_url.query:
-        subfolder = request.rel_url.query["subfolder"]
-    if "key" in request.rel_url.query:
-        key = request.rel_url.query["key"]
-    if "value" in request.rel_url.query:
-        value = request.rel_url.query["value"]
+async def save_model_user_info(request):
 
-    if item_name is None :
-        logger.warning(f"Missing item_name, unable to update model config.")
-        return web.Response(status=400)
-    if key is None :
-        logger.warning(f"Missing key, unable to update model config for '{item_name}'.")
-        return web.Response(status=400)
-    if value is None :
-        logger.warning(f"Missing value, unable to update model config for '{item_name}' at key '{key}'.")
-        return web.Response(status=400)
-    
-    
-    file_path = folder_paths.get_full_path(type, subfolder + '/' + item_name if subfolder is not None else item_name)
-    #logger.info(familiar_dictionaries)
-    return web.json_response(familiar_dictionaries)
+    try:
+        request_data = await read_we_request_content(request.content)
+        request_json = json.loads(request_data)
+        type = subfolder = item_name = text_to_save = None
+        if "type" in request_json:
+            type = request_json["type"]
+        if "subfolder" in request_json:
+            subfolder = request_json["subfolder"]
+        if "item_name" in request_json:
+            item_name = request_json["item_name"]
+        if "text" in request_json:
+            text_to_save = request_json["text"]
+            
+        if type and item_name and text_to_save:
+            name = subfolder + '/' + item_name if subfolder is not None else item_name
+            full_path = folder_paths.get_full_path(type, name)
+            folder_path = os.path.dirname(full_path)
+            file_name_no_ext, file_ext = os.path.splitext(os.path.basename(item_name))
+
+            file_path = f"{folder_path}/{file_name_no_ext}.user.info"
+
+            with open(file_path, 'w', encoding='utf-8') as file:
+                file.write(text_to_save)
+
+            return web.json_response({"success": True})
+
+        assert ValueError
+
+    except Exception as e:
+        log_exception("Error saving text:", e)
+        return web.json_response({"success": False, "error": str(e)})
 
 def load_info(request):
     type = "loras"
