@@ -31,6 +31,10 @@ async def save_model_user_info_wrapper(request):
 async def view_image_wrapper(request):
     return await view_image(request)
 
+@server.PromptServer.instance.routes.post("/jnodes_save_image_as_model_preview")
+async def save_image_as_model_preview_wrapper(request):
+    return await save_image_as_model_preview(request)
+
 @server.PromptServer.instance.routes.post('/jnodes_copy_item')
 async def copy_item_wrapper(request):
     return await copy_item(request)
