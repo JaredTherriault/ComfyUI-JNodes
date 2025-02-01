@@ -1,5 +1,11 @@
 import { app } from "/scripts/app.js";
 
+import { 
+    setupUiSettings,setting_bEnabled, setting_ImageDrawerInstanceCount 
+} from "../../common/SettingsManager.js";
+
+import { utilitiesInstance } from "../../common/Utilities.js"
+
 /*
     The idea is to have a central place for all classes to be able to access other classes without circular dependency issues.
     Each participating class will need to inherit from ImageDrawerComponent. Its owning script will need to keep an instance of a ClassInstanceFactory,
@@ -23,13 +29,13 @@ import { app } from "/scripts/app.js";
 
     When the user wants to access a component, they just 'import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";' and call, for example:
 
-        const imageDrawerMainInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerMain", this.drawerInstanceIndex);
+        const imageDrawerMainInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerMain", this.imageDrawerInstance);
 
-    This returns an instance of the ImageDrawer class for the given caller's same drawerInstanceIndex, as there may be many instances of the drawer widget.
-    This assumes the calling class is also a ImageDrawerComponent. If not, 'this.drawerInstanceIndex' may be omitted from the call, assuming there is only on drawer widget instance.
+    This returns an instance of the ImageDrawer class for the given caller's same imageDrawerInstance, as there may be many instances of the drawer widget.
+    This assumes the calling class is also a ImageDrawerComponent. If not, 'this.imageDrawerInstance' may be omitted from the call, assuming there is only on drawer widget instance.
     It is best to call getComponentByName() inside of a function, similar to functional programming paradigms. This ensures the instance is not created if not necessary.
 
-    getComponentByName() will check drawerInstanceToComponentMap at the given drawerInstanceIndex for an existing instance of the component with the given name, i.e. "ImageDrawerMain".
+    getComponentByName() will check drawerInstanceToComponentMap at the given imageDrawerInstance for an existing instance of the component with the given name, i.e. "ImageDrawerMain".
     If it doesn't find an instance, it will lookup the registered ClassInstanceFactory with the given name and call makeInstance() on it, then the instance will automatically
     register itself with the module so next time getComponentByName() is called, it will just return the instance that was created earlier.
 
@@ -48,11 +54,10 @@ import { app } from "/scripts/app.js";
         -Startup may take longer as we wait for ClassInstanceFactory instances to register themselves
 */
 
-class ImageDrawerComponentManager {
+class ImageDrawerFactoryManager {
 
     constructor() {
         this.classInstanceFactories = [];
-        this.drawerInstanceToComponentMap = {}; // Drawer instance index mapped to a set of registered components
     }
 
     registerClassInstanceFactory(factory) {
@@ -69,33 +74,41 @@ class ImageDrawerComponentManager {
 
         return null;
     }
+}
 
-    _getOrInitComponentArrayByDrawerIndex(drawerInstanceIndex) {
-        if (!this.drawerInstanceToComponentMap[drawerInstanceIndex]) {
-            this.drawerInstanceToComponentMap[drawerInstanceIndex] = [];
-        }
+class ImageDrawerComponentManager {
 
-        return this.drawerInstanceToComponentMap[drawerInstanceIndex];
+    constructor() {
+        this.componentInstances = []; // Drawer instance index mapped to a set of registered components
     }
 
-    registerComponent(component, drawerInstanceIndex = 0) {
+    _getComponentArray() {
 
-        this._getOrInitComponentArrayByDrawerIndex(drawerInstanceIndex).push(component);
+        return this.componentInstances;
     }
 
-    getComponentByName(name, drawerInstanceIndex = 0) {
-        let foundComponent = this._getOrInitComponentArrayByDrawerIndex(drawerInstanceIndex).find(
+    registerComponent(component) {
+
+        this._getComponentArray().push(component);
+    }
+
+    getComponentByName(name) {
+        let foundComponent = this._getComponentArray().find(
             (component) => component.name === name);
 
         if (!foundComponent) {
-            const foundFactory = this._getClassInstanceFactoryByName(name);
+            const foundFactory = _imageDrawerFactoryManagerInstance._getClassInstanceFactoryByName(name);
 
             if (foundFactory) {
-                foundComponent = foundFactory.makeInstance(drawerInstanceIndex);
+                foundComponent = foundFactory.makeInstance(this);
             }
         }
 
         return foundComponent;
+    }
+
+    getIndex() {
+        return _imageDrawerComponentManagerInstances.findIndex(other => this === other);
     }
 
     async setup() {
@@ -107,18 +120,26 @@ class ImageDrawerComponentManager {
             throw ("imageDrawerMainInstance never registered!");
         }
     }
-};
 
-export const imageDrawerComponentManagerInstance = new ImageDrawerComponentManager();
+    async destroy() {
+        const imageDrawerMainInstance = this.getComponentByName("ImageDrawerMain");
+
+        if (imageDrawerMainInstance) {
+            await imageDrawerMainInstance.destroy();
+        } else {
+            throw ("imageDrawerMainInstance never registered!");
+        }
+    }
+};
 
 export class ImageDrawerComponent {
 
     constructor(args) {
 
         this.name = args.name;
-        this.drawerInstanceIndex = args.drawerInstanceIndex || 0;
+        this.imageDrawerInstance = args.imageDrawerInstance;
 
-        imageDrawerComponentManagerInstance.registerComponent(this, this.drawerInstanceIndex);
+        this.imageDrawerInstance.registerComponent(this);
     }
 }
 
@@ -135,19 +156,71 @@ export class ClassInstanceFactory {
         this.scriptArgs = args;
         this.scriptArgs.name = this.name;
 
-        imageDrawerComponentManagerInstance.registerClassInstanceFactory(this);
+        _imageDrawerFactoryManagerInstance.registerClassInstanceFactory(this);
     }
 
-    makeInstance(drawerInstanceIndex = 0) {
-        this.scriptArgs.drawerInstanceIndex = drawerInstanceIndex;
+    makeInstance(imageDrawerInstance) {
+        this.scriptArgs.imageDrawerInstance = imageDrawerInstance;
         const newComponentInstance = new this.managedComponentClass(this.scriptArgs); // Will be automatically registered
         return newComponentInstance;
+    }
+}
+
+const _imageDrawerFactoryManagerInstance = new ImageDrawerFactoryManager();
+
+let _imageDrawerComponentManagerInstances = [];
+
+export function makeImageDrawerInstance() {
+
+    const instance = new ImageDrawerComponentManager();
+    instance.id = utilitiesInstance.getRandomInt(10000, 99999);
+    instance._getComponentArray();
+    _imageDrawerComponentManagerInstances.push(instance);
+    return instance;
+}
+
+export function removeImageDrawerInstance(index = -1) {
+
+    if (index < -1 || index >= _imageDrawerComponentManagerInstances.length) {
+
+        console.log(`removeImageDrawerInstance: Can't remove ImageDrawerInstance at index ${index}: Index out of range!`);
+        return;
+    }
+
+    if (index == -1) {
+        index = _imageDrawerComponentManagerInstances.length - 1;
+    }
+
+    _imageDrawerComponentManagerInstances[index].destroy();
+    _imageDrawerComponentManagerInstances.splice(index, 1);
+}
+
+export async function onImageDrawerInstanceCountChanged(newCount) {
+
+    const difference = newCount - _imageDrawerComponentManagerInstances.length;
+
+    if (difference > 0) {
+        for (let i = 0; i < difference; i++) {
+            let instance = makeImageDrawerInstance();
+            await instance.setup();
+        }
+    } else if (difference < 0) {
+        for (let i = 0; i < (difference * -1); i++) {
+            removeImageDrawerInstance();
+        }
     }
 }
 
 app.registerExtension({
     name: "JNodes.ImageDrawer",
     async setup() {
-        await imageDrawerComponentManagerInstance.setup();
+
+        await setupUiSettings((e) => { onImageDrawerInstanceCountChanged(e.target.value); });
+
+        if (!setting_bEnabled.value) {
+            return;
+        }
+
+        onImageDrawerInstanceCountChanged(setting_ImageDrawerInstanceCount.value);
     }
 });
