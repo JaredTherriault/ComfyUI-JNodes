@@ -13,7 +13,6 @@ import { isPointerDown } from "../../common/EventManager.js";
 
 import { setting_FontSize, setting_FontFamily } from "../../TextareaFontControl.js"
 
-import { imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
 import { getVideoMetadata, isVideoFile } from "../../nodes/MediaMetadata.js";
 
 const toolTipOffsetX = 10; // Adjust the offset from the mouse pointer
@@ -219,7 +218,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 labelElement.textContent = confirmLabelText;
                             } else if (labelElement.textContent == confirmLabelText) {
 
-                                const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+                                const imageDrawerContextSelectorInstance = imageElementToUse.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
                                 const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
                                 if (currentContextObject) {
                                     currentContextObject.onRequestSingleDeletion(imageElementToUse);
@@ -249,7 +248,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 labelElement.textContent = confirmLabelText;
                             } else if (labelElement.textContent == confirmLabelText) {
 
-                                const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+                                const imageDrawerContextSelectorInstance = imageElementToUse.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
                                 const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
                                 if (currentContextObject) {
                                     currentContextObject.onRequestSingleRemoval(imageElementToUse);
@@ -279,7 +278,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 labelElement.textContent = confirmLabelText;
                             } else if (labelElement.textContent == confirmLabelText) {
 
-                                const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+                                const imageDrawerContextSelectorInstance = imageElementToUse.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
                                 const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
                                 if (currentContextObject) {
                                     currentContextObject.onRequestSingleFavourite(imageElementToUse);
@@ -305,7 +304,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                         }),
                         "Open this file's containing directory in your OS's default file manager.",
                         function (e) {
-                            const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+                            const imageDrawerContextSelectorInstance = imageElementToUse.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
                             const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
                             if (currentContextObject) {
                                 currentContextObject.onRequestShowInFileManager(imageElementToUse);
@@ -377,9 +376,9 @@ export function getOrCreateToolButton(imageElementToUse) {
         toolButtonContainer = utilitiesInstance.createDarkContainer("imageToolsButton", "0%");
     }
 
-    const handleClassSuffix = '.imageElement-flyout-handle';
-    const menuClassSuffix = '.imageElement-flyout-menu';
-    const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+    const handleClassSuffix = 'imageElement-flyout-handle';
+    const menuClassSuffix = 'imageElement-flyout-menu';
+    const imageDrawerListInstance = imageElementToUse.imageDrawerInstance.getComponentByName("ImageDrawerList");
     const parentRect = imageDrawerListInstance.getImageListElement().getBoundingClientRect();
     const flyout = createFlyoutHandle("⋮", handleClassSuffix, menuClassSuffix, parentRect, imageElementToUse.bIsVideoFormat ? "w" : "");
 
@@ -461,7 +460,7 @@ export function addCheckboxSelectorToImageElement(imageElementToUse) {
             }
 
             if (bUpdateBatchSelectionWidget) {
-                const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+                const batchSelectionManagerInstance = imageElementToUse.imageDrawerInstance.getComponentByName("BatchSelectionManager");
                 batchSelectionManagerInstance.updateWidget();
             }
         }
