@@ -248,6 +248,39 @@ def get_file_extension_without_dot(filename):
     _, extension = os.path.splitext(filename)
     return extension[1:].lower()
 
+def get_next_base_filename(base_directory, base_name, fill_in_missing_numbers = False):
+    """
+    Finds the next available numbered filename in the format base_name_<number>, ignoring extensions.
+    """
+    existing_numbers = []
+    pattern = re.compile(rf"^{re.escape(base_name)}_(\d+)(?:\..+)?$")  # Allow optional extensions
+
+    # Scan directory for matching files
+    for filename in os.listdir(base_directory):
+        match = pattern.match(filename)
+        if match:
+            existing_numbers.append(int(match.group(1)))
+
+    if not existing_numbers:
+        return f"{base_name}_0"
+
+    existing_numbers.sort()
+    
+    # Find the first missing number
+    if fill_in_missing_numbers:
+        for i in range(len(existing_numbers)):
+            if existing_numbers[i] != i:
+                return f"{base_name}_{i}"
+
+    # Otherwise, use the next highest number
+    return f"{base_name}_{existing_numbers[-1] + 1}"   
+
+def is_media_url(url):
+    """Check if the URL points to an image or video."""
+    parsed_url = urlparse(url)
+    ext = os.path.splitext(parsed_url.path)[-1].lower()
+    return ext in ALL_ACCEPTED_BROWSER_VISUAL_EXTENSIONS
+
 
 def is_webp(filename):
     return get_file_extension_without_dot(filename).lower() == "webp"
