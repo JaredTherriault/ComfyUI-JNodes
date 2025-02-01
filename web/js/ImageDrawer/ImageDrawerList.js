@@ -3,7 +3,7 @@ import { $el } from "/scripts/ui.js";
 import { observeVisualElement, unobserveVisualElement } from "../common/ImageAndVideoObserver.js";
 import { utilitiesInstance } from "../common/Utilities.js";
 
-import { ImageDrawerComponent, ClassInstanceFactory, imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
+import { ImageDrawerComponent, ClassInstanceFactory } from "./Core/ImageDrawerModule.js";
 
 class ImageDrawerList extends ImageDrawerComponent {
 
@@ -19,6 +19,11 @@ class ImageDrawerList extends ImageDrawerComponent {
 				flex: "1 1 auto"
 			}
 		});
+
+		this._scrollLevel = 0;
+		this.imageList.addEventListener("scroll", (event) => {
+			this._scrollLevel = event.target.scrollTop;
+		});
 	}
 
 	// Delegates
@@ -33,6 +38,10 @@ class ImageDrawerList extends ImageDrawerComponent {
             this.onFinishChangingImageListMulticastFunctions.push(inFunction);
         }
     }
+
+	scrollToLastScrollLevel() {
+		this.imageList.scrollTop = this._scrollLevel;
+	}
 
 	// To be called externally when a context or another component begins adding a batch of elements to the imageList
 	notifyStartChangingImageList() {
@@ -63,6 +72,11 @@ class ImageDrawerList extends ImageDrawerComponent {
 		return this.imageList.childNodes;
 	}
 
+	getChildIndex(child) {
+		const children = Array.from(child.parentNode.childNodes); 
+		return children.indexOf(child);
+	}
+
 	getVisibleImageListChildren() {
 		let visibleChildren = [];
 		for (const child of this.getImageListChildren()) {
@@ -74,6 +88,21 @@ class ImageDrawerList extends ImageDrawerComponent {
 		return visibleChildren;
 	}
 
+	async replaceImageListChild(oldChild, newChild) {
+
+		if (!oldChild || !newChild) {
+
+			return;
+		}
+
+		const insertionIndex = this.getChildIndex(oldChild);
+
+		if (insertionIndex > -1) {
+			await this.removeElementFromImageList(oldChild, false);
+			await this.addElementToImageList(newChild, false, insertionIndex);
+		}
+	}
+
 	async replaceImageListChildren(newChildren) {
 
 		this.notifyStartChangingImageList();
@@ -83,7 +112,7 @@ class ImageDrawerList extends ImageDrawerComponent {
 		}
 		this.notifyFinishChangingImageList();
 
-		const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+		const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
 		imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
 	}
 
@@ -101,8 +130,8 @@ class ImageDrawerList extends ImageDrawerComponent {
 	async removeElementFromImageList(element, bHandleSearch = true) {
 		if (element != undefined) {
 			//console.log("removing element: " + element);
-			if (element.onObserve) {
-				observeVisualElement(element);
+			if (element.onObserverIntersect) {
+				unobserveVisualElement(element);
 			} else {
 				for (let visualElement of utilitiesInstance.getVisualElements(element)) {
 					unobserveVisualElement(visualElement);
@@ -122,7 +151,7 @@ class ImageDrawerList extends ImageDrawerComponent {
 			}
 			this.imageList.removeChild(element);
 			if (bHandleSearch) {
-				const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+				const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
 				imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
 			}
 		} else {
@@ -130,11 +159,16 @@ class ImageDrawerList extends ImageDrawerComponent {
 		}
 	};
 
-	async addElementToImageList(element, bHandleSearch = true) {
+	async addElementToImageList(element, bHandleSearch = true, insertAt = -1) {
 		//console.log("adding element: " + element);
 		if (element != undefined) {
-			this.imageList.appendChild(element);
-			if (element.onObserve) {
+			if (insertAt > -1 && insertAt < this.imageList.childNodes.length) {
+				const referenceNode = this.imageList.childNodes[insertAt];
+            	this.imageList.insertBefore(element, referenceNode);
+			} else {
+				this.imageList.appendChild(element);
+			}
+			if (element.onObserverIntersect) {
 				observeVisualElement(element);
 			} else {
 				for (let visualElement of utilitiesInstance.getVisualElements(element)) {
@@ -142,7 +176,7 @@ class ImageDrawerList extends ImageDrawerComponent {
 				}
 			}
 			if (bHandleSearch) {
-				const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+				const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
 				imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
 			}
 		} else {
