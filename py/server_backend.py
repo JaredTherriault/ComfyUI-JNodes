@@ -7,6 +7,7 @@ from .server_backend_get_subdirectory_images import GetSubdirectoryImages
 from app.user_manager import UserManager
 
 import folder_paths
+import aiohttp
 from aiohttp import web
 import server
 
@@ -25,7 +26,7 @@ def should_cancel_task():
 def request_task_cancellation():
     CANCELLATION_REQUESTED = True
 
-async def read_we_request_content(reader):
+async def read_web_request_content(reader):
     data = await reader.read()
     return data.decode('utf-8')
 
@@ -382,6 +383,44 @@ async def view_image(request):
 
     return web.Response(status= result["response"] if result["response"] else 404)
 
+async def save_image_as_model_preview(request):
+
+    try:
+        # For ease of use, pass the model URI in the URL
+        result = await validate_and_return_file_from_request(request)
+
+        if result["success"] == True:
+
+            request_data = await read_web_request_content(request.content)
+            request_json = json.loads(request_data)
+
+            new_image_url = request_json["url"]
+
+            model_file_path = result["payload"]["file"]
+            model_directory = os.path.dirname(model_file_path)
+            model_base_name = os.path.splitext(os.path.basename(model_file_path))[0]
+
+            new_image_file_name = None
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(new_image_url) as response:
+                    if response.status == 200:
+                        new_image_ext = response.content_type.split("/")[1]
+                        new_image_file_name =  f"{get_next_base_filename(model_directory, model_base_name)}.{new_image_ext}"
+                        new_image_path = os.path.join(model_directory, new_image_file_name)
+                        with open(new_image_path, "wb") as file:
+                            while chunk := await response.content.read(1024):
+                                file.write(chunk)
+                    else:
+                        return web.json_response({"success": False, "error": "Failed to download image"})
+
+            
+            return web.json_response({"success": True, "file_name": new_image_file_name})
+
+    except Exception as e:
+        logger.error(e)
+        return web.json_response({"success": False, "error": str(e)})
+
 async def copy_item(request):
    
     def copy_file(path_from, path_to):
@@ -468,7 +507,7 @@ async def upload_image(request):
 async def save_model_user_info(request):
 
     try:
-        request_data = await read_we_request_content(request.content)
+        request_data = await read_web_request_content(request.content)
         request_json = json.loads(request_data)
         type = subfolder = item_name = text_to_save = None
         if "type" in request_json:
@@ -541,7 +580,7 @@ def load_info(request):
 
 async def save_text(request):
     try:
-        request_data = await read_we_request_content(request.content)
+        request_data = await read_web_request_content(request.content)
         request_json = json.loads(request_data)
         if "path" in request_json:
             path = resolve_file_path(request_json["path"])
@@ -559,7 +598,7 @@ async def save_text(request):
 
 async def load_text(request):
     try:
-        request_data = await read_we_request_content(request.content)
+        request_data = await read_web_request_content(request.content)
         request_json = json.loads(request_data)
         if "path" in request_json:
             path = resolve_file_path(request_json["path"])
@@ -580,7 +619,7 @@ def save_settings(request, settings):
 
 async def post_setting(request):
     try:
-        request_data = await read_we_request_content(request.content)
+        request_data = await read_web_request_content(request.content)
         request_json = json.loads(request_data)
 
         setting_id = None
@@ -608,7 +647,7 @@ async def post_setting(request):
 
 async def post_all_settings(request):
     try:
-        request_data = await read_we_request_content(request.content)
+        request_data = await read_web_request_content(request.content)
         request_json = json.loads(request_data)
 
         settings = None
@@ -637,7 +676,7 @@ def get_settings(request):
 
 async def get_setting(request):
     try:
-        request_data = await read_we_request_content(request.content)
+        request_data = await read_web_request_content(request.content)
         request_json = json.loads(request_data)
 
         setting_id = None
