@@ -11,9 +11,20 @@ $el("style", {
 		font-size: 12px;
 		display: flex;
 		flex-direction: column;
-		min-width: min-content;
+	}
+	.JNodes-image-drawer--sidebar {
+		position: unset;
+		width: -moz-available;          /* WebKit-based browsers will ignore this. */
+    	width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+		height: inherit;
+	}
+	.JNodes-image-drawer--top-left, 
+	.JNodes-image-drawer--top-right,
+	.JNodes-image-drawer--bottom-left,
+	.JNodes-image-drawer--bottom-right {
+		min-width: min-content;	
 		width: calc(var(--drawer-width, 20) * 1vw);
-		height: calc(var(--drawer-height, 20) * 1vh);		
+		height: calc(var(--drawer-height, 20) * 1vh);	
 	}
 	.JNodes-image-drawer--bottom-left,
 	.JNodes-image-drawer--bottom-right {
@@ -71,6 +82,23 @@ $el("style", {
 	.JNodes-image-drawer--top-right .JNodes-image-drawer-right-affined-basic-controls-group,
 	.JNodes-image-drawer--bottom-right .JNodes-image-drawer-right-affined-basic-controls-group {
 		flex-direction: row-reverse;
+	}
+
+	.JNodes-image-drawer-menu {
+		display: flex;
+	}
+
+	.JNodes-image-drawer--sidebar .JNodes-image-drawer-menu {
+		display: block;
+	}
+
+	.JNodes-image-drawer--sidebar .JNodes-image-drawer-btn.hide-btn {
+		display: none;
+	}
+
+	.JNodes-image-drawer--sidebar .drawer-size-control.drawer-width-control,
+	.JNodes-image-drawer--sidebar .drawer-size-control.drawer-height-control {
+		display: none;
 	}
 
 	.JNodes-image-drawer--top-right .JNodes-image-drawer-menu,
