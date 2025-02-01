@@ -2,7 +2,7 @@ import { $el } from "/scripts/ui.js";
 
 import * as Contexts from "./Contexts.js";
 
-import { ImageDrawerComponent, ClassInstanceFactory, imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
+import { ImageDrawerComponent, ClassInstanceFactory } from "./Core/ImageDrawerModule.js";
 
 class ImageDrawerContextSelector extends ImageDrawerComponent {
 
@@ -12,7 +12,32 @@ class ImageDrawerContextSelector extends ImageDrawerComponent {
 
 		this.ContextSelector;
 		this.lastSelectedContextOption;
+		this.contexts;
 	}
+
+	getContexts() {
+		return this.contexts;
+	}
+
+	getContextObjectFromName(contextName) {
+		const contextValues = Object.values(this.contexts);
+
+		let foundContext;
+
+		for (const context of contextValues) {
+			if (context.name == contextName) {
+				foundContext = context;
+				break;
+			}
+		}
+
+	if (foundContext) {
+		return foundContext;
+	} else {
+		console.error(`ImageDrawerContext with name '${contextName}' not found.`);
+		return null;
+	}
+}
 
 	getCurrentContextName() {
 		return this.ContextSelector.value;
@@ -20,7 +45,7 @@ class ImageDrawerContextSelector extends ImageDrawerComponent {
 
 	getCurrentContextObject() {
 		if (this.ContextSelector) {
-			return Contexts.getContextObjectFromName(this.ContextSelector.value);
+			return this.getContextObjectFromName(this.ContextSelector.value);
 		}
 
 		return null;
@@ -34,25 +59,25 @@ class ImageDrawerContextSelector extends ImageDrawerComponent {
 	async onOptionSelected(selectedValue) {
 		//		console.log("ContextSelector selectedValue:" + selectedValue);
 
-		const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+		const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
 
 		// Create cache for previously selected option
 		if (this.lastSelectedContextOption) {
 
-			const lastContextObject = Contexts.getContextObjectFromName(this.lastSelectedContextOption);
+			const lastContextObject = this.getContextObjectFromName(this.lastSelectedContextOption);
 			if (lastContextObject) {
 				lastContextObject.makeCache();
 			}
 		}
 
-		const NewContext = Contexts.getContextObjectFromName(selectedValue);
+		const NewContext = this.getContextObjectFromName(selectedValue);
 		await NewContext.switchToContext();
 
 		// Set up lastSelectedContextOption to accommodate future context switching
 		this.lastSelectedContextOption = selectedValue;
 
 		// Setup sorting
-		const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+		const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 		imageDrawerListSortingInstance.setSortingOptionsFromSortTypeArray(NewContext.getSupportedSortTypes());
 
 		const sortType = NewContext.getDesiredSortType();
@@ -62,7 +87,7 @@ class ImageDrawerContextSelector extends ImageDrawerComponent {
 			imageDrawerListSortingInstance.setOptionSelectedFromOptionName(sortType);
 		}
 
-		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+		const batchSelectionManagerInstance = this.imageDrawerInstance.getComponentByName("BatchSelectionManager");
 		batchSelectionManagerInstance.updateWidget();
 
 		// Automatically focus search bar and select text to save user a click
@@ -73,12 +98,12 @@ class ImageDrawerContextSelector extends ImageDrawerComponent {
 
 		this.ContextSelector = $el("select");
 
-		Contexts.initializeContexts();
+		this.contexts = Contexts.initializeContexts(this.imageDrawerInstance);
 
-		this.lastSelectedContextOption = Contexts.getContexts().feed.name;
+		this.lastSelectedContextOption = this.getContexts().feed.name;
 
-		for (const contextKey in Contexts.getContexts()) {
-			const context = Contexts.getContexts()[contextKey];
+		for (const contextKey in this.getContexts()) {
+			const context = this.getContexts()[contextKey];
 			const option = document.createElement("option");
 			option.value = context.name;
 			option.textContent = context.name;
