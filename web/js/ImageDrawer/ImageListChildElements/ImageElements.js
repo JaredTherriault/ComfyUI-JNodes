@@ -3,16 +3,14 @@ import { $el } from "/scripts/ui.js";
 
 import { utilitiesInstance } from "../../common/Utilities.js";
 
-import { ModalManager } from "../../common/ModalManager.js";
+import { ModalManager, ModalOptions } from "../../common/ModalManager.js";
 
 import { setting_VideoPlaybackOptions } from "../../common/SettingsManager.js";
 import { setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen, toggleVideoPlayback } from "../../common/VideoControl.js";
 
 import * as ImageElementUtils from "./ImageListChildElementUtils.js";
 
-import { imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
-
-export async function createImageElementFromFileInfo(fileInfo) {
+export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstance) {
 	if (!fileInfo) { return; }
 	let href = `/jnodes_view_image?`;
 	if (fileInfo.filename) {
@@ -41,6 +39,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	imageElement.fileInfo = fileInfo;
 	imageElement.bIsVideoFormat = bIsVideoFormat;
+	imageElement.imageDrawerInstance = imageDrawerInstance;
 
 	imageElement.deleteItem = async function (bAlsoRemoveFromImageList = true, bNotifyImageListChanged = true) {
 
@@ -81,7 +80,7 @@ export async function createImageElementFromFileInfo(fileInfo) {
 
 	imageElement.removeItemFromImageList = async function (bNotifyImageListChanged = true) {
 
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerListInstance = imageDrawerInstance.getComponentByName("ImageDrawerList");
 
 		if (bNotifyImageListChanged) {
 			imageDrawerListInstance.notifyStartChangingImageList();
@@ -227,11 +226,16 @@ export async function createImageElementFromFileInfo(fileInfo) {
 				} else {
 
 					// Make a modal for the image, passing in its current index to allow for slideshows and image switching
-					const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+					const imageDrawerListInstance = imageDrawerInstance.getComponentByName("ImageDrawerList");
 					// Find this imageElement in the list
 					const currentIndex = Array.from(imageDrawerListInstance.getVisibleImageListChildren()).findIndex((op => op === imageElement));
 
-					const modalManager = new ModalManager((currentIndex !== undefined && currentIndex > -1) ? currentIndex : undefined);
+					const modalManager = new ModalManager(
+						imageDrawerInstance, new ModalOptions(
+							true, 
+							(currentIndex !== undefined && currentIndex > -1) ? currentIndex : undefined),
+							true
+						);
 
 					modalManager.createModal(modalManager.createModalReadyImage(href));
 
