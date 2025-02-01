@@ -89,7 +89,7 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 			const x = transform.e * scale / transform.a;
 			const y = transform.f * scale / transform.a;
 
-			const setting = app.ui.settings.getSettingValue("Comfy.UseNewMenu", false).toLowerCase();
+			const setting = app.ui.settings.getSettingValue("Comfy.UseNewMenu").toLowerCase();
 			const comfyMenuBar = document.querySelector(".comfyui-body-top");
 			const topOffset = comfyMenuBar && setting == "top" ? comfyMenuBar.clientHeight : 0; //Comfy.UseNewMenu
 
