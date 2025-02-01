@@ -130,48 +130,100 @@ document.addEventListener('wheel', (event) => {
 
 document.addEventListener("drop", (event) => {
 
-	if (event.target.data == app.canvas) { // Drop in lora node onto canvas
+	const afterGetDropData = (key, callback) => {
+
+		if (!callback) { return; }
+
 		for (const item of event.dataTransfer.items) {
 
 			if (item.type != 'text/plain') { continue; }
 
-			item.getAsString(function (itemString) {
-				if (itemString && itemString.includes("loraNodeName=")) {
-					function addNode(name, coordinates, options) {
-						options = { select: true, shiftY: 0, ...(options || {}) };
-						const node = LiteGraph.createNode(name);
-						app.graph.add(node);
-						node.pos = [
-							coordinates[0] - node.size[0] / 2, coordinates[1] + options.shiftY,
-						];
-						if (options.select) {
-							app.canvas.selectNode(node, false);
-						}
-						return node;
-					}
+			item.getAsString((itemString) => {
 
-					event.preventDefault();
-					event.stopPropagation();
+				try {
+					const asJson = JSON.parse(itemString);
 
-					let node = addNode("LoraLoader", [event.canvasX, event.canvasY]);
-					for (let widget of node.widgets) {
-						if (widget.name == "lora_name") {
-							widget.value = itemString.split("=")[1];
-						}
+					if (asJson && asJson[key]) {
+						callback(asJson[key]);
+					} else {
+						console.log(`JNodes: Unable to parse ${key} from JSON from payload: ${itemString}`)
 					}
+				} catch {
+					console.log(`JNodes: Unable to parse JSON from payload: ${itemString}`)
 				}
 			});
 		}
-	} else if (event.target.tagName.toLowerCase() === 'textarea') { // Drop a1111 lora text or embedding text onto textarea
-		for (const item of event.dataTransfer.items) {
-			item.getAsString(function (itemString) {
-				if (itemString && itemString.includes("modelInsertText=")) {
+	};
+
+	const updateLoraNode = function(node, modelName, strengthModel, strengthClip) {
+		for (let widget of node.widgets) {
+			if (widget.name == "lora_name") {
+				widget.value = modelName;
+			}
+			if (widget.name == "strength_model") {
+				widget.value = strengthModel;
+			}
+			if (widget.name == "strength_clip") {
+				widget.value = strengthClip;
+			}
+		}
+	};
+
+	if (event.target.data == app.canvas) {
+
+		// Drop lora node data onto existing node to replace
+		const graph = event.target.data.graph;
+
+		if (graph) {
+
+			const pos = app.clientPosToCanvasPos([event.clientX, event.clientY]);
+			const hoveredNode = graph.getNodeOnPos(
+				pos[0],
+				pos[1]
+			);
+			
+			if (hoveredNode && hoveredNode.type == "LoraLoader") {
+				afterGetDropData("modelInfo", (asJson) => {
+
 					event.preventDefault();
 					event.stopPropagation();
 
-					utilitiesInstance.pasteToTextArea(itemString.split("=")[1], event.target, event.target.selectionStart, event.target.selectionEnd);
-				}
-			})
+					updateLoraNode(hoveredNode, asJson.modelName, asJson.strengthModel, asJson.strengthClip);
+				});
+				return;
+			}
 		}
+ 
+		// Or drop in lora node data onto canvas to place
+		afterGetDropData("modelInfo", (payload) => {
+
+			function addNode(name, coordinates, options) {
+				options = { select: true, shiftY: 0, ...(options || {}) };
+				const node = LiteGraph.createNode(name);
+				app.graph.add(node);
+				node.pos = [
+					coordinates[0] - node.size[0] / 2, coordinates[1] + options.shiftY,
+				];
+				if (options.select) {
+					app.canvas.selectNode(node, false);
+				}
+				return node;
+			};
+
+			event.preventDefault();
+			event.stopPropagation();
+
+			let node = addNode("LoraLoader", [event.canvasX, event.canvasY]);
+			updateLoraNode(node, payload.modelName, payload.strengthModel, payload.strengthClip);
+		});
+
+	} else if (event.target.tagName.toLowerCase() === 'textarea') { // Drop a1111 lora text or embedding text onto textarea
+		afterGetDropData("modelInsertText", (payload) => {
+
+			event.preventDefault();
+			event.stopPropagation();
+
+			utilitiesInstance.pasteToTextArea(payload, event.target, event.target.selectionStart, event.target.selectionEnd);
+		});
 	}
 });
