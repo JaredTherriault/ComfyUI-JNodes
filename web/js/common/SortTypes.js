@@ -1,9 +1,9 @@
-import { imageDrawerComponentManagerInstance } from "../ImageDrawer/Core/ImageDrawerModule.js";
 
 export class SortType {
-	constructor(name, bIsAscending) {
+	constructor(name, bIsAscending, imageDrawerInstance) {
 		this.name = `${name}${bIsAscending == undefined ? "" : " " + (bIsAscending ? "⬆️" : "⬇️")}`;
 		this.bIsAscending = bIsAscending;
+		this.imageDrawerInstance = imageDrawerInstance;
 	}
 
 	sortImageList() {
@@ -11,7 +11,7 @@ export class SortType {
 
 		imageListChildren.sort(this.getSortingLambda());
 
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 		imageDrawerListInstance.replaceImageListChildren(imageListChildren);
 	}
 
@@ -19,7 +19,7 @@ export class SortType {
 
 	getSortableChildren() {
 
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 		let imageListChildren = imageDrawerListInstance.getImageListChildren();
 
 		return Array.from(imageListChildren);
@@ -27,8 +27,8 @@ export class SortType {
 }
 
 export class SortTypeFilename extends SortType {
-	constructor(bIsAscending) {
-		super('Filename', bIsAscending)
+	constructor(bIsAscending, imageDrawerInstance) {
+		super('Filename', bIsAscending, imageDrawerInstance)
 	}
 
 	getSortingLambda() {
@@ -37,8 +37,8 @@ export class SortTypeFilename extends SortType {
 }
 
 export class SortTypeFriendlyName extends SortType {
-	constructor(bIsAscending) {
-		super('Friendly Name', bIsAscending)
+	constructor(bIsAscending, imageDrawerInstance) {
+		super('Friendly Name', bIsAscending, imageDrawerInstance)
 	}
 
 	getSortingLambda() {
@@ -47,8 +47,8 @@ export class SortTypeFriendlyName extends SortType {
 }
 
 export class SortTypeDate extends SortType {
-	constructor(bIsAscending) {
-		super('Date', bIsAscending)
+	constructor(bIsAscending, imageDrawerInstance) {
+		super('Date', bIsAscending, imageDrawerInstance)
 	}
 
 	getSortingLambda() {
@@ -57,8 +57,8 @@ export class SortTypeDate extends SortType {
 }
 
 export class SortTypeFileSize extends SortType {
-	constructor(bIsAscending) {
-		super('File Size', bIsAscending)
+	constructor(bIsAscending, imageDrawerInstance) {
+		super('File Size', bIsAscending, imageDrawerInstance)
 	}
 
 	getSortingLambda() {
@@ -67,8 +67,8 @@ export class SortTypeFileSize extends SortType {
 }
 
 export class SortTypeImageWidth extends SortType {
-	constructor(bIsAscending) {
-		super('Image Width', bIsAscending)
+	constructor(bIsAscending, imageDrawerInstance) {
+		super('Image Width', bIsAscending, imageDrawerInstance)
 	}
 
 	getSortingLambda() {
@@ -77,8 +77,8 @@ export class SortTypeImageWidth extends SortType {
 }
 
 export class SortTypeImageHeight extends SortType {
-	constructor(bIsAscending) {
-		super('Image Height', bIsAscending)
+	constructor(bIsAscending, imageDrawerInstance) {
+		super('Image Height', bIsAscending, imageDrawerInstance)
 	}
 
 	getSortingLambda() {
@@ -87,8 +87,8 @@ export class SortTypeImageHeight extends SortType {
 }
 
 export class SortTypeImageAspectRatio extends SortType {
-	constructor(bIsAscending) {
-		super('Image Aspect Ratio', bIsAscending)
+	constructor(bIsAscending, imageDrawerInstance) {
+		super('Image Aspect Ratio', bIsAscending, imageDrawerInstance)
 	}
 
 	getSortingLambda() {
@@ -97,8 +97,8 @@ export class SortTypeImageAspectRatio extends SortType {
 }
 
 export class SortTypeFileType extends SortType {
-	constructor(bIsAscending) {
-		super('File Type', bIsAscending)
+	constructor(bIsAscending, imageDrawerInstance) {
+		super('File Type', bIsAscending, imageDrawerInstance)
 	}
 
 	getSortingLambda() {
@@ -107,8 +107,8 @@ export class SortTypeFileType extends SortType {
 }
 
 export class SortTypeShuffle extends SortType {
-	constructor() {
-		super('Shuffle', undefined)
+	constructor(imageDrawerInstance) {
+		super('Shuffle', undefined, imageDrawerInstance)
 	}
 
 	getSortingLambda() {
