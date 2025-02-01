@@ -67,11 +67,10 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 		// Check if the video is intersecting with the viewport
 		if (entry.isIntersecting) {
 
-			if (element.onObserve) {
-				element.onObserve();
+			if (element.onObserverIntersect) {
+				element.onObserverIntersect();
 			}
-			
-			if (!element.src || element.src === '') {
+			else if (!element.src || element.src === '') {
 				element.forceLoad();
 
 				if (element.tagName !== 'VIDEO') {
@@ -85,11 +84,10 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 			}
 		} else {
 
-			if (element.onUnobserve) {
-				element.onUnobserve();
+			if (element.onObserverUnintersect) {
+				element.onObserverUnintersect();
 			}
-
-			if (element.tagName === 'VIDEO') {
+			else if (element.tagName === 'VIDEO') {
 				// Pause the video if it's not intersecting with the viewport
 				tryStopVideo(element);
 
