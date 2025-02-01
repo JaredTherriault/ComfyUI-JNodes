@@ -14,51 +14,23 @@ import {
 	setting_FavouritesDirectory
 } from "../common/SettingsManager.js";
 
-import { imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
 import { SearchableDropDown } from "../common/SearchableDropDown.js";
 
-let Contexts;
+export function initializeContexts(imageDrawerInstance) {
 
-export function initializeContexts() {
-	if (!Contexts) {
-		Contexts = {
-			feed: new ContextFeed(),
-			temp: new ContextTemp(),
-			favoourites: new ContextFavourites(),
-			input: new ContextInput(),
-			output: new ContextOutput(),
-			lora: new ContextLora(),
-			embeddings: new ContextEmbeddings(),
-			//savedPrompts: new ContextSavedPrompts(),
-			//			metadata: new ContextMetadataReader(),
-			//			compare: new ContextCompare(),
-		};
-	}
+	return {
+		feed: new ContextFeed(imageDrawerInstance),
+		temp: new ContextTemp(imageDrawerInstance),
+		favoourites: new ContextFavourites(imageDrawerInstance),
+		input: new ContextInput(imageDrawerInstance),
+		output: new ContextOutput(imageDrawerInstance),
+		lora: new ContextLora(imageDrawerInstance),
+		embeddings: new ContextEmbeddings(imageDrawerInstance),
+		//savedPrompts: new ContextSavedPrompts(imageDrawerInstance),
+		//			metadata: new ContextMetadataReader(imageDrawerInstance),
+		//			compare: new ContextCompare(imageDrawerInstance),
+	};
 };
-
-export function getContexts() {
-	return Contexts;
-}
-
-export function getContextObjectFromName(contextName) {
-	const contextValues = Object.values(Contexts);
-
-	let foundContext;
-
-	for (const context of contextValues) {
-		if (context.name == contextName) {
-			foundContext = context;
-			break;
-		}
-	}
-
-	if (foundContext) {
-		return foundContext;
-	} else {
-		console.error(`ImageDrawerContext with name '${contextName}' not found.`);
-		return null;
-	}
-}
 
 export class ImageDrawerContextCache {
 	constructor(scrollLevel, searchBarText, imageListElements, sortType, customContextCacheData = null) {
@@ -71,9 +43,10 @@ export class ImageDrawerContextCache {
 };
 
 export class ImageDrawerContext {
-	constructor(name, tooltip) {
+	constructor(name, tooltip, imageDrawerInstance) {
 		this.name = name;
 		this.tooltip = tooltip;
+		this.imageDrawerInstance = imageDrawerInstance;
 		this.cache = null;
 	}
 
@@ -91,9 +64,9 @@ export class ImageDrawerContext {
 
 	makeCache() {
 
-		const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
-		const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
+		const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 		const childNodesArray = Array.from(imageDrawerListInstance.getImageListChildren());
 
 		const newCache =
@@ -105,16 +78,16 @@ export class ImageDrawerContext {
 
 	async switchToContext(bSkipRestore = false) {
 
-		const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+		const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 		imageDrawerListSortingInstance.stopAutomaticShuffle();
 
 		const bSuccessfulRestore = bSkipRestore || await this.checkAndRestoreContextCache();
 		if (!bSuccessfulRestore) {
-			const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+			const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
 			imageDrawerSearchInstance.clearAndExecuteSearch(); // Reset search if no cache
 		}
 
-		const imageDrawerMainInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerMain");
+		const imageDrawerMainInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerMain");
 		imageDrawerMainInstance.setContextToolbarWidget(await this.makeToolbar());
 
 		return bSuccessfulRestore;
@@ -135,7 +108,7 @@ export class ImageDrawerContext {
 			textContent: "⏫",
 			title: "Jump to top of list",
 			onclick: async () => {
-				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+				const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 				imageDrawerListInstance.getImageListElement().scrollTop = 0;
 				scrollToTopButton.blur();
 			},
@@ -154,9 +127,9 @@ export class ImageDrawerContext {
 		if (this.hasCache()) {
 			if (this.cache.imageListElements.length > 0) {
 
-				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
-				const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
-				const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+				const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
+				const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
+				const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 
 				// Replace children
 				imageDrawerListInstance.replaceImageListChildren(this.cache.imageListElements);
@@ -186,7 +159,7 @@ export class ImageDrawerContext {
 	}
 
 	onRequestBatchDeletion() {
-		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+		const batchSelectionManagerInstance = this.imageDrawerInstance.getComponentByName("BatchSelectionManager");
 		for (const child of batchSelectionManagerInstance.getValidSelectedItems()) {
 			this.onRequestSingleDeletion(child);
 		}
@@ -199,7 +172,7 @@ export class ImageDrawerContext {
 	}
 
 	onRequestBatchRemoval() {
-		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+		const batchSelectionManagerInstance = this.imageDrawerInstance.getComponentByName("BatchSelectionManager");
 		for (const child of batchSelectionManagerInstance.getValidSelectedItems()) {
 			this.onRequestSingleRemoval(child);
 		}
@@ -212,7 +185,7 @@ export class ImageDrawerContext {
 	}
 
 	onRequestBatchFavourite() {
-		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+		const batchSelectionManagerInstance = this.imageDrawerInstance.getComponentByName("BatchSelectionManager");
 		for (const child of batchSelectionManagerInstance.getValidSelectedItems()) {
 			this.onRequestSingleFavourite(child);
 		}
@@ -231,7 +204,7 @@ export class ImageDrawerContext {
 	}
 
 	shouldCancelAsyncOperation() {
-		const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+		const imageDrawerContextSelectorInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
 		return imageDrawerContextSelectorInstance.getCurrentContextObject() != this; // By default, cancel async operations if the selected context has changed
 	}
 }
@@ -276,7 +249,7 @@ export class ContextClearable extends ImageDrawerContext {
 export class ContextRefreshable extends ImageDrawerContext {
 
 	async onRefreshClicked() {
-		const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+		const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 		imageDrawerListSortingInstance.stopAutomaticShuffle();
 		imageDrawerListSortingInstance.sortWithCurrentType();
 	}
@@ -304,15 +277,15 @@ export class ContextRefreshable extends ImageDrawerContext {
 }
 
 export class ContextModel extends ContextRefreshable {
-	constructor(name, description, type) {
-		super(name, description);
+	constructor(name, description, imageDrawerInstance, type) {
+		super(name, description, imageDrawerInstance);
 		this.type = type;
 	}
 
 	async getModels(bForceRefresh = false) { }
 
 	async loadModels(bForceRefresh = false) {
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 		imageDrawerListInstance.clearImageListChildren();
 		await imageDrawerListInstance.addElementToImageList($el("label", { textContent: `Loading ${this.name}...` }));
 		let modelDicts = await this.getModels(bForceRefresh);
@@ -328,7 +301,7 @@ export class ContextModel extends ContextRefreshable {
 				if (this.shouldCancelAsyncOperation()) { break; }
 
 				if (maxCount > 0 && count > maxCount) { break; }
-				let element = await ExtraNetworks.createExtraNetworkCard(modelKey, modelDicts[modelKey], this.type);
+				let element = await ExtraNetworks.createExtraNetworkCard(modelKey, modelDicts[modelKey], this.type, this.imageDrawerInstance);
 				if (element == undefined) {
 					console.log("Attempting to add undefined element for model named: " + modelKey + " with dict: " + JSON.stringify(modelDicts[modelKey]));
 				}
@@ -366,7 +339,7 @@ export class ContextModel extends ContextRefreshable {
 		options.valueLabelFractionalDigits = 2;
 		options.oninput = async (e) => {
 			setting_ModelCardAspectRatio.value = e.target.valueAsNumber;
-			const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+			const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 			for (let element of imageDrawerListInstance.getImageListChildren()) {
 				if (element.classList.contains('extraNetworksCard')) {
 					element.style.aspectRatio = setting_ModelCardAspectRatio.value;
@@ -410,8 +383,8 @@ export class ContextModel extends ContextRefreshable {
 }
 
 export class ContextSubdirectoryExplorer extends ContextRefreshable {
-	constructor(name, description, directoryName, bShouldForceLoad = false) {
-		super(name, description);
+	constructor(name, description, imageDrawerInstance, directoryName, bShouldForceLoad = false) {
+		super(name, description, imageDrawerInstance);
 		this.rootDirectoryName = directoryName;
 		this.rootDirectoryDisplayName = '/root';
 		this.bIncludeSubdirectories = false;
@@ -477,10 +450,10 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 	// as well as all subdirectories then load the images in a given subdirectory
 	async fetchFolderItems(selectedSubdirectory = "") {
 
-		const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+		const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 		imageDrawerListSortingInstance.stopAutomaticShuffle();
 
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 		imageDrawerListInstance.clearImageListChildren();
 		const withOrWithout = this.bIncludeSubdirectories ? "with" : "without";
 
@@ -538,7 +511,7 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 
 	async loadImagesInFolder(selectedSubdirectory) {
 
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 
 		if (!this.fileList || this.fileList.length == 0) {
 
@@ -566,7 +539,7 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 				bShouldForceLoad: this.bShouldForceLoad,
 				bShouldSort: false,
 				bShouldApplySearch: false,
-			});
+			}, this.imageDrawerInstance);
 			if (element !== undefined) {
 				imageDrawerListInstance.addElementToImageList(element, false);
 			} else {
@@ -588,10 +561,10 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 		// Wait for all promises to resolve
 		Promise.all(promises).then(() => {
 
-			const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+			const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 			imageDrawerListSortingInstance.sortWithCurrentType();
 
-			const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+			const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
 			imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
 
 			imageDrawerListInstance.notifyFinishChangingImageList();
@@ -684,8 +657,8 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 }
 
 export class ContextFeed extends ContextClearable {
-	constructor() {
-		super("Feed", "The latest generations from this web session (cleared on page refresh)");
+	constructor(imageDrawerInstance) {
+		super("Feed", "The latest generations from this web session (cleared on page refresh)", imageDrawerInstance);
 
 		this.feedImages = [];
 
@@ -704,7 +677,7 @@ export class ContextFeed extends ContextClearable {
 					this.feedImages.push(src);
 				}
 
-				const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+				const imageDrawerContextSelectorInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
 				if (imageDrawerContextSelectorInstance.getCurrentContextName() == this.name) {
 					await this.addNewUncachedFeedImages();
 				}
@@ -715,7 +688,7 @@ export class ContextFeed extends ContextClearable {
 	}
 
 	async addNewUncachedFeedImages(bShouldSort = true, bShouldApplySearch = true) {
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 		const imageListLength = imageDrawerListInstance.getImageListChildren().length;
 		if (imageListLength < this.feedImages.length) {
 			imageDrawerListInstance.notifyStartChangingImageList();
@@ -724,19 +697,19 @@ export class ContextFeed extends ContextClearable {
 
 				let fileInfo = this.feedImages[imageIndex];
 				fileInfo.bShouldForceLoad = true; // Don't lazy load
-				const element = await ImageElements.createImageElementFromFileInfo(fileInfo);
+				const element = await ImageElements.createImageElementFromFileInfo(fileInfo, this.imageDrawerInstance);
 				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
 				const bHandleSearch = false;
 				await imageDrawerListInstance.addElementToImageList(element, bHandleSearch);
 			}
 
 			if (bShouldSort) {
-				const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+				const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 				imageDrawerListSortingInstance.sortWithCurrentType();
 			}
 
 			if (bShouldApplySearch) {
-				const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
+				const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
 				imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
 			}
 
@@ -746,7 +719,7 @@ export class ContextFeed extends ContextClearable {
 
 	async switchToContext() {
 		if (!await super.switchToContext()) {
-			const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+			const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 			imageDrawerListInstance.clearImageListChildren();
 		}
 
@@ -754,7 +727,7 @@ export class ContextFeed extends ContextClearable {
 	}
 
 	async onClearClicked() {
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 		imageDrawerListInstance.clearImageListChildren();
 		this.feedImages = [];
 	}
@@ -770,7 +743,7 @@ export class ContextFeed extends ContextClearable {
 	}
 
 	onRequestBatchDeletion() {
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 		for (const child of imageDrawerListInstance.getImageListChildren()) {
 			this.onRequestSingleDeletion(child);
 		}
@@ -782,7 +755,7 @@ export class ContextFeed extends ContextClearable {
 	}
 
 	onRequestBatchRemoval() {
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 		for (const child of imageDrawerListInstance.getImageListChildren()) {
 			this.onRequestSingleRemoval(child);
 		}
@@ -797,18 +770,15 @@ export class ContextFeed extends ContextClearable {
 		super.onRequestSingleRemoval(item);
 
 		if (item.img?.src) {
-			this.feedImages = this.feedImages.filter(src => src == item.img.src); // Remove matching feed sources
 			this.feedImages = this.feedImages.filter(src => src !== item.img.src); // Remove matching feed sources
 		}
-
-		super.onRequestSingleRemoval(item);
 	}
 }
 
 export class ContextTemp extends ContextSubdirectoryExplorer {
-	constructor() {
+	constructor(imageDrawerInstance) {
 		const bShouldForceLoad = true; // These need to be searchable by meta data
-		super("Temp / History", "The generations you've created since the last comfyUI server restart", "temp", bShouldForceLoad);
+		super("Temp / History", "The generations you've created since the last comfyUI server restart", imageDrawerInstance, "temp", bShouldForceLoad);
 	}
 
 	getDefaultSortType() {
@@ -817,32 +787,32 @@ export class ContextTemp extends ContextSubdirectoryExplorer {
 }
 
 export class ContextFavourites extends ContextSubdirectoryExplorer {
-	constructor() {
+	constructor(imageDrawerInstance) {
 		const bShouldForceLoad = true; // These need to be searchable by meta data
 
 		// Update rootDirectoryName when this setting changes
 		setting_FavouritesDirectory.setOnChange((newValue) => { this.rootDirectoryName = newValue; })
 
-		super("Favourites", "The generations you've copied to the Favourites directory defined in Settings > JNodes Settings", setting_FavouritesDirectory.value, bShouldForceLoad);
+		super("Favourites", "The generations you've copied to the Favourites directory defined in Settings > JNodes Settings", imageDrawerInstance, setting_FavouritesDirectory.value, bShouldForceLoad);
 	}
 }
 
 export class ContextInput extends ContextSubdirectoryExplorer {
-	constructor() {
-		super("Input", "Images and videos found in your input folder", "input");
+	constructor(imageDrawerInstance) {
+		super("Input", "Images and videos found in your input folder", imageDrawerInstance, "input");
 	}
 }
 
 export class ContextOutput extends ContextSubdirectoryExplorer {
-	constructor() {
+	constructor(imageDrawerInstance) {
 		const bShouldForceLoad = true; // These need to be searchable by meta data
-		super("Output", "Images and videos found in your output folder", "output", bShouldForceLoad);
+		super("Output", "Images and videos found in your output folder", imageDrawerInstance, "output", bShouldForceLoad);
 	}
 }
 
 export class ContextLora extends ContextModel {
-	constructor() {
-		super("Lora / Lycoris", "Lora and Lycoris models found in your Lora directory", "loras");
+	constructor(imageDrawerInstance) {
+		super("Lora / Lycoris", "Lora and Lycoris models found in your Lora directory", imageDrawerInstance, "loras");
 	}
 
 	async getModels(bForceRefresh = false) {
@@ -851,8 +821,8 @@ export class ContextLora extends ContextModel {
 }
 
 export class ContextEmbeddings extends ContextModel {
-	constructor() {
-		super("Embeddings / Textual Inversions", "Embedding/textual inversion models found in your embeddings directory", "embeddings");
+	constructor(imageDrawerInstance) {
+		super("Embeddings / Textual Inversions", "Embedding/textual inversion models found in your embeddings directory", imageDrawerInstance, "embeddings");
 	}
 
 	async getModels(bForceRefresh = false) {
@@ -861,17 +831,18 @@ export class ContextEmbeddings extends ContextModel {
 }
 
 export class ContextSavedPrompts extends ContextSubdirectoryExplorer {
-	constructor() {
+	constructor(imageDrawerInstance) {
 		super(
 			"Saved Prompts",
 			"Images and videos found in the JNodes/saved_prompts folder and its subdirectories. Title comes from filename",
+			imageDrawerInstance,
 			"JNodes/saved_prompts");
 	}
 }
 
 export class ContextMetadataReader extends ImageDrawerContext {
-	constructor() {
-		super("Metadata Reader", "Read and display metadata from a generation");
+	constructor(imageDrawerInstance) {
+		super("Metadata Reader", "Read and display metadata from a generation", imageDrawerInstance);
 	}
 
 	getSupportedSortNames() {
@@ -880,13 +851,17 @@ export class ContextMetadataReader extends ImageDrawerContext {
 }
 
 export class ContextCompare extends ContextClearable {
-	constructor() {
-		super("Compare", "Compare generations sent to this context via menu. Does not persist on refresh.");
+	constructor(imageDrawerInstance) {
+		super(
+			"Compare", 
+			"Compare generations sent to this context via menu. Does not persist on refresh.",
+			imageDrawerInstance
+		);
 	}
 
 	async switchToContext() {
 		if (!await super.switchToContext()) {
-			const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+			const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 			imageDrawerListInstance.clearImageListChildren();
 		}
 
