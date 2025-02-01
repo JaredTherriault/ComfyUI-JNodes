@@ -7,8 +7,6 @@ import { app } from "/scripts/app.js";
 import { info_VideoPlaybackOptions, options_VideoPlayback } from "../common/VideoOptions.js";
 import { utilitiesInstance } from "./Utilities.js";
 
-import { imageDrawerComponentManagerInstance } from "../ImageDrawer/Core/ImageDrawerModule.js";
-
 export const defaultKeyList = "prompt, workflow, parameters";
 
 var underButtonContent;
@@ -38,6 +36,10 @@ export class ConfigSetting {
     // Method to set the callback function
     setOnChange(callback) {
         this._onChange = callback;
+    }
+
+    getDefaultValue() {
+        return this._defaultValue;
     }
 
     // localStorage
@@ -113,14 +115,17 @@ export class ImageDrawerConfigSetting extends ConfigSetting {
 }
 
 export let setting_bEnabled = new ImageDrawerConfigSetting("bEnabled", true);
+export let setting_ImageDrawerInstanceCount = new ImageDrawerConfigSetting("ImageDrawerInstanceCount", 1);
 export let setting_bMasterVisibility = new ImageDrawerConfigSetting("bMasterVisibility", true);
 export let setting_DrawerAnchor = new ImageDrawerConfigSetting("DrawerAnchor", "top-left");
+export let setting_SidebarSplitterHandleSize = new ImageDrawerConfigSetting("Drawer.Sidebar.Splitter.Width", 0);
 
 export let setting_KeyList = new ImageDrawerConfigSetting("ImageVideo.KeyList", defaultKeyList);
 export let setting_bKeyListAllowDenyToggle = new ImageDrawerConfigSetting("ImageVideo.bKeyListAllowDenyToggle", false);
 export let setting_bMetadataTooltipToggle = new ImageDrawerConfigSetting("ImageVideo.bMetadataTooltipToggle", true);
 
 export let setting_FavouritesDirectory = new ImageDrawerConfigSetting("Directories.Favourites", "output/Favourites");
+export let setting_CopyLoraTextPattern = new ImageDrawerConfigSetting("Models.CopyLoraTextPattern", "<lora:{{modelName}}:{{strengthModel}}:{{strengthClip}}>");
 
 export let setting_ModelCardAspectRatio = new ImageDrawerConfigSetting("Models.AspectRatio", 0.67);
 
@@ -130,7 +135,7 @@ export let setting_bQueueTimerEnabled = new ImageDrawerConfigSetting("bQueueTime
 
 // Button setup
 
-export const setupUiSettings = async (onDrawerAnchorInput) => {
+export const setupUiSettings = async (onImageDrawerInstanceCountChanged) => {
 
     let response = await api.fetchApi("/jnodes_get_all_settings", { method: "GET", cache: "no-store" });
 
@@ -161,17 +166,64 @@ export const setupUiSettings = async (onDrawerAnchorInput) => {
         const tooltip = "Whether or not the image drawer is initialized (requires page reload)";
         addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
-    // Drawer location
+    // Number of Instances
     {
         const labelWidget = $el("label", {
-            textContent: "Image Drawer Anchor:",
+            textContent: "Image Drawer Instance Count:",
         });
 
-        const settingWidget = createDrawerSelectionWidget(onDrawerAnchorInput);
+        const settingWidget = $el(
+            "input",
+            {
+                type: "number",
+                value: setting_ImageDrawerInstanceCount.value,
+                min: 1,
+                step: 1,
+                oninput: (e) => {
+                    setting_ImageDrawerInstanceCount.value = e.target.value;
+                    onImageDrawerInstanceCountChanged(e);
+                },
+            },
+        );
 
-        const tooltip = "To which part of the screen the drawer should be docked";
+        const tooltip = "How many image drawer instances to have onscreen at once.";
         addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
+    // Default Drawer location
+    {
+        const labelWidget = $el("label", {
+            textContent: "Default Image Drawer Anchor:",
+        });
+
+        const settingWidget = createDrawerSelectionWidget(setting_DrawerAnchor.value, null);
+
+        const tooltip = "To which part of the screen new drawer instances should be docked";
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+
+    // Sidebar Splitter Handle Size
+    {
+        const labelWidget = $el("label", {
+            textContent: "Sidebar Splitter Handle Size:",
+        });
+
+        const settingWidget = $el("input", {
+            type: "number",
+            value: setting_SidebarSplitterHandleSize.value,
+            min: 0,
+            step: 1,
+            oninput: (e) => {
+                setting_SidebarSplitterHandleSize.value = e.target.value;
+            },
+        });
+
+        const tooltip = "Overrides the size of the splitter handle for JNodes Image Drawer docked in a sidebar tab. " +
+            "Note that this only applies to Image Drawer tabs and does not apply to any other tabs. " +
+            "Set to 0 to use the default Comfy-set size. Size is in pixels. Close and re-open sidebar tab.";
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+
+    
 
     // Mouse over image/video key allow/deny list
     {
@@ -260,6 +312,28 @@ export const setupUiSettings = async (onDrawerAnchorInput) => {
         addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
 
+    // Copy Lora Text pattern
+    {
+        const labelWidget = $el("label", {
+            textContent: "'Copy Lora as Text' pattern:",
+        });
+
+        const settingWidget = $el(
+            "input",
+            {
+                defaultValue: setting_CopyLoraTextPattern.value,
+                oninput: (e) => {
+                    setting_CopyLoraTextPattern.value = e.target.value;
+                },
+            },
+        );
+
+        const tooltip = "Define the way text loras are constructed when copied to the clipboard. " +
+            "put variable names in double braces '{{}}'. Variables are 'modelName', 'strengthModel', and 'strengthClip'. " +
+            `For example, '${setting_CopyLoraTextPattern.getDefaultValue()}'`;
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+
     // Enable/disable queue timer
     {
         const labelWidget = $el("label", {
@@ -297,18 +371,25 @@ export const setupUiSettings = async (onDrawerAnchorInput) => {
     // }
 };
 
-export function createDrawerSelectionWidget(onInput) {
-    return $el("select", {
+export function createDrawerSelectionWidget(defaultValue, onInput, isSelected = null) {
+
+    const options = ["top-left", "top-right", "bottom-left", "bottom-right", "sidebar"];
+
+    const widget = $el("select", {
         oninput: onInput,
     },
-        ["top-left", "top-right", "bottom-left", "bottom-right"].map((m) =>
+        options.map((m) =>
             $el("option", {
                 value: m,
                 textContent: m,
-                selected: setting_DrawerAnchor.value === m,
+                selected: isSelected ? isSelected(m) : setting_DrawerAnchor.value === m,
             })
         )
     );
+
+    widget.value = options.includes(defaultValue) ? defaultValue : widget.value;
+
+    return widget;
 }
 
 function createExpandableSettingsArea() {
@@ -427,11 +508,11 @@ export function addJNodesSetting(nameWidget, settingWidget, tooltip, bUseExpanda
 }
 
 export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClassSuffix = "", parentRect = window, forcedAnchor = "") {
-    let handle = $el(`section.flyout-handle${handleClassSuffix}`, [
+    let handle = $el(`section.flyout-handle.${handleClassSuffix}`, [
         $el("label.flyout-handle-label", { textContent: handleText })
     ]);
 
-    let menu = $el(`div.flyout-menu${menuClassSuffix}`);
+    let menu = $el(`div.flyout-menu.${menuClassSuffix}`);
 
     handle.appendChild(menu);
 
@@ -482,12 +563,11 @@ export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClass
     return { handle: handle, menu: menu };
 }
 
-export function createVideoPlaybackOptionsMenuWidgets(menu) {
+export function createVideoPlaybackOptionsMenuWidgets(menu, imageDrawerListInstance) {
 
     const infos = new info_VideoPlaybackOptions();
 
     async function callForEachCallbackOnEachElementInImageList(propertyName, propertyValue, info) {
-        const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
         for (let child of imageDrawerListInstance.getImageListChildren()) {
             for (let element of utilitiesInstance.getVideoElements(child)) {
                 info.forEachElement(element, propertyName, propertyValue);
@@ -503,7 +583,7 @@ export function createVideoPlaybackOptionsMenuWidgets(menu) {
         // If requested, set similarly named properties on image list
         const info = infos[propertyName];
         if (info.forEachElement) {
-            callForEachCallbackOnEachElementInImageList(propertyName, newValue, info);
+            callForEachCallbackOnEachElementInImageList(propertyName, newValue, info, imageDrawerListInstance);
         }
     }
 
@@ -559,12 +639,12 @@ export function createVideoPlaybackOptionsMenuWidgets(menu) {
     });
 }
 
-export function createVideoPlaybackOptionsFlyout() {
-    const handleClassSuffix = ".video-handle";
-    const menuClassSuffix = ".video-menu";
+export function createVideoPlaybackOptionsFlyout(imageDrawerListInstance) {
+    const handleClassSuffix = "video-handle";
+    const menuClassSuffix = "video-menu";
     let flyout = createFlyoutHandle("📽️", handleClassSuffix, menuClassSuffix);
 
-    createVideoPlaybackOptionsMenuWidgets(flyout.menu);
+    createVideoPlaybackOptionsMenuWidgets(flyout.menu, imageDrawerListInstance);
 
     return flyout;
 }
