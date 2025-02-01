@@ -2,7 +2,7 @@ import { $el } from "/scripts/ui.js";
 
 import { utilitiesInstance } from "../common/Utilities.js";
 
-import { ImageDrawerComponent, ClassInstanceFactory, imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
+import { ImageDrawerComponent, ClassInstanceFactory } from "./Core/ImageDrawerModule.js";
 
 class ImageDrawerSearch extends ImageDrawerComponent {
 
@@ -84,7 +84,7 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 				// Basically, we get a child element from the current list randomly
 				// Then if it has searchTerms, which all items should, we parse them out into an array
 				// Then we get a random term, clean it up a little, and if it's valid we execute search with it
-				const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+				const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 				const children = imageDrawerListInstance.getImageListChildren();
 
 				if (children.length > 1) {
@@ -169,7 +169,7 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 		const bSearchTermsGiven = splitSearchTerms.length > 0;
 
 		// Loop through items and check for a match
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 		const children = imageDrawerListInstance.getImageListChildren();
 		for (let i = 0; i < children.length; i++) {
 
@@ -196,7 +196,7 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 			utilitiesInstance.setElementVisible(children[i], bShouldEvaluateSearch ? bDoesItemTextIncludeSearchTerm : true);
 		}
 
-		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+		const batchSelectionManagerInstance = this.imageDrawerInstance.getComponentByName("BatchSelectionManager");
 		batchSelectionManagerInstance.updateWidget();
 	}
 
