@@ -1,15 +1,28 @@
+import { utilitiesInstance } from "./Utilities.js";
 import { $el } from "/scripts/ui.js";
 
-import { imageDrawerComponentManagerInstance } from "../ImageDrawer/Core/ImageDrawerModule.js";
+export class ModalOptions {
+
+	constructor(
+		bIsImageContainer = false, 
+		imageIndex = undefined
+	) {
+
+		this.bIsImageContainer = bIsImageContainer;
+		this.imageIndex = imageIndex;
+	}
+}
 
 export class ModalManager {
 
-	constructor(imageIndex = undefined) {
+	constructor(imageDrawerInstance, modalOptions = new ModalOptions()) {
+
+        this.imageDrawerInstance = imageDrawerInstance;
 
 		// If this modal is representing an image in imageList,
 		// add functionality to switch to neighboring images or
-		// enable auto mode / slideshows
-		this._imageIndex = imageIndex;
+		// enable auto mode / slideshows, among other things
+		this._modalOptions = modalOptions;
 
 		// Zoom and Pan functionality
 		this._scale = 1;
@@ -27,7 +40,7 @@ export class ModalManager {
 		this._bButtonPressed = false;
 	}
 
-	createModal(modalContent,) {
+	createModal(modalContent) {
 		if (!modalContent) { return; }
 
 		this._modalContent = modalContent;
@@ -64,7 +77,6 @@ export class ModalManager {
 	_setModalContentStyle() {
 
 		this._modalContent.style.position = 'absolute';
-		this._modalContent.style.display = "inline-block";
 		this._modalContent.style.left = "50%";
 		this._modalContent.style.top = "50%";
 		this._modalContent.style.transform = "translate(-50%, -50%)";
@@ -77,25 +89,69 @@ export class ModalManager {
 	}
 
 	_createAndOpenModalContainer() {
-		this._modalContainer = document.createElement("div");
-		this._modalContainer.style.display = "block";
-		this._modalContainer.style.position = "fixed";
-		this._modalContainer.style.zIndex = "10000";
-		this._modalContainer.style.left = "0";
-		this._modalContainer.style.top = "0";
-		this._modalContainer.style.width = "100%";
-		this._modalContainer.style.height = "100%";
-		this._modalContainer.style.overflow = "auto";
-		this._modalContainer.style.backgroundColor = "rgba(0,0,0,0.7)";
 
-		this._modalContainer.addEventListener("wheel", (event) => { event.preventDefault(); this._zoom(event); });
-		this._modalContainer.addEventListener("mousedown", (event) => { event.preventDefault(); this._startPan(event); });
-		this._modalContainer.addEventListener("mousemove", (event) => { event.preventDefault(); this._pan(event); });
-		this._modalContainer.addEventListener("mouseup", (event) => { event.preventDefault(); this._onMouseUp(event); });
-		this._modalContainer.addEventListener("mouseleave", (event) => { event.preventDefault(); this._endPan(); });
+		this._modalContainer = $el("div", 
+			{
+				style: {
+
+					display: "block",
+					position: "fixed",
+					zIndex: "10000",
+					left: "0%",
+					top: "0%",
+					width: "100%",
+					height: "100%",
+					maxWidth: "100%",
+					maxHeight: "100%",
+					overflow: "auto",
+					backgroundColor: "rgba(0,0,0,0.7)",
+				}
+			}
+		);
+
+		this._modalContainer.addEventListener("wheel", (event) => { 
+			
+			if (this._modalOptions.bIsImageContainer) {
+				event.preventDefault(); 
+				this._zoom(event); 
+			}
+		});
+		this._modalContainer.addEventListener("mousedown", (event) => { 
+			
+			if (this._modalOptions.bIsImageContainer) {
+				event.preventDefault(); 
+				this._startPan(event);
+			} 
+		});
+		this._modalContainer.addEventListener("mousemove", (event) => { 
+			
+			if (this._modalOptions.bIsImageContainer) {
+				event.preventDefault(); 
+				this._pan(event); 
+			}
+		});
+		this._modalContainer.addEventListener("mouseup", (event) => { 
+			
+			if (this._modalOptions.bIsImageContainer) {
+				event.preventDefault(); 
+			}
+			this._onMouseUp(event); 
+		});
+		this._modalContainer.addEventListener("mouseleave", (event) => { 
+			
+			if (this._modalOptions.bIsImageContainer) {
+				event.preventDefault(); 
+				this._endPan(); 
+			}
+		});
 
 		// Prevent drag & drop operation
-		this._modalContainer.addEventListener("dragstart", (event) => { event.preventDefault(); });
+		this._modalContainer.addEventListener("dragstart", (event) => { 
+			
+			if (this._modalOptions.bIsImageContainer) {
+				event.preventDefault();
+			} 
+		});
 		this._modalContainer.draggable = false;
 
 		this._modalContainer.data = this;
@@ -138,24 +194,24 @@ export class ModalManager {
 			return button;
 		}
 
-		const previousImageButton = createButton("<", "See previous image", () => { this._displayNeighbouringImage(-1); });
-		previousImageButton.style.left = "2.5%";
-		previousImageButton.style.top = "50%";
-		this._getOrCreateModalContainer().appendChild(previousImageButton);
-
-		const nextImageButton = createButton(">", "See next image", () => { this._displayNeighbouringImage(1); });
-		nextImageButton.style.right = "2.5%";
-		nextImageButton.style.top = "50%";
-		this._getOrCreateModalContainer().appendChild(nextImageButton);
-
 		// Count
-		if (this._imageIndex != undefined) {
+		if (this._modalOptions.imageIndex != undefined) {
 
-			const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+			const previousImageButton = createButton("<", "See previous image", () => { this._displayNeighbouringImage(-1); });
+			previousImageButton.style.left = "2.5%";
+			previousImageButton.style.top = "50%";
+			this._getOrCreateModalContainer().appendChild(previousImageButton);
+
+			const nextImageButton = createButton(">", "See next image", () => { this._displayNeighbouringImage(1); });
+			nextImageButton.style.right = "2.5%";
+			nextImageButton.style.top = "50%";
+			this._getOrCreateModalContainer().appendChild(nextImageButton);
+
+			const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 			const currentListChildren = imageDrawerListInstance.getVisibleImageListChildren();
 
 			const countWidget = $el("label", {
-				textContent: `${this._imageIndex + 1}/${currentListChildren.length}`,
+				textContent: `${this._modalOptions.imageIndex + 1}/${currentListChildren.length}`,
 				style: {
 					background: "rgba(0,0,0,0.5)",
 					color: "white",
@@ -172,7 +228,7 @@ export class ModalManager {
 	}
 
 	// Function to close the modal and destroy the class instance
-	_closeModal() {
+	closeModal() {
 		if (this._modalContainer && this._modalContainer.parentNode) {
 			this._modalContainer.parentNode.removeChild(this._modalContainer);
 		}
@@ -184,17 +240,23 @@ export class ModalManager {
 	_handleKeyDown(event) {
 		if (event.key === "Escape") {
 			event.preventDefault();
-			this._closeModal();
+			this.closeModal();
 		} else if (event.key === "ArrowLeft") {
-			event.preventDefault();
-			this._displayNeighbouringImage(-1);
+			if (this._modalOptions.bIsImageContainer){
+				event.preventDefault();
+				this._displayNeighbouringImage(-1);
+			}
 		} else if (event.key === "ArrowRight") {
-			event.preventDefault();
-			this._displayNeighbouringImage(1);
+			if (this._modalOptions.bIsImageContainer){
+				event.preventDefault();
+				this._displayNeighbouringImage(1);
+			}
 		}
 	}
 
 	_zoom(event) {
+		if (!this._modalOptions.bIsImageContainer) { return; }
+
 		event.preventDefault(); // Prevent the default scroll behavior
 
 		const zoomSpeed = 0.1;
@@ -212,6 +274,8 @@ export class ModalManager {
 	}
 
 	_startPan(event) {
+		if (!this._modalOptions.bIsImageContainer) { return; }
+		
 		this._bIsPanningActive = true;
 		this._getOrCreateModalContainer().style.cursor = "grabbing";
 		this._startX = event.clientX;
@@ -219,6 +283,8 @@ export class ModalManager {
 	}
 
 	_pan(event) {
+		if (!this._modalOptions.bIsImageContainer) { return; }
+		
 		if (!this._bIsPanningActive) return;
 
 		const dx = event.clientX - this._startX;
@@ -239,6 +305,8 @@ export class ModalManager {
 	}
 
 	_endPan() {
+		if (!this._modalOptions.bIsImageContainer) { return; }
+		
 		this._bIsPanningActive = false;
 		this._getOrCreateModalContainer().style.cursor = "grab";
 	}
@@ -259,19 +327,25 @@ export class ModalManager {
 
 		} else if (event.button == 0) { // Left mouse button only can close
 
-			this._closeModal();
+			if (!this._modalOptions.bIsImageContainer && 
+				(event.target == this._modalContent ||
+				utilitiesInstance.hasAncestor(event.target, this._modalContent))
+			) {
+				return;
+			}
 
+			this.closeModal();
 		}
 	}
 
 	_displayNeighbouringImage(offset = 0) {
 
-		if (this._imageIndex !== undefined) {
+		if (this._modalOptions.imageIndex !== undefined) {
 
-			const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+			const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 			const currentListChildren = imageDrawerListInstance.getVisibleImageListChildren();
 
-			let newImageIndex = this._imageIndex;
+			let newImageIndex = this._modalOptions.imageIndex;
 			let newImage;
 
 			// Loop until we find an image format child
@@ -284,16 +358,22 @@ export class ModalManager {
 				newImage = currentListChildren[newImageIndex];
 
 				// Break if we round back to the original image index
-				if (newImageIndex == this._imageIndex) {
+				if (newImageIndex == this._modalOptions.imageIndex) {
 					break;
 				}
 
 			} while (newImage?.bIsVideoFormat);
 
-			const modalManager = new ModalManager(newImageIndex);
+			const modalManager = new ModalManager(
+				this.imageDrawerInstance, 
+				new ModalOptions(
+					this._modalOptions.bIsImageContainer, 
+					newImageIndex
+				)
+			);
 			modalManager.createModal(modalManager.createModalReadyImage(newImage.fileInfo.href));
 
-			this._closeModal();
+			this.closeModal();
 		}
 	}
 }
