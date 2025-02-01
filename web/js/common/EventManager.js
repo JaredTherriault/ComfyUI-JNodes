@@ -43,7 +43,9 @@ export function simulateMouseClickAtPoint(x, y) {
 // Keyboard events
 
 function isElementAppropriateForVideoEvent(elementUnderPointer) {
-	return elementUnderPointer && VideoControl.isElementVideo(elementUnderPointer);
+	return elementUnderPointer && 
+		VideoControl.isElementVideo(elementUnderPointer) && 
+		!elementUnderPointer.hasAttribute("NoVideoControl");
 }
 
 // Keyboard events
