@@ -168,6 +168,22 @@ class JNodesUtilities {
 		return returnValue;
 	}
 
+	getRandomInt(min, max) {
+		// Ensure that min and max are integers
+		min = Math.ceil(min);
+		max = Math.floor(max);
+		
+		// Generate a random number between min (inclusive) and max (inclusive)
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	convertToTitleCase(input) {
+		return input
+			.replace(/([A-Z])/g, ' $1') // Add space before each uppercase letter
+			.replace(/^./, str => str.toUpperCase()) // Capitalize the first letter
+			.trim(); // Remove leading/trailing spaces
+	}
+
 	stringifyDisplayData(inDisplayData) {
 		const Stringifier = (key, value) => {
 			// Check if the key is "FileDimensions"
@@ -282,6 +298,50 @@ class JNodesUtilities {
 		document.execCommand("copy");
 
 		document.body.removeChild(textArea);
+	}
+
+	simulateDrag(element, startX, startY, endX, endY) {
+		// Dispatch mousedown event at the starting position
+		let mousedownEvent = new MouseEvent('mousedown', {
+			bubbles: true,
+			cancelable: true,
+			clientX: startX,
+			clientY: startY
+		});
+		element.dispatchEvent(mousedownEvent);
+	
+		// Dispatch mousemove event to simulate dragging
+		let mousemoveEvent = new MouseEvent('mousemove', {
+			bubbles: true,
+			cancelable: true,
+			clientX: endX,
+			clientY: endY
+		});
+		document.dispatchEvent(mousemoveEvent);
+	
+		// Dispatch mouseup event to release the drag
+		let mouseupEvent = new MouseEvent('mouseup', {
+			bubbles: true,
+			cancelable: true
+		});
+		document.dispatchEvent(mouseupEvent);
+	}
+
+	jsonStringifyWithoutCircularErrors(object) {
+
+		function removeCircularReferences() {
+			const seen = new WeakSet();
+			return function (key, value) {
+				if (typeof value === 'object' && value !== null) {
+					if (seen.has(value)) {
+						return; // Circular reference found, don't include it in the JSON
+					}
+					seen.add(value);
+				}
+				return value;
+			};
+		}
+		return JSON.stringify(object, removeCircularReferences());
 	}
 
 	checkIfAllImagesAreComplete(images) {
