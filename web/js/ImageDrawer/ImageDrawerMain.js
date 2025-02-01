@@ -2,13 +2,13 @@ import { app } from "/scripts/app.js";
 import { $el } from "/scripts/ui.js";
 
 import {
-	ImageDrawerConfigSetting, setupUiSettings, createDrawerSelectionWidget,
+	ImageDrawerConfigSetting, createDrawerSelectionWidget,
 	setting_bEnabled, setting_bMasterVisibility, setting_DrawerAnchor,
 	createFlyoutHandle, createLabeledSliderRange, options_LabeledSliderRange,
-	setting_bQueueTimerEnabled
+	setting_bQueueTimerEnabled, setting_SidebarSplitterHandleSize
 } from "../common/SettingsManager.js";
 
-import { ImageDrawerComponent, ClassInstanceFactory, imageDrawerComponentManagerInstance } from "./Core/ImageDrawerModule.js";
+import { ImageDrawerComponent, ClassInstanceFactory } from "./Core/ImageDrawerModule.js";
 
 import { utilitiesInstance } from "../common/Utilities.js";
 
@@ -21,18 +21,52 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		super(args);
 
 		this.imageDrawer;
+		this.ImageDrawerMenu;
 		this.drawerOptionsFlyout;
 		this.imageDrawerContextToolbar;
 		this.drawerWidthSlider;
 		this.drawerHeightSlider;
 		this.columnSlider;
 
+		this.icon = "🗄️";
+
+		this._bHasRenderedSidebarTabAtLeastOnce = false;
+
 		this._minimumDrawerSize = 15;
 		this._maximumDrawerSize = 100;
 
-		this.setting_ColumnCount = new ImageDrawerConfigSetting("ImageSize", 4);
-		this.setting_DrawerHeight = new ImageDrawerConfigSetting("DrawerHeight", 25);
-		this.setting_DrawerWidth = new ImageDrawerConfigSetting("DrawerWidth", 25);
+		this.setting_ColumnCount = new ImageDrawerConfigSetting(`ImageDrawer_ColumnCount_Instance_${this.imageDrawerInstance.getIndex()}`, 4);
+		this.setting_DrawerHeight = new ImageDrawerConfigSetting(`ImageDrawer_Height_Instance_${this.imageDrawerInstance.getIndex()}`, 25);
+		this.setting_DrawerWidth = new ImageDrawerConfigSetting(`ImageDrawer_Width_Instance_${this.imageDrawerInstance.getIndex()}`, 25);
+		this.setting_DrawerAnchorLocal = new ImageDrawerConfigSetting(`ImageDrawer_Anchor_Instance_${this.imageDrawerInstance.getIndex()}`, setting_DrawerAnchor.value);
+	}
+
+	destroy() {
+
+		if (this.isSidebarTab()) {
+			this.unregisterSidebarTab();
+		}
+
+		this.imageDrawer.parent = null;
+		this.imageDrawer = null;
+		this.ImageDrawerMenu = null;
+		this.drawerOptionsFlyout = null;
+		this.imageDrawerContextToolbar = null;
+		this.drawerWidthSlider = null;
+		this.drawerHeightSlider = null;
+		this.columnSlider = null;
+
+		this.icon = null;
+
+		this.setting_ColumnCount = null;
+		this.setting_DrawerHeight = null;
+		this.setting_DrawerWidth = null;
+		this.setting_DrawerAnchorLocal = null;
+	}
+
+	isSidebarTab() {
+
+		return this.setting_DrawerAnchorLocal.value == "sidebar";
 	}
 
 	getColumnCount() {
@@ -42,7 +76,8 @@ class ImageDrawerMain extends ImageDrawerComponent {
 	setColumnCount(value, bSetColumnCountSliderValue = true) {
 		value = utilitiesInstance.clamp(value, 1, value);
 		this.setting_ColumnCount.value = value;
-		this.imageDrawer?.style.setProperty("--column-count", value);
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
+		imageDrawerListInstance.getImageListElement().style.setProperty("--column-count", value);
 		this.columnSlider.title = `Controls the number of columns in the drawer (${value} columns).\nClick label to set custom value.`;
 		if (bSetColumnCountSliderValue && this.columnSlider) {
 
@@ -81,9 +116,17 @@ class ImageDrawerMain extends ImageDrawerComponent {
 	}
 
 	setDrawerAnchor(value) {
-		setting_DrawerAnchor.value = value;
+		const bWasSidebar = this.setting_DrawerAnchorLocal.value == "sidebar";
+		this.setting_DrawerAnchorLocal.value = value;
 		this.imageDrawer.className =
 			`JNodes-image-drawer JNodes-image-drawer--${value}`;
+
+		if (this.isSidebarTab() && !bWasSidebar) {
+			this.registerAsSidebarTab();
+		} else if (!this.isSidebarTab() && bWasSidebar) {
+			this.unregisterSidebarTab();
+			this.registerAsAnchored();
+		}
 	}
 
 	setContextToolbarWidget(widget) {
@@ -94,7 +137,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		this.imageDrawerContextToolbar.replaceChildren(widget);
 	}
 
-	createDrawerOptionsFlyout() {
+	createDrawerOptionsFlyout(parentRect = window) {
 
 		let widthSliderOptions = new options_LabeledSliderRange();
 		widthSliderOptions.bPrependValueLabel = true;
@@ -129,7 +172,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		this.columnSlider = createLabeledSliderRange(columnSliderOptions);
 		this.setColumnCount(this.getColumnCount());
 
-		let flyout = createFlyoutHandle("👁️");
+		let flyout = createFlyoutHandle("👁️", "image-drawer-options-handle", "image-drawer-options-menu");
 		this.drawerOptionsFlyout = flyout.handle;
 
 		flyout.menu.appendChild(
@@ -183,22 +226,170 @@ class ImageDrawerMain extends ImageDrawerComponent {
 				})]),
 				$el('td', [this.columnSlider])
 			]));
-		flyout.menu.appendChild(
-			// Anchor Select
-			$el("tr.drawer-anchor-control", [
-				$el('td', [$el("span", {
-					textContent: "Image Drawer Anchor:",
-				})]),
-				$el('td', [createDrawerSelectionWidget((e) => { this.setDrawerAnchor(e.target.value); })])
-			]));
+		const anchorSelector = $el("tr.drawer-anchor-control", [
+			$el('td', [$el("span", {
+				textContent: "Image Drawer Anchor:",
+			})]),
+			$el('td', [createDrawerSelectionWidget(
+				this.setting_DrawerAnchorLocal.value,
+				(e) => { this.setDrawerAnchor(e.target.value); },
+				(m) => { this.setting_DrawerAnchorLocal.value === m; }
+			)]
+			)
+		]);
+		flyout.menu.appendChild(anchorSelector);
 	};
+
+	isComfySidebarLeft() {
+
+		const sidebar = document.querySelector(".side-tool-bar-container");
+		if (sidebar) {
+			const sidebarParent = sidebar.parentElement;
+
+			if (sidebarParent) {
+				return sidebarParent.classList.contains("comfyui-body-left");
+			}
+		}
+
+		return false;
+	}
+
+	registerAsSidebarTab() {
+
+		// Create sidebar icon
+		this.iconOverride = document.createElement("style")
+		this.iconOverride.innerHTML = `.ImageDrawerTabIcon:before {content: '${this.icon}'; font-style: normal;}`
+		document.body.append(this.iconOverride)
+
+		let sidebarTab = {
+			id: `ImageDrawerSidebarTab_${this.imageDrawerInstance.id}`, title: "Image Drawer Sidebar Tab", 
+			tooltip: "Toggle Image Drawer",
+			icon: "ImageDrawerTabIcon", type: "custom",
+			render: (e) => {
+
+				e.appendChild(
+					$el("div", {
+						id: "jnodes-sidebar-image-drawer-wrapper",
+						style: {
+							height: "100%",
+							width: "100%",
+						}
+					}, [
+						this.imageDrawer
+					])
+				);
+
+				// Perform some visual workarounds on next frame
+
+				if (!this._bHasRenderedSidebarTabAtLeastOnce) {
+					// Do once
+					setTimeout(() => {
+
+						// Restore last drawer width / splitter position
+						const splitterElement = document.querySelector(".p-splitter-gutter:not(.hidden)");
+						if (splitterElement) {
+							
+							let savedWidthPercentage = this.setting_DrawerWidth.value / 100;
+							if (!this.isComfySidebarLeft()) {
+								savedWidthPercentage = 1.0 - savedWidthPercentage;
+							}
+							const endX = window.innerWidth * savedWidthPercentage;
+							const rect = splitterElement.getBoundingClientRect();
+							utilitiesInstance.simulateDrag(splitterElement, rect.x, rect.y, endX, rect.y);
+						}
+
+						this._bHasRenderedSidebarTabAtLeastOnce = true;
+
+					}, 1);
+				}
+
+				// Do every time
+				setTimeout(() => {
+
+					// Ensure that custom tooltips and such are not constrained to the bounds of the drawer
+					const panelElement = document.querySelector(".p-splitterpanel.side-bar-panel");
+					if (panelElement) {
+						panelElement.style.overflow = "visible";
+					}
+					const containerElement = document.querySelector(".sidebar-content-container");
+					if (containerElement) {
+						containerElement.style.overflow = "visible";
+					}
+
+					// Ensure that the image drawer list is contained within the height of the sidebar panel
+					e.style.height = "100%";
+
+					// Restore scroll level
+					const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
+					imageDrawerListInstance.scrollToLastScrollLevel();
+
+					// Cache splitter position so it can be restored on next session
+					// we're specifically not using '.p-splitter-gutter-handle' here because
+					// the handle width is reset after dragging
+					const splitterElement = document.querySelector(".p-splitter-gutter:not(.hidden)");
+					if (splitterElement) {
+
+						// Set handle width
+						if (setting_SidebarSplitterHandleSize.value != 0) {
+
+							splitterElement.style.width = `${setting_SidebarSplitterHandleSize.value}px`;
+						}
+
+						// Bind to pointerup for splitter so we can cache the width
+						splitterElement.addEventListener("pointerup", (e) => {
+							this.cacheDrawerWidthFromSplitterElement(splitterElement);
+						});
+					}
+
+				}, 1);
+
+			}};
+		app.extensionManager.registerSidebarTab(sidebarTab);
+	}
+
+	registerAsAnchored() {
+
+		const drawerParent = document.querySelector(".comfyui-body-bottom") || document.body;
+		drawerParent.appendChild(this.imageDrawer);
+	}
+
+	unregisterSidebarTab() {
+
+		this.iconOverride.remove();
+		this.iconOverride = null;
+		app.extensionManager.unregisterSidebarTab(`ImageDrawerSidebarTab_${this.imageDrawerInstance.id}`);
+
+		this._bHasRenderedSidebarTabAtLeastOnce = false;
+	}
+
+	cacheDrawerWidthFromSplitterElement(splitterElement) {
+
+		let rect = splitterElement.getBoundingClientRect();
+		let percentage = rect.x / window.innerWidth;
+
+		if (!this.isComfySidebarLeft()) {
+
+			percentage = 1.0 - percentage;
+		}
+
+		this.setDrawerWidth(percentage * 100);
+	}
+
+	cacheDrawerDimensions() {
+
+		const rect = this.imageDrawer.getBoundingClientRect();
+
+		const widthPercentage = rect.width / window.innerWidth;
+		const heightPercentage = rect.height / window.innerHeight;
+
+		this.setDrawerWidth(parseInt(widthPercentage * 100));
+		this.setDrawerHeight(parseInt(heightPercentage * 100));
+	}
 
 	async setup() {
 
-		const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
-		const imageDrawerSearchInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerSearch");
-
-		await setupUiSettings((e) => { this.setDrawerAnchor(e.target.value); });
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
+		const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
 
 		if (!setting_bEnabled.value) {
 			return;
@@ -206,7 +397,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 		// A button shown in the comfy modal to show the drawer after it's been hidden
 		const showButton = $el("button.comfyui-button.comfy-settings-btn", {
-			textContent: "🖼️",
+			textContent: "this.icon",
 			title: "Display JNodes Image Drawer"
 		});
 		const showButtonClickListener = () => {
@@ -297,7 +488,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			title: "Hide the drawer. Show it again by clicking the image icon on the Comfy menu.",
 			onclick: () => {
 
-				const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+				const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 				imageDrawerListSortingInstance.stopAutomaticShuffle();
 
 				utilitiesInstance.setElementVisible(this.imageDrawer, false);
@@ -312,13 +503,10 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		});
 
 		// The main drawer widget
-		const drawerParent = document.querySelector(".comfyui-body-bottom") || document.body;
-		this.imageDrawer = $el("div.JNodes-image-drawer", {
-			parent: drawerParent
-		});
+		this.imageDrawer = $el("div.JNodes-image-drawer");
 
 		// Initialize Anchor
-		const drawerStartingAnchor = setting_DrawerAnchor.value;
+		const drawerStartingAnchor = this.setting_DrawerAnchorLocal.value;
 		this.imageDrawer.className =
 			`JNodes-image-drawer JNodes-image-drawer--${drawerStartingAnchor}`;
 
@@ -374,13 +562,13 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			CollapseExpandButton.textContent = bIsCurrentlyCollapsed ? "▼" : "▶";
 		});
 
-		const batchFavouriteManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchFavouriteManager", this.drawerInstanceIndex);
+		const batchFavouriteManagerInstance = this.imageDrawerInstance.getComponentByName("BatchFavouriteManager");
 		const batchFavouriteManagerWidget = batchFavouriteManagerInstance.makeWidget();
-		const batchDeletionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchDeletionManager", this.drawerInstanceIndex);
+		const batchDeletionManagerInstance = this.imageDrawerInstance.getComponentByName("BatchDeletionManager");
 		const batchDeletionManagerWidget = batchDeletionManagerInstance.makeWidget();
-		const batchRemovalManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchRemovalManager", this.drawerInstanceIndex);
+		const batchRemovalManagerInstance = this.imageDrawerInstance.getComponentByName("BatchRemovalManager");
 		const batchRemovalManagerWidget = batchRemovalManagerInstance.makeWidget();
-		const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager", this.drawerInstanceIndex);
+		const batchSelectionManagerInstance = this.imageDrawerInstance.getComponentByName("BatchSelectionManager");
 		const batchSelectionManagerWidget = batchSelectionManagerInstance.makeWidget();
 		const RightAffinedControlsGroup = $el("div.JNodes-image-drawer-right-affined-basic-controls-group", {
 			style: {
@@ -404,13 +592,13 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		this.imageDrawerContextToolbar =
 			$el("div.JNodes-image-drawer-context-toolbar");
 
-		function makeDropDownComboContainer() {
+		const makeDropDownComboContainer = () => {
 			// Context and sorting Dropdowns
-			const imageDrawerListSortingInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerListSorting");
+			const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 			const sortingWidget = imageDrawerListSortingInstance.makeSortingWidget(); // Sorting first since contexts act upon sorting
 			sortingWidget.style.width = '50%';
 
-			const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+			const imageDrawerContextSelectorInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
 			const contextSelector = imageDrawerContextSelectorInstance.createContextSelector();
 			contextSelector.style.width = '50%';
 
@@ -446,14 +634,13 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			this.imageDrawerContextToolbar,
 		]);
 
-		const ImageDrawerMenu =
+		this.ImageDrawerMenu =
 			$el("div.JNodes-image-drawer-menu", {
 				style: {
 					minHeight: 'fit-content',
 					minWidth: 'fit-content',
 					position: 'relative',
 					flex: '0 1 min-content',
-					display: 'flex',
 					gap: '3px',
 					padding: '3px',
 					justifyContent: 'flex-start',
@@ -462,7 +649,13 @@ class ImageDrawerMain extends ImageDrawerComponent {
 				BasicControlsGroup,
 				CollapsibleArea
 			]);
-		this.imageDrawer.append(ImageDrawerMenu, imageDrawerListInstance.getImageListElement());
+		this.imageDrawer.append(this.ImageDrawerMenu, imageDrawerListInstance.getImageListElement());
+
+		if (this.isSidebarTab()) {
+			this.registerAsSidebarTab();
+		} else {
+			this.registerAsAnchored();
+		}
 
 		// If not supposed to be visible on startup, close it
 		if (!setting_bMasterVisibility.value) {
