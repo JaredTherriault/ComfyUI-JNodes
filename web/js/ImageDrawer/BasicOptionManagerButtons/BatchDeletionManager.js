@@ -4,7 +4,7 @@ import { $el } from "/scripts/ui.js";
 import { BatchOptionManagerButton } from "./BatchOptionManagerButton.js";
 
 import { utilitiesInstance } from "../../common/Utilities.js";
-import { ClassInstanceFactory, imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
+import { ClassInstanceFactory } from "../Core/ImageDrawerModule.js";
 
 class BatchDeletionManager extends BatchOptionManagerButton {
 
@@ -46,10 +46,10 @@ class BatchDeletionManager extends BatchOptionManagerButton {
         }
 
         // Subscribe to when the selection manager's count is updated
-        const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+        const batchSelectionManagerInstance = this.imageDrawerInstance.getComponentByName("BatchSelectionManager");
         batchSelectionManagerInstance.registerCheckedItemCountUpdatedMulticastFunction(() => {
 
-            const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+            const batchSelectionManagerInstance = this.imageDrawerInstance.getComponentByName("BatchSelectionManager");
             let lastCheckedItemCount = batchSelectionManagerInstance.lastCheckedItemCount;
 
             if (Object.keys(lastCheckedItemCount).length == 0) {
@@ -72,12 +72,12 @@ class BatchDeletionManager extends BatchOptionManagerButton {
 
         } else {
 
-            const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+            const imageDrawerContextSelectorInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
             const currentContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
             if (currentContextObject) {
                 currentContextObject.onRequestBatchDeletion();
 
-                const batchSelectionManagerInstance = imageDrawerComponentManagerInstance.getComponentByName("BatchSelectionManager");
+                const batchSelectionManagerInstance = this.imageDrawerInstance.getComponentByName("BatchSelectionManager");
                 batchSelectionManagerInstance.updateWidget();
             }
         }

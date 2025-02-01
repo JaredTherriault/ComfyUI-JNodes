@@ -2,7 +2,7 @@ import { $el } from "/scripts/ui.js";
 
 import { ContextModel } from "../Contexts.js";
 
-import { ClassInstanceFactory, imageDrawerComponentManagerInstance } from "../Core/ImageDrawerModule.js";
+import { ClassInstanceFactory } from "../Core/ImageDrawerModule.js";
 
 import { BatchOptionManagerButton } from "./BatchOptionManagerButton.js";
 
@@ -50,7 +50,7 @@ class BatchSelectionManager extends BatchOptionManagerButton {
         this.updateWidget();
 
         // Subscribe to imageList Changes
-        const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+        const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
         imageDrawerListInstance.registerStartChangingImageListMulticastFunction(() => {
 
             this.lastCheckedItemCount = { selectedCount: 0, totalItems: 0 };
@@ -85,7 +85,7 @@ class BatchSelectionManager extends BatchOptionManagerButton {
 
     setSelectedStateOnAll(bNewCheckedState) {
 
-        const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+        const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
         const listChildren = imageDrawerListInstance.getImageListChildren();
 
         for (const child of listChildren) {
@@ -99,7 +99,7 @@ class BatchSelectionManager extends BatchOptionManagerButton {
 
     getValidSelectedItems() {
 
-        const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+        const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
         const listChildren = imageDrawerListInstance.getVisibleImageListChildren();
 
         // Count up selected items in the current view
@@ -115,7 +115,7 @@ class BatchSelectionManager extends BatchOptionManagerButton {
 
     countCheckedItems() {
 
-        const imageDrawerListInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerList");
+        const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
         const listChildren = imageDrawerListInstance.getVisibleImageListChildren();
 
         const selectedCount = this.getValidSelectedItems().length;
@@ -170,7 +170,7 @@ class BatchSelectionManager extends BatchOptionManagerButton {
         this.countText.textContent = `(${this.lastCheckedItemCount.selectedCount}/${this.lastCheckedItemCount.totalItems})`;
 
         // Hide selector for model contexts as it's not currently implemented
-        const imageDrawerContextSelectorInstance = imageDrawerComponentManagerInstance.getComponentByName("ImageDrawerContextSelector");
+        const imageDrawerContextSelectorInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
 		const currentContext = imageDrawerContextSelectorInstance.getCurrentContextObject();
         const bIsContextModel = currentContext instanceof ContextModel;
 
