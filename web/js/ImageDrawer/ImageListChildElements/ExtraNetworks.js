@@ -499,6 +499,17 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 		}
 	}
 
+	const setPreferredDefaultPreviewIndexToCurrent = () => {
+
+		if (familiars.familiar_images.length < 1) {
+			return;
+		}
+
+		userCardInfoOverrides.preferredDefaultPreviewIndex = backgroundImageContainer.lastViewedImageIndex + 1;
+
+		saveUserModelInfo(JSON.stringify(userCardInfoOverrides));
+	};
+
 	function createImageCounterElement() {
 
 		imageCounterLabel = $el("label", {
@@ -514,16 +525,7 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 		imageCounterElement.classList.add("JNodes-interactive-container");
 
 		// Click to set default image
-		imageCounterElement.addEventListener("click", () => {
-
-			if (familiars.familiar_images.length < 1) {
-				return;
-			}
-
-			userCardInfoOverrides.preferredDefaultPreviewIndex = backgroundImageContainer.lastViewedImageIndex + 1;
-
-			saveUserModelInfo(JSON.stringify(userCardInfoOverrides));
-		});
+		imageCounterElement.addEventListener("click", setPreferredDefaultPreviewIndexToCurrent);
 
 		updateImageCounterText();
 
@@ -721,6 +723,57 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 				);
 			}
 
+			// Paste image/video URI
+			buttonsRow.appendChild(
+				createButton(
+					$el("label", {
+						textContent: "🖼️",
+						style: {
+							cursor: "pointer",
+						}
+					}),
+					`Paste image or video URI/URL from the clipboard to add a new preview image and set it as default. ` +
+					`Any unsecured image or video should work, just right-click->Copy image/video address`,
+					async () => {
+						try {
+							const clipboardText = await navigator.clipboard.readText();
+							if (!clipboardText) {
+								console.error("Error reading clipboard");
+								return;
+							}
+					
+							// Send the URL to the backend for processing
+							const response = await api.fetchApi(
+								`/jnodes_save_image_as_model_preview?filename=${encodeURIComponent(familiars.full_name)}&type=${type}`, 
+								{
+									method: "POST",
+									headers: { "Content-Type": "application/json" },
+									body: JSON.stringify({ url: clipboardText }),
+								}
+							);
+					
+							const result = await response.json();
+
+							if (result.success) {
+								const newFilename = result.file_name;
+
+								familiars.familiar_images.push({file_name: `${familiars.containing_directory}/${newFilename}`});
+
+								backgroundImageContainer.lastViewedImageIndex = familiars.familiar_images.length - 1;
+
+								setPreferredDefaultPreviewIndexToCurrent();
+
+								modelElement.reinstantiate();
+							} else {
+								console.error(result.error);
+							}
+						} catch (error) {
+							console.error("Error receiving result from jnodes_save_image_as_model_preview:", error);
+						}
+					}
+				)
+			);
+
 			// Edit model user data button
 			buttonsRow.appendChild(
 				createButton(
@@ -754,6 +807,25 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 					}
 				)
 			);
+
+			// Open in file manager
+            {
+                const baseLabelText = "📂";
+                buttonsRow.appendChild(
+                    createButton(
+                        $el("label", {
+                            textContent: baseLabelText,
+                            style: {
+                                color: 'rgb(250,250,250)',
+                            }
+                        }),
+                        "Open this file's containing directory in your OS's default file manager.",
+                        (e) => {
+                            modelElement.showInFileManager();
+                        }
+                    )
+                );
+            }
 		}
 
 		const buttonsRow = $el("div", {
@@ -908,6 +980,12 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 		imageDrawerListInstance.replaceImageListChild(this, newModelElement);
 
 		delete this;
+	}
+
+	modelElement.showInFileManager = async function () {
+
+		const call = `/jnodes_request_open_file_manager?filename=${encodeURIComponent(familiars.full_name)}&type=${type}`;
+		api.fetchApi(call, { method: "POST" });
 	}
 
 	modelElement.appendChild(backgroundImageContainer);
