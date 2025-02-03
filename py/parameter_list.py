@@ -75,8 +75,8 @@ def return_paramter_from_list(parsed_list, parameter_name, parameter_default = "
     if parsed_list and parameter_name in parsed_list:
         return auto_convert_output(parsed_list[parameter_name], explicit_return_type)
     else:
-        default_to_use = parameter_default if len(str(parameter_default)) < 5 else "given default"
-        logger.info(f"Did not find parameter_name '{parameter_name}' in parameter_list. Using '{default_to_use}'.")
+        parameter_display_value = parameter_default if len(str(parameter_default)) < 5 else "given default"
+        logger.info(f"Did not find parameter_name '{parameter_name}' in parameter_list. Using '{parameter_display_value}'.")
         return auto_convert_output(parameter_default, explicit_return_type)
     
 def add_param_to_png_info(extra_pnginfo, parameter_name, param):
