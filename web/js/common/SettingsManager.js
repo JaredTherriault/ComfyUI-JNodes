@@ -126,6 +126,7 @@ export let setting_bMetadataTooltipToggle = new ImageDrawerConfigSetting("ImageV
 
 export let setting_FavouritesDirectory = new ImageDrawerConfigSetting("Directories.Favourites", "output/Favourites");
 export let setting_CopyLoraTextPattern = new ImageDrawerConfigSetting("Models.CopyLoraTextPattern", "<lora:{{modelName}}:{{strengthModel}}:{{strengthClip}}>");
+export let setting_CopyModelTrainedWordsEndCharacter = new ImageDrawerConfigSetting("Models.CopyLoraTrainedWordsEndCharacter", ", ");
 
 export let setting_ModelCardAspectRatio = new ImageDrawerConfigSetting("Models.AspectRatio", 0.67);
 
@@ -331,6 +332,27 @@ export const setupUiSettings = async (onImageDrawerInstanceCountChanged) => {
         const tooltip = "Define the way text loras are constructed when copied to the clipboard. " +
             "put variable names in double braces '{{}}'. Variables are 'modelName', 'strengthModel', and 'strengthClip'. " +
             `For example, '${setting_CopyLoraTextPattern.getDefaultValue()}'`;
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+
+    // Copy Model Trained Words End Character
+    {
+        const labelWidget = $el("label", {
+            textContent: "'Copy Model Trained Words' end character:",
+        });
+
+        const settingWidget = $el(
+            "input",
+            {
+                defaultValue: setting_CopyModelTrainedWordsEndCharacter.value,
+                oninput: (e) => {
+                    setting_CopyModelTrainedWordsEndCharacter.value = e.target.value;
+                },
+            },
+        );
+
+        const tooltip = "Define the text appended to the end of the trained words when copying " +
+            "a model's trained words or full text.";
         addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
 

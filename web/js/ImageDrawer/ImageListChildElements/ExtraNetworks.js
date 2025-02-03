@@ -2,7 +2,10 @@ import { api } from "/scripts/api.js";
 import { $el } from "/scripts/ui.js";
 import { utilitiesInstance } from "../../common/Utilities.js"
 
-import { setting_CopyLoraTextPattern, setting_ModelCardAspectRatio } from "../../common/SettingsManager.js";
+import { 
+	setting_CopyLoraTextPattern, setting_ModelCardAspectRatio, 
+	setting_CopyModelTrainedWordsEndCharacter 
+} from "../../common/SettingsManager.js";
 
 import { ModalManager } from "../../common/ModalManager.js";
 import { ModelEditForm, FormObject, FormInfo } from "../../common/ModelEditForm.js";
@@ -219,8 +222,8 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 		if (trainedWords) {
 			trainedWords = trainedWords.trim()
 
-			if (!trainedWords.endsWith(",")) {
-				trainedWords += ",";
+			if (!trainedWords.endsWith(setting_CopyModelTrainedWordsEndCharacter.value.trim())) {
+				trainedWords += setting_CopyModelTrainedWordsEndCharacter.value;
 			}
 			trainedWords = trainedWords.replace("\\(", "(").replace("\\)", ")").replace('\\"', '"');
 		}
