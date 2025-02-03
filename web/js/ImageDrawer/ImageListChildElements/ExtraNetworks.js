@@ -734,43 +734,7 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 					}),
 					`Paste image or video URI/URL from the clipboard to add a new preview image and set it as default. ` +
 					`Any unsecured image or video should work, just right-click->Copy image/video address`,
-					async () => {
-						try {
-							const clipboardText = await navigator.clipboard.readText();
-							if (!clipboardText) {
-								console.error("Error reading clipboard");
-								return;
-							}
-					
-							// Send the URL to the backend for processing
-							const response = await api.fetchApi(
-								`/jnodes_save_image_as_model_preview?filename=${encodeURIComponent(familiars.full_name)}&type=${type}`, 
-								{
-									method: "POST",
-									headers: { "Content-Type": "application/json" },
-									body: JSON.stringify({ url: clipboardText }),
-								}
-							);
-					
-							const result = await response.json();
-
-							if (result.success) {
-								const newFilename = result.file_name;
-
-								familiars.familiar_images.push({file_name: `${familiars.containing_directory}/${newFilename}`});
-
-								backgroundImageContainer.lastViewedImageIndex = familiars.familiar_images.length - 1;
-
-								setPreferredDefaultPreviewIndexToCurrent();
-
-								modelElement.reinstantiate();
-							} else {
-								console.error(result.error);
-							}
-						} catch (error) {
-							console.error("Error receiving result from jnodes_save_image_as_model_preview:", error);
-						}
-					}
+					modelElement.pasteImageOrVideoLinkAsPreview
 				)
 			);
 
@@ -987,6 +951,44 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 		const call = `/jnodes_request_open_file_manager?filename=${encodeURIComponent(familiars.full_name)}&type=${type}`;
 		api.fetchApi(call, { method: "POST" });
 	}
+
+	modelElement.pasteImageOrVideoLinkAsPreview = async () => {
+		try {
+			const clipboardText = await navigator.clipboard.readText();
+			if (!clipboardText) {
+				console.error("Error reading clipboard");
+				return;
+			}
+	
+			// Send the URL to the backend for processing
+			const response = await api.fetchApi(
+				`/jnodes_save_image_as_model_preview?filename=${encodeURIComponent(familiars.full_name)}&type=${type}`, 
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ url: clipboardText }),
+				}
+			);
+	
+			const result = await response.json();
+
+			if (result.success) {
+				const newFilename = result.file_name;
+
+				familiars.familiar_images.push({file_name: `${familiars.containing_directory}/${newFilename}`});
+
+				backgroundImageContainer.lastViewedImageIndex = familiars.familiar_images.length - 1;
+
+				setPreferredDefaultPreviewIndexToCurrent();
+
+				modelElement.reinstantiate();
+			} else {
+				console.error(result.error);
+			}
+		} catch (error) {
+			console.error("Error receiving result from jnodes_save_image_as_model_preview:", error);
+		}
+	};
 
 	modelElement.appendChild(backgroundImageContainer);
 	const leftImageSwitchButton = createImageSwitchButton(true);
