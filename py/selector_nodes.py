@@ -128,6 +128,7 @@ class ImageSizeSelector:
                 "custom_size_x": ("INT", {"default": 512, "minimum": 2, "tooltip": "Hardcoded width"}),
                 "custom_size_y": ("INT", {"default": 512, "minimum": 2, "tooltip": "Hardcoded height"}),
                 "flip_width_and_height": ("BOOLEAN", {"default": False, "tooltip": "Set to True to flip the dimensions, for instance to create a vertical image instead of a horizontal one."}),
+                "multiplier": ("FLOAT", {"default": 1.0, "minimum": 0.0, "tooltip": "Multiply the output width and height by this factor, rounded to the nearest even number."}),
             },
         }
 
@@ -135,7 +136,7 @@ class ImageSizeSelector:
     RETURN_NAMES = ("width", "height",)
     FUNCTION = "return_size"
 
-    def return_size(self, image_size, use_custom_size, custom_size_x, custom_size_y, flip_width_and_height):
+    def return_size(self, image_size, use_custom_size, custom_size_x, custom_size_y, flip_width_and_height, multiplier):
         """
         Allows the user to either select a common image size from a list or input their own
         if 'use_custom_size' is true. If 'custom_size_x' is less than 2, it will take the value of 'custom_size_y'
@@ -150,7 +151,10 @@ class ImageSizeSelector:
             x = int(y_str if flip_width_and_height else x_str)
             y = int(x_str if flip_width_and_height else y_str)
             return x,y
-        
+
+        def round_up_to_even(n):
+            return n if n % 2 == 0 else n + 1
+
         if use_custom_size:
             x = abs(custom_size_x)
             y = abs(custom_size_y)
@@ -167,6 +171,9 @@ class ImageSizeSelector:
                 return (y if flip_width_and_height else x, x if flip_width_and_height else y,)
 
         x,y = split_size(image_size)
+
+        x = int(round_up_to_even(x * multiplier))
+        y = int(round_up_to_even(y * multiplier))
 
         assert x > 1 and y > 1, "ImageSizeSelector::return_size: x and y values should be greater than 0!"
         return (x, y,)
