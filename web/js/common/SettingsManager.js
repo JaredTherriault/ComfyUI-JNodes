@@ -118,6 +118,7 @@ export let setting_bEnabled = new ImageDrawerConfigSetting("bEnabled", true);
 export let setting_ImageDrawerInstanceCount = new ImageDrawerConfigSetting("ImageDrawerInstanceCount", 1);
 export let setting_bMasterVisibility = new ImageDrawerConfigSetting("bMasterVisibility", true);
 export let setting_DrawerAnchor = new ImageDrawerConfigSetting("DrawerAnchor", "top-left");
+export let setting_bRememberLastDrawerContext = new ImageDrawerConfigSetting("Drawer.bRememberLastDrawerContext", true);
 export let setting_SidebarSplitterHandleSize = new ImageDrawerConfigSetting("Drawer.Sidebar.Splitter.Width", 0);
 
 export let setting_KeyList = new ImageDrawerConfigSetting("ImageVideo.KeyList", defaultKeyList);
@@ -199,6 +200,28 @@ export const setupUiSettings = async (onImageDrawerInstanceCountChanged) => {
         const settingWidget = createDrawerSelectionWidget(setting_DrawerAnchor.value, null);
 
         const tooltip = "To which part of the screen new drawer instances should be docked";
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+
+    // Remember last selected context per drawer instance
+    {
+        const labelWidget = $el("label", {
+            textContent: "Remember last selected context per drawer instance:",
+        });
+
+        const settingWidget = $el(
+            "input",
+            {
+                type: "checkbox",
+                checked: setting_bRememberLastDrawerContext.value,
+                oninput: (e) => {
+                    setting_bRememberLastDrawerContext.value = e.target.checked;
+                },
+            },
+        );
+
+        const tooltip = `Whether or not to remember the last selected context and restore it after a page refresh. ` +
+            "Works on a per-drawer instance basis, so each drawer instance will remember its last context individually";
         addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
 
@@ -474,6 +497,8 @@ function createExpandableSettingsArea() {
 
 export function addJNodesSetting(nameWidget, settingWidget, tooltip, bUseExpandableArea = false) {
 
+    let title = tooltip ? tooltip.toString() : "";
+
     if (!bUseExpandableArea){
         app.ui.settings.addSetting({
             id: `JNodes.SettingsContainer.${nameWidget.textContent.replace(" ","")}`,
@@ -501,12 +526,10 @@ export function addJNodesSetting(nameWidget, settingWidget, tooltip, bUseExpanda
             rows.forEach(row => underButtonContent.appendChild(row));
         }
 
-        let title = tooltip ? tooltip.toString() : "";
-        nameWidget.title = nameWidget.title ? nameWidget.title : title;
-        settingWidget.title = settingWidget.title ? settingWidget.title : title;
-
         underButtonContent.appendChild(
-            $el("tr", [
+            $el("tr", {
+                title: title 
+            }, [
                 $el("td", {
                     style: {
                         verticalAlign: "middle",

@@ -5,12 +5,14 @@ import {
 	ImageDrawerConfigSetting, createDrawerSelectionWidget,
 	setting_bEnabled, setting_bMasterVisibility, setting_DrawerAnchor,
 	createFlyoutHandle, createLabeledSliderRange, options_LabeledSliderRange,
-	setting_bQueueTimerEnabled, setting_SidebarSplitterHandleSize
+	setting_bQueueTimerEnabled, setting_SidebarSplitterHandleSize,
+	setting_bRememberLastDrawerContext
 } from "../common/SettingsManager.js";
 
 import { ImageDrawerComponent, ClassInstanceFactory } from "./Core/ImageDrawerModule.js";
 
 import { utilitiesInstance } from "../common/Utilities.js";
+import { ContextFeed } from "./Contexts.js";
 
 // Attribution: pythongsssss's Image Feed. So much brilliance in that original script.
 
@@ -39,6 +41,11 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		this.setting_DrawerHeight = new ImageDrawerConfigSetting(`ImageDrawer_Height_Instance_${this.imageDrawerInstance.getIndex()}`, 25);
 		this.setting_DrawerWidth = new ImageDrawerConfigSetting(`ImageDrawer_Width_Instance_${this.imageDrawerInstance.getIndex()}`, 25);
 		this.setting_DrawerAnchorLocal = new ImageDrawerConfigSetting(`ImageDrawer_Anchor_Instance_${this.imageDrawerInstance.getIndex()}`, setting_DrawerAnchor.value);
+
+		const imageDrawerContextSelectorInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
+		imageDrawerContextSelectorInstance.createContextSelector();
+		const feedName = imageDrawerContextSelectorInstance.contexts.feed.name;
+		this.setting_LastSelectedContext = new ImageDrawerConfigSetting(`ImageDrawer_LastSelectedContext_Instance_${this.imageDrawerInstance.getIndex()}`, feedName);
 	}
 
 	destroy() {
@@ -655,13 +662,18 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			this.registerAsSidebarTab();
 		} else {
 			this.registerAsAnchored();
+
+			// If not supposed to be visible on startup, close it
+			if (!setting_bMasterVisibility.value) {
+				hideButton.onclick();
+			}
 		}
 
-		// If not supposed to be visible on startup, close it
-		if (!setting_bMasterVisibility.value) {
-			hideButton.onclick();
+		// Restore last chosen context
+		if (setting_bRememberLastDrawerContext.value) {
+			const imageDrawerContextSelectorInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
+			await imageDrawerContextSelectorInstance.setOptionSelected(this.setting_LastSelectedContext.value);
 		}
-
 	}
 }
 
