@@ -52,6 +52,36 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
     familiar and non-familiar, are in one big folder. For example "loras/MyLora/ contains all "MyLora" familiar files,
     and they aren't all just in the base "lora" folder.
     """
+
+    def load_pt_metadata(file_path):
+
+        try:
+            data = torch.load(file_path, map_location="cpu")  # Load on CPU to avoid GPU dependency
+        except Exception as e:
+            print(f"load_pt_metadata: Error loading file: {e}")
+            return None
+
+        metadata = None
+
+        # Check if the file contains metadata (depends on how it was saved)
+        if isinstance(data, dict) and "metadata" in data:
+            metadata = data["metadata"]
+
+        return metadata
+
+    def load_safetensors_metadata(file_path):
+
+        metadata = None
+        # Open the safetensors file
+        with safe_open(file_path, framework="pt") as file:
+
+            try:
+                metadata = file.metadata()
+            except:
+                pass
+
+        return metadata
+
     familiar_dictionaries = {}
     for item_name in names:
 
@@ -59,14 +89,21 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
             break
 
         item_name = item_name.replace("\\", "/")
+        # logger.info(f"item_name: {item_name}")
             
         try:
 
-            metadata = {}
-            # Open the safetensors file
-            with safe_open(folder_paths.models_dir + "/loras/" + item_name, framework="pt") as file:
+            file_path = folder_paths.get_full_path(type, item_name)
+            # logger.info(f"file_path: {file_path}")
+            if file_path is None:
+                logger.warning(f"Unable to get path for {type} {item_name}")
+                continue
 
-                metadata = file.metadata()
+            metadata = None
+            if item_name.endswith(".safetensors"):
+                metadata = load_safetensors_metadata(file_path)
+            else:
+                metadata = load_pt_metadata(file_path)
 
             if metadata:
                 try: # Sorted dictionaries only available in py 3.7+
@@ -74,18 +111,11 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
                 except:
                     pass
 
-            # logger.info(f"item_name: {item_name}")
             file_name_no_ext, file_ext = os.path.splitext(item_name)
             # logger.info(f"file_name_no_ext, file_ext: {file_name_no_ext, file_ext}")
-            file_path = folder_paths.get_full_path(type, item_name)
-            # logger.info(f"file_path: {file_path}")
             
             # Get time of creation since the last epoch, in seconds
             file_age = os.path.getctime(file_path)
-
-            if file_path is None:
-                logger.warning(f"Unable to get path for {type} {item_name}")
-                continue
 
             file_path = file_path.replace("\\", "/")
             # logger.info(f'file_path: {file_path}')
@@ -116,7 +146,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
                 "familiar_infos": familiar_infos
             }
         except Exception as e:
-            logger.error(f"Error loading lora: {e}")
+            logger.error(f"Error loading {type}: {e}")
         
     return familiar_dictionaries
     
