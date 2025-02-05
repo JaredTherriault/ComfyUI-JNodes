@@ -265,13 +265,14 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 		// Create sidebar icon
 		this.iconOverride = document.createElement("style")
-		this.iconOverride.innerHTML = `.ImageDrawerTabIcon:before {content: '${this.icon}'; font-style: normal;}`
+		this.iconOverride.innerHTML = `.ImageDrawerTabIcon_${this.imageDrawerInstance.getIndex()}:before 
+			{content: '${this.icon}'; font-style: normal; filter: hue-rotate(${this.imageDrawerInstance.getIndex() * 60}deg);}`
 		document.body.append(this.iconOverride)
 
 		let sidebarTab = {
-			id: `ImageDrawerSidebarTab_${this.imageDrawerInstance.id}`, title: "Image Drawer Sidebar Tab", 
-			tooltip: "Toggle Image Drawer",
-			icon: "ImageDrawerTabIcon", type: "custom",
+			id: `ImageDrawerSidebarTab_${this.imageDrawerInstance.getIndex()}`, title: `Image Drawer Sidebar Tab (${this.imageDrawerInstance.getIndex()})`, 
+			tooltip: `Toggle Image Drawer (${this.imageDrawerInstance.getIndex()})`,
+			icon: `ImageDrawerTabIcon_${this.imageDrawerInstance.getIndex()}`, type: "custom",
 			render: (e) => {
 
 				e.appendChild(
@@ -364,7 +365,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 		this.iconOverride.remove();
 		this.iconOverride = null;
-		app.extensionManager.unregisterSidebarTab(`ImageDrawerSidebarTab_${this.imageDrawerInstance.id}`);
+		app.extensionManager.unregisterSidebarTab(`ImageDrawerSidebarTab_${this.imageDrawerInstancegetIndex()}`);
 
 		this._bHasRenderedSidebarTabAtLeastOnce = false;
 	}

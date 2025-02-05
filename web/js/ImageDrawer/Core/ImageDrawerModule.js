@@ -173,7 +173,6 @@ let _imageDrawerComponentManagerInstances = [];
 export function makeImageDrawerInstance() {
 
     const instance = new ImageDrawerComponentManager();
-    instance.id = utilitiesInstance.getRandomInt(10000, 99999);
     instance._getComponentArray();
     _imageDrawerComponentManagerInstances.push(instance);
     return instance;
