@@ -336,6 +336,7 @@ def pil2tensor(image: Union[Image.Image, List[Image.Image]]) -> torch.Tensor:
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
 
 def open_file_manager(path):
+    print(f"JNodes: opening file manager on {platform.system()} at path: {path}")
     if not os.path.exists(path):
         raise FileNotFoundError(f"The path '{path}' does not exist.")
 
