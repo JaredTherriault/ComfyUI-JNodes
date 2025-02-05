@@ -365,7 +365,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 		this.iconOverride.remove();
 		this.iconOverride = null;
-		app.extensionManager.unregisterSidebarTab(`ImageDrawerSidebarTab_${this.imageDrawerInstancegetIndex()}`);
+		app.extensionManager.unregisterSidebarTab(`ImageDrawerSidebarTab_${this.imageDrawerInstance.getIndex()}`);
 
 		this._bHasRenderedSidebarTabAtLeastOnce = false;
 	}
