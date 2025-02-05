@@ -131,7 +131,12 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 	}
 
 	getSearchText() {
-		return this.searchFieldElement.value;
+
+		if (this.searchFieldElement) {
+			return this.searchFieldElement.value;
+		} else {
+			return "";
+		}
 	}
 
 	setSearchText(newText) {
