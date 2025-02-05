@@ -51,7 +51,11 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 	}
 
 	getCurrentSortTypeName() {
-		return this.sortSelectionWidget.value;
+		if (this.sortSelectionWidget) {
+			return this.sortSelectionWidget.value;
+		} else {
+			return "";
+		}
 	}
 
 	getCurrentSortTypeObject() {
