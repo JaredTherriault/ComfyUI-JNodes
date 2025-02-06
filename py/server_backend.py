@@ -273,7 +273,7 @@ async def request_open_file_manager(request):
         result = await validate_and_return_file_from_request(request)
 
         if result["success"] == True:
-            open_file_manager(result["payload"]["file"])
+            open_file_manager(os.path.normpath(result["payload"]["file"]))
             return web.json_response({"success": True})
     except Exception as e:
         logger.error(e)
