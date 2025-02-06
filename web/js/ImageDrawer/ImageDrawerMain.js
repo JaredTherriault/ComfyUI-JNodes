@@ -405,7 +405,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 		// A button shown in the comfy modal to show the drawer after it's been hidden
 		const showButton = $el("button.comfyui-button.comfy-settings-btn", {
-			textContent: "this.icon",
+			textContent: "🖼️",
 			title: "Display JNodes Image Drawer"
 		});
 		const showButtonClickListener = () => {
