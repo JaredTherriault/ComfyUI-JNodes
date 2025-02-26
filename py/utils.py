@@ -84,6 +84,7 @@ ACCEPTED_IMAGE_AND_VIDEO_EXTENSIONS_COMPENDIUM = (
     ALL_ACCEPTED_IMAGE_EXTENSIONS + ALL_ACCEPTED_UPLOAD_VISUAL_EXTENSIONS + ALL_ACCEPTED_BROWSER_VISUAL_EXTENSIONS
 )
 
+mimetypes.add_type ('image/webp', '.webp')
 
 @staticmethod
 def return_random_int(min=1, max=100000):
