@@ -189,6 +189,17 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 
 	imageElement.searchTerms = `${imageElement.filename} ${imageElement.subdirectory} ${JSON.stringify(imageElement.displayData)} `; // Search terms to start with, onload will add more
 
+	// Add meta keys as well, except workflow and prompt from comfy
+	if (fileInfo.file?.hasOwnProperty("metadata")) {
+		for (const key of Object.keys(fileInfo.file.metadata)) {
+
+			if (key == "prompt" || key == "workflow") {
+				continue;
+			}
+			imageElement.searchTerms += fileInfo.file.metadata[key];
+		}
+	}
+
 	// Mouse Events
 	imageElement.bHasEverMousedOver = false;
 	imageElement.addEventListener("mouseover", (event) => {
