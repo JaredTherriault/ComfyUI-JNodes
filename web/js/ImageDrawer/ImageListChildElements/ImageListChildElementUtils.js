@@ -314,9 +314,10 @@ export function getOrCreateToolButton(imageElementToUse) {
                 );
             }
 
-            if (imageElementToUse.promptMetadata && Object.keys(imageElementToUse.promptMetadata).length > 0) {
+            if (imageElementToUse?.promptMetadata && Object.keys(imageElementToUse.promptMetadata).length > 0) {
 
-                if (imageElementToUse?.promptMetadata && imageElementToUse?.promptMetadata["Positive prompt"]) {
+                const positivePrompt = getPositivePromptInMetadata(imageElementToUse.promptMetadata);
+                if (positivePrompt) {
                     flyout.menu.appendChild(
                         createButton(
                             $el("label", {
@@ -327,10 +328,9 @@ export function getOrCreateToolButton(imageElementToUse) {
                             }),
                             'Copy positive prompt',
                             function (e) {
-                                let positive_prompt = imageElementToUse?.promptMetadata ? imageElementToUse?.promptMetadata["Positive prompt"] : "";
-                                if (positive_prompt.startsWith('"')) { positive_prompt = positive_prompt.slice(1); }
-                                if (positive_prompt.endsWith('"')) { positive_prompt = positive_prompt.slice(0, positive_prompt.length - 1); }
-                                utilitiesInstance.copyToClipboard(positive_prompt);
+                                if (positivePrompt.startsWith('"')) { positivePrompt = positivePrompt.slice(1); }
+                                if (positivePrompt.endsWith('"')) { positivePrompt = positivePrompt.slice(0, positivePrompt.length - 1); }
+                                utilitiesInstance.copyToClipboard(positivePrompt);
                                 // removeOptionsMenu();
                                 e.preventDefault();
                             }
@@ -341,7 +341,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                 let metadataKeys = Object.keys(imageElementToUse.promptMetadata);
                 metadataKeys.sort();
                 for (const key of metadataKeys) {
-                    if (key == "Positive prompt") {
+                    if (isPositivePromptKey(key)) {
                         continue;
                     }
 
@@ -492,7 +492,7 @@ export async function onLoadImageElement(imageElement) {
         //console.log(imageElement.fileInfo.href);
         let metadata = null;
         try {
-            if (imageElement.fileInfo.format === "image/png") {
+            if (imageElement.fileInfo.file.format === "image/png") {
                 metadata = await pngInfo.getPngMetadata(blob);
 
                 if (metadata.parameters) {
@@ -506,9 +506,9 @@ export async function onLoadImageElement(imageElement) {
                     let a111Metadata = makeMetaDataFromA111(metadata.parameters);
                     metadata = { ...metadata, ...a111Metadata };
                 }
-            } else if (imageElement.fileInfo.format === "image/webp" || 
-                imageElement.fileInfo.format === "image/jpeg" || 
-                imageElement.fileInfo.format === "image/gif") {
+            } else if (imageElement.fileInfo.file.format === "image/webp" || 
+                imageElement.fileInfo.file.format === "image/jpeg" || 
+                imageElement.fileInfo.file.format === "image/gif") {
 
                 const webpArrayBuffer = await blob.arrayBuffer();
 
@@ -558,10 +558,11 @@ export async function onLoadImageElement(imageElement) {
             }
         }
 
+        if (!imageElement.displayData.FileSize || imageElement.displayData.FileSize < 1) {
+            imageElement.displayData.FileSize = blob.size;
+        }
+
         setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata);
-		imageElement.style.aspectRatio = 
-            imageElement.displayData.AspectRatio ? imageElement.displayData.AspectRatio : 
-            `${imageElement.img.offsetWidth / imageElement.img.offsetHeight}`;
 
         imageElement.bComplete = true;
     }
@@ -570,7 +571,54 @@ export async function onLoadImageElement(imageElement) {
     }
 }
 
+function getPromptKeys(type) {
+    return [
+        `${type}Prompt`, `${type} Prompt`, `${type}_Prompt`, 
+        `${type}prompt`, `${type} prompt`, `${type}_prompt`, 
+        `${type.toLowerCase()}Prompt`, `${type.toLowerCase()}prompt`, 
+        `${type.toLowerCase()} prompt`, `${type.toLowerCase()}_prompt`
+    ];
+}
+
+function getPromptInMetadata(metadata, type) {
+
+    const keys = getPromptKeys(type);
+
+    if (metadata) {
+        for (const key of keys) {
+            if (key in metadata) {
+                return metadata[key];
+            }
+        }
+    }
+
+    return null;
+}
+
+export function isPositivePromptKey(key) {
+    const keys = getPromptKeys("Positive");
+
+    return keys.includes(key);
+}
+
+export function isNegativePromptKey(key) {
+    const keys = getPromptKeys("Negative");
+
+    return keys.includes(key);
+}
+
+export function getPositivePromptInMetadata(metadata) {
+    return getPromptInMetadata(metadata, "Positive");
+}
+
+export function getNegativePromptInMetadata(metadata) {
+    return getPromptInMetadata(metadata, "Negative");
+}
+
 export function makeMetaDataFromA111(inString) {
+
+    const positivePromptKey = "Positive prompt";
+    const negativePromptKey = "Negative prompt";
 
     let metadata = null;
     if (inString.startsWith("\"")) {
@@ -593,11 +641,8 @@ export function makeMetaDataFromA111(inString) {
             p[s[0].trim()] = s[1].trim();
             return p;
         }, {});
-        const p2 = inString.lastIndexOf("Negative prompt:", p);
+        const p2 = inString.lastIndexOf(`${negativePromptKey}:`, p);
         if (p2 > -1) {
-
-            const positivePromptKey = "Positive prompt";
-            const negativePromptKey = "Negative prompt";
 
             metadata[positivePromptKey] = inString.substring(0, p2).trim().replace("\n", '').replace("\\n", ''); // Trim whitespace and newlines
             metadata[negativePromptKey] = inString.substring(p2 + negativePromptKey.length + 1, p).trim().replace("\n", '').replace("\\n", '');
@@ -614,27 +659,25 @@ export function getDisplayTextFromMetadata(metadata) {
 
     if (!metadata) { return ''; }
 
-    const positivePromptKey = "Positive prompt";
-    const negativePromptKey = "Negative prompt";
-
     const allowDenyList = setting_KeyList.value.split(",")?.map(item => item.trim());
     const bIsAllowList = setting_bKeyListAllowDenyToggle.value;
 
     let outputString = '';
 
-    if (metadata[positivePromptKey]) {
-        outputString = metadata[positivePromptKey] + "\n";
+    const positivePrompt = getPositivePromptInMetadata(metadata);
+    if (positivePrompt) {
+        outputString = positivePrompt + "\n";
     }
 
     const metaKeys = Object.keys(metadata)?.sort((a, b) => {
         // "Negative prompt" comes first
-        if (a === negativePromptKey) { return -1; }
-        if (b === negativePromptKey) { return 1; }
+        if (isNegativePromptKey(a)) { return -1; }
+        if (isNegativePromptKey(b)) { return 1; }
         return a.localeCompare(b);  // Alphabetical sorting for other keys
     });
 
     for (const key of metaKeys) {
-        if (key == positivePromptKey) { continue; }
+        if (isPositivePromptKey(key)) { continue; }
 
         const bIsKeySpecified = allowDenyList?.includes(key.trim());
 
@@ -659,9 +702,6 @@ export function makeTooltipWidgetFromMetadata(metadata) {
         return null;
     }
 
-    const positivePromptKey = "Positive prompt";
-    const negativePromptKey = "Negative prompt";
-
     const allowDenyList = setting_KeyList.value.split(",")?.map(item => item.trim());
     const bIsAllowList = setting_bKeyListAllowDenyToggle.value;
 
@@ -671,8 +711,9 @@ export function makeTooltipWidgetFromMetadata(metadata) {
         }
     });
 
-    if (metadata[positivePromptKey]) {
-        let textContent = metadata[positivePromptKey].replace(/\\n/g, '\n').replace(/,(?=\S)/g, ', ');
+    const positivePrompt = getPositivePromptInMetadata(metadata);
+    if (positivePrompt) {
+        let textContent = positivePrompt.replace(/\\n/g, '\n').replace(/,(?=\S)/g, ', ');
         outputWidget.appendChild(
             $el('tr', [
                 $el('td', {
@@ -684,15 +725,16 @@ export function makeTooltipWidgetFromMetadata(metadata) {
         );
     }
 
-    if (metadata[negativePromptKey]) {
-        let textContent = metadata[negativePromptKey].replace(/\\n/g, '\n').replace(/,(?=\S)/g, ', ');
+    const negativePrompt = getNegativePromptInMetadata(metadata);
+    if (negativePrompt) {
+        let textContent = negativePrompt.replace(/\\n/g, '\n').replace(/,(?=\S)/g, ', ');
         // Negative Prompt key and value on separate rows
         outputWidget.appendChild(
             $el('tr', [
                 $el('td', {
                     colSpan: '2',
                 }, [
-                    $el("label", { textContent: `${negativePromptKey}:` })
+                    $el("label", { textContent: "Negative prompt:" })
                 ])
             ])
         );
@@ -712,7 +754,7 @@ export function makeTooltipWidgetFromMetadata(metadata) {
     });
 
     for (const key of metaKeys) {
-        if (key == positivePromptKey || key == negativePromptKey) { continue; }
+        if (isPositivePromptKey(key) || isNegativePromptKey(key)) { continue; }
 
         const bIsKeySpecified = allowDenyList?.includes(key.trim());
 
@@ -786,12 +828,15 @@ export function setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata
     imageElement.promptMetadata = metadata;
 
     // Set the dimensional display data in the event that it's not found in python meta sweep
-    if (!imageElement.displayData.FileDimensions && imageElement.fileInfo.file?.dimensions) {
-        imageElement.displayData.FileDimensions = imageElement.fileInfo.file.dimensions;
-    }
+    if (!imageElement?.displayData?.AspectRatio) {            
+        imageElement.displayData.AspectRatio = imageElement.img.offsetWidth / imageElement.img.offsetHeight;
+    } 
+    imageElement.style.aspectRatio = `${imageElement.displayData.AspectRatio}`;
 
-    if (!imageElement.displayData.AspectRatio && imageElement.displayData.FileDimensions) {
-        imageElement.displayData.AspectRatio = imageElement.displayData.FileDimensions[0] / imageElement.displayData.FileDimensions[1];
+    if (!imageElement.displayData?.FileDimensions) {
+        const width = imageElement.img.videoWidth || imageElement.img.offsetWidth;
+        const height = imageElement.img.videoHeight || imageElement.img.offsetHeight;
+        imageElement.displayData.FileDimensions = [width, height];
     }
 
     imageElement.displayData = utilitiesInstance.sortJsonObjectByKeys(imageElement.displayData);
