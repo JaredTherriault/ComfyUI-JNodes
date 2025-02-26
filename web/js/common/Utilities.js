@@ -227,6 +227,12 @@ class JNodesUtilities {
 		return unindentedLines.join("\n").trim();
 	}
 
+	sanitizeMetadataForJson(metadata) {
+		metadata = metadata.replace(/NaN/g, "0");
+
+		return metadata;
+	}
+
 	formatBytesToString(bytes, decimalPlaces = 3) {
 		if (bytes === 0) return "0";
 		const k = 1024;
