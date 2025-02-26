@@ -1,4 +1,5 @@
 import { $el } from "/scripts/ui.js";
+import { app } from "/scripts/app.js";
 import { api } from "/scripts/api.js";
 
 import * as ExtraNetworks from "./ImageListChildElements/ExtraNetworks.js";
@@ -410,7 +411,9 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 		let subdirectories;
 		try {
 			// Decode into a string
-			const decodedString = await utilitiesInstance.decodeReadableStream(subdirectoriesResponse.body);
+			let decodedString = await utilitiesInstance.decodeReadableStream(subdirectoriesResponse.body);
+
+			decodedString = utilitiesInstance.sanitizeMetadataForJson(decodedString);
 
 			const asJson = JSON.parse(decodedString);
 
@@ -493,6 +496,8 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 		try {
 			// Decode into a string
 			decodedString = await utilitiesInstance.decodeReadableStream(allItems.body);
+
+			decodedString = utilitiesInstance.sanitizeMetadataForJson(decodedString);
 
 			const asJson = JSON.parse(decodedString);
 
@@ -682,7 +687,7 @@ export class ContextFeed extends ContextClearable {
 					await this.addNewUncachedFeedImages();
 				}
 
-				utilitiesInstance.tryFreeMemory(false, true, false);
+				// utilitiesInstance.tryFreeMemory(false, true, false);
 			}
 		});
 	}
@@ -696,6 +701,7 @@ export class ContextFeed extends ContextClearable {
 				if (this.shouldCancelAsyncOperation()) { break; }
 
 				let fileInfo = this.feedImages[imageIndex];
+				fileInfo.file = fileInfo;
 				fileInfo.bShouldForceLoad = true; // Don't lazy load
 				const element = await ImageElements.createImageElementFromFileInfo(fileInfo, this.imageDrawerInstance);
 				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
@@ -842,10 +848,13 @@ export class ContextSavedPrompts extends ContextSubdirectoryExplorer {
 
 export class ContextMetadataReader extends ImageDrawerContext {
 	constructor(imageDrawerInstance) {
-		super("Metadata Reader", "Read and display metadata from a generation", imageDrawerInstance);
+		super(
+			"Metadata Reader", 
+			"Read and display metadata from a generation", 
+			imageDrawerInstance);
 	}
 
-	getSupportedSortNames() {
+	getSupportedSortTypes() {
 		return [];
 	}
 }
