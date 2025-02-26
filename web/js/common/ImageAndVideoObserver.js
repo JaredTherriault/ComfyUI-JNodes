@@ -71,8 +71,11 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
 				element.onObserverIntersect();
 			}
 			else if (!element.src || element.src === '') {
-				element.forceLoad();
 
+				if (element.forceLoad) {
+					element.forceLoad();
+				}
+				
 				if (element.tagName !== 'VIDEO') {
 					unobserveVisualElement(element);
 					return;
