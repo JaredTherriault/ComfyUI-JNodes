@@ -4,12 +4,16 @@ import re
 from .logger import *
 from .utils import *
 
-from PIL import Image
-
 import concurrent
 import multiprocessing
 
 import cv2
+import json
+import subprocess
+import piexif
+from PIL import Image, PngImagePlugin, ExifTags
+
+DEBUG = False
 
 class GetSubdirectoryImages:
 
@@ -76,7 +80,7 @@ class GetSubdirectoryImages:
             proc_count = multiprocessing.cpu_count()
             proc_count_recursive = max(1, int(proc_count / 2)) # To ensure we don't overflow in recursive multiprocess loads
             args = [(item, full_directory, current_subdirectory) for item in in_items]
-            with multiprocessing.Pool(processes= proc_count_recursive if self.recursive else proc_count) as pool:
+            with multiprocessing.Pool(processes= 1 if DEBUG else proc_count_recursive if self.recursive else proc_count) as pool:
                 results_from_pool = pool.starmap(process_item, args)
                 for result in results_from_pool:
                     evaluate_result(result)
@@ -146,8 +150,6 @@ class GetSubdirectoryImages:
         items = os.listdir(full_directory)  
         do_auto(items)
 
-
-
 def process_item(item, full_directory, current_subdirectory):
     """
     Process a single file or directory item.
@@ -164,18 +166,82 @@ def process_item(item, full_directory, current_subdirectory):
             
     return False, full_path, item
 
+def extract_png_metadata(img):
+    """Extracts PNG metadata."""
+    metadata = {}
+    if isinstance(img.info, dict):
+        for key, value in img.info.items():
+            metadata[key] = value
+    return metadata
+
+def extract_jpg_exif(img):
+    """Extracts EXIF metadata from JPG/WebP."""
+    exif_data = {}
+    try:
+        exif_raw = img._getexif()
+        if exif_raw:
+            exif_data = {ExifTags.TAGS.get(tag, tag): value for tag, value in exif_raw.items()}
+            # Decode UserComment if it's JSON
+            if "UserComment" in exif_data:
+                try:
+                    exif_data = json.loads(piexif.helper.UserComment.load(exif_data["UserComment"]))
+                except json.JSONDecodeError:
+                    pass
+    except Exception as e:
+        logger.warning(f"Unable to extract EXIF data: {e}")
+    return exif_data
+
+def extract_gif_comment(img):
+    """Extracts JSON metadata stored in a GIF comment, if available."""
+    try:
+        comment = img.info.get("comment", "").decode("utf-8")
+        return json.loads(comment) if comment else None
+    except (json.JSONDecodeError, AttributeError):
+        return comment  # Return raw text if it's not JSON
+
+def extract_video_metadata(full_path):
+    """Extracts video metadata using ffprobe via subprocess."""
+    metadata = {}
+    try:
+        # Run ffprobe and capture JSON output
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_format", "-print_format", "json", full_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+        # Parse JSON output
+        probe = json.loads(result.stdout)
+        format_tags = probe.get("format", {}).get("tags", {})
+        
+        # Handle comment field
+        if "comment" in format_tags:
+            try:
+                metadata = json.loads(format_tags["comment"])
+            except json.JSONDecodeError:
+                metadata["comment"] = format_tags["comment"]
+    except Exception as e:
+        logger.warning(f"Unable to extract video metadata: {e}")
+
+    return metadata
+
 def process_acceptable_item(item, current_subdirectory, full_path):
     file_size = os.path.getsize(full_path)
     dimensions = [0, 0]
+    is_video_item = is_video(item)
+    file_age = os.path.getctime(full_path)
     frame_count = -1
     fps = -1
-    is_video_item = is_video(item)
 
     metadata_read = True
+    metadata = {}
 
     try:
         if is_video_item:
-            try:
+            metadata = extract_video_metadata(full_path)
+
+            try: # Attempt on GPU first
                 cap = cv2.cudacodec.VideoReader(full_path)
             except:
                 cap = cv2.VideoCapture(full_path)
@@ -191,16 +257,30 @@ def process_acceptable_item(item, current_subdirectory, full_path):
         else:
             with Image.open(full_path) as img:
                 dimensions = img.size
+                ext = full_path.lower()
+
+                if ext.endswith(".png"):
+                    metadata = extract_png_metadata(img)
+                elif ext.endswith(".jpg") or ext.endswith(".jpeg") or ext.endswith(".webp"):
+                    metadata = extract_jpg_exif(img)
+                elif ext.endswith(".gif"):
+                    metadata["comment"] = extract_gif_comment(img)
+
     except Exception as e:
         metadata_read = False
-        logger.warning(f"Unable to get meta for '{full_path}': {e}")
+        logger.warning(f"Unable to get metadata for '{full_path}': {e}")
 
-    file_age = os.path.getctime(full_path)
-    file_format = f"{'video' if is_video_item else 'image'}/{get_file_extension_without_dot(item)}"
-    
     return {
-        'item': item, 'file_age': file_age, 'format': file_format, 'file_size': file_size, 'dimensions': dimensions,
-        'is_video': is_video_item, 'metadata_read': metadata_read, "subdirectory": current_subdirectory,
-        'frame_count': frame_count, 'fps': fps, 
+        'item': item,
+        'format': f"{'video' if is_video_item else 'image'}/{get_file_extension_without_dot(item)}",
+        "file_age": file_age, 
+        'file_size': file_size,
+        'dimensions': dimensions,
+        'is_video': is_video_item,
+        'metadata_read': metadata_read,
+        "subdirectory": current_subdirectory,
+        'metadata': metadata,
+        'frame_count': frame_count, 
+        'fps': fps, 
         'duration_in_seconds': frame_count / fps if frame_count > 1 and fps > 1 else -1
     }
