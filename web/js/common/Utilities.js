@@ -294,7 +294,7 @@ class JNodesUtilities {
 
 	copyToClipboard(text) {
 		const textArea = document.createElement("textarea");
-		textArea.value = text;
+		textArea.value = text.replace(/\\n/g, "\n"); // Ensure newlines are proper
 
 		// Make the textarea hidden
 		textArea.style.position = "fixed";
