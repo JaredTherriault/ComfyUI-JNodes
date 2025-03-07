@@ -266,6 +266,19 @@ def process_acceptable_item(item, current_subdirectory, full_path):
                 elif ext.endswith(".gif"):
                     metadata["comment"] = extract_gif_comment(img)
 
+        # Filter out json-incompatible metadata
+        json_serializable_meta = {}
+        for tag, value in metadata.items():
+            
+            try:
+                as_dict = {tag: value}
+                json.dump(as_dict)
+            
+                json_serializable_meta[tag] = value
+            except:
+                pass
+        metadata = json_serializable_meta
+
     except Exception as e:
         metadata_read = False
         logger.warning(f"Unable to get metadata for '{full_path}': {e}")
