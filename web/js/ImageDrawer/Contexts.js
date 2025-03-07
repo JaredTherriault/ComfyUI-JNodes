@@ -27,9 +27,9 @@ export function initializeContexts(imageDrawerInstance) {
 		output: new ContextOutput(imageDrawerInstance),
 		lora: new ContextLora(imageDrawerInstance),
 		embeddings: new ContextEmbeddings(imageDrawerInstance),
+		preview: new ContextPreview(imageDrawerInstance),
 		//savedPrompts: new ContextSavedPrompts(imageDrawerInstance),
 		//			metadata: new ContextMetadataReader(imageDrawerInstance),
-		//			compare: new ContextCompare(imageDrawerInstance),
 	};
 };
 
@@ -859,11 +859,11 @@ export class ContextMetadataReader extends ImageDrawerContext {
 	}
 }
 
-export class ContextCompare extends ContextClearable {
+export class ContextPreview extends ImageDrawerContext {
 	constructor(imageDrawerInstance) {
 		super(
-			"Compare", 
-			"Compare generations sent to this context via menu. Does not persist on refresh.",
+			"Preview", 
+			"Show the current preview of whatever is being generated, the same as what would show on a sampler node",
 			imageDrawerInstance
 		);
 	}
@@ -872,15 +872,82 @@ export class ContextCompare extends ContextClearable {
 		if (!await super.switchToContext()) {
 			const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 			imageDrawerListInstance.clearImageListChildren();
+
+			if (!this.link) {
+				this.createPreviewElement();
+			}
+
+			imageDrawerListInstance.addElementToImageList(this.link);
+	
+			api.addEventListener("b_preview", ({ detail }) => {
+				if (this.animateInterval) { return; }
+				this.canvas.style.display = "none";
+				this.img.style.display = "unset";
+				this.show(URL.createObjectURL(detail), app.runningNodeId);
+			});
+
+			api.addEventListener('VHS_latentpreview', ({ detail }) => {
+				let setting = app.ui.settings.getSettingValue("VHS.LatentPreview");
+				if (!setting) {
+					return;
+				}
+				this.nodeId = app.runningNodeId;
+				if (this.nodeId == null) {
+					return;
+				}
+				this.canvas.style.display = "unset";
+				this.img.style.display = "none";
+				let previewNode = app.graph.getNodeById(this.nodeId);
+				let previewWidget = previewNode.widgets.find((w) => w.name == "vhslatentpreview");
+				let ctx;
+				if (this.animateInterval) {
+					clearInterval(this.animateInterval);
+				}
+				this.animateInterval = setInterval(() => {
+					if (app.runningNodeId != this.nodeId) {
+						clearInterval(this.animateInterval);
+						this.animateInterval = undefined;
+						return;
+					}
+					if (!ctx) {
+						ctx = this.canvas.getContext("2d");
+					}
+					this.canvas.style.aspectRatio = previewWidget.aspectRatio;
+					ctx.drawImage(previewWidget.element, 0, 0, this.canvas.width, this.canvas.height);
+				}, 1000/detail.rate);
+			});
 		}
-
-		//await this.addNewUncachedFeedImages();
 	}
 
-	async onClearClicked() {
+	show(src, node) {
+		this.img.src = src;
+		this.nodeId = Number(node);
 	}
 
-	getSupportedSortNames() {
+	createPreviewElement() {
+
+		this.canvas = $el("canvas", { style: { display: "none", width: "100%" } });
+		this.img = $el("img", { style: { display: "none", width: "100%" } });
+
+		this.link = $el(
+			"a",
+			{
+				href: "#",
+				onclick: (e) => {
+					e.stopPropagation();
+					e.preventDefault();
+					const node = app.graph.getNodeById(this.nodeId);
+					if (!node) return;
+					app.canvas.centerOnNode(node);
+					app.canvas.setZoom(1);
+				},
+			}, [
+				this.canvas, this.img
+			]
+		);
+	}
+
+	getSupportedSortTypes() {
 		return [];
 	}
 }
