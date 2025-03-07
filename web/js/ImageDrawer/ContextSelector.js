@@ -133,9 +133,6 @@ class ImageDrawerContextSelector extends ImageDrawerComponent {
 				// await api.fetchApi(
 				// 	'/jnodes_request_task_cancellation', { method: "POST"}); // Cancel any outstanding python task
 			});
-
-			// Initialize
-			this.setOptionSelected(this.lastSelectedContextOption);
 		}
 
 		return this.ContextSelector;
