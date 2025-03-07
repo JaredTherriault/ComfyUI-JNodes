@@ -276,7 +276,7 @@ def process_acceptable_item(item, current_subdirectory, full_path):
             
                 json_serializable_meta[tag] = value
             except:
-                pass
+                json_serializable_meta[tag] = str(value)
         metadata = json_serializable_meta
 
     except Exception as e:
