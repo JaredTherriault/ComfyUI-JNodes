@@ -41,6 +41,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		this.setting_DrawerHeight = new ImageDrawerConfigSetting(`ImageDrawer_Height_Instance_${this.imageDrawerInstance.getIndex()}`, 25);
 		this.setting_DrawerWidth = new ImageDrawerConfigSetting(`ImageDrawer_Width_Instance_${this.imageDrawerInstance.getIndex()}`, 25);
 		this.setting_DrawerAnchorLocal = new ImageDrawerConfigSetting(`ImageDrawer_Anchor_Instance_${this.imageDrawerInstance.getIndex()}`, setting_DrawerAnchor.value);
+		this.setting_CollapsedControls = new ImageDrawerConfigSetting(`ImageDrawer_Collapsed_Instance_${this.imageDrawerInstance.getIndex()}`, false);
 
 		const imageDrawerContextSelectorInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
 		imageDrawerContextSelectorInstance.createContextSelector();
@@ -544,7 +545,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			}
 		}, [hideButton, this.drawerOptionsFlyout, syncButton]);
 
-		const CollapseExpandButton = $el("button.JNodes-image-drawer-menu-collapsible-area-toggle-button", {
+		this.CollapseExpandButton = $el("button.JNodes-image-drawer-menu-collapsible-area-toggle-button", {
 			title: "Toggle the visibility of the controls below",
 			textContent: "▼",
 			style: {
@@ -556,18 +557,22 @@ class ImageDrawerMain extends ImageDrawerComponent {
 				cursor: 'pointer',
 			}
 		});
-		CollapseExpandButton.classList.add("JNodes-interactive-container");
+		this.CollapseExpandButton.classList.add("JNodes-interactive-container");
 
 		// Add click event listener to toggle button
-		CollapseExpandButton.addEventListener('click', function () {
-			const bIsCurrentlyCollapsed = CollapsibleArea.style.display === "none";
+		const setCollapsedState = (bIsCollapsed) => {
 
 			// Toggle content display
-			CollapsibleArea.style.display =
-				bIsCurrentlyCollapsed ? 'block' : 'none';
+			CollapsibleArea.style.display = bIsCollapsed ? 'none' : 'block';
 
 			// Toggle button arrow orientation
-			CollapseExpandButton.textContent = bIsCurrentlyCollapsed ? "▼" : "▶";
+			this.CollapseExpandButton.textContent = bIsCollapsed ? "▶" : "▼";
+		};
+		this.CollapseExpandButton.addEventListener('click', () => {
+
+			this.setting_CollapsedControls.value = !this.setting_CollapsedControls.value;
+
+			setCollapsedState(this.setting_CollapsedControls.value);
 		});
 
 		const batchFavouriteManagerInstance = this.imageDrawerInstance.getComponentByName("BatchFavouriteManager");
@@ -584,7 +589,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 				justifycontent: "flex-end",
 			}
 		}, [batchFavouriteManagerWidget.container, batchDeletionManagerWidget.container, batchRemovalManagerWidget.container, batchSelectionManagerWidget.container, 
-			CollapseExpandButton]);
+			this.CollapseExpandButton]);
 
 		const BasicControlsGroup =
 			$el("div.JNodes-image-drawer-basic-controls-group", {
@@ -675,6 +680,9 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			const imageDrawerContextSelectorInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
 			await imageDrawerContextSelectorInstance.setOptionSelected(this.setting_LastSelectedContext.value);
 		}
+
+		// Restore control collapse state
+		setCollapsedState(this.setting_CollapsedControls.value);
 	}
 }
 
