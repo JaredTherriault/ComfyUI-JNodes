@@ -100,16 +100,19 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
                 continue
 
             metadata = None
-            if item_name.endswith(".safetensors"):
-                metadata = load_safetensors_metadata(file_path)
-            else:
-                metadata = load_pt_metadata(file_path)
+            try:
+                if item_name.endswith(".safetensors"):
+                    metadata = load_safetensors_metadata(file_path)
+                else:
+                    metadata = load_pt_metadata(file_path)
 
-            if metadata:
-                try: # Sorted dictionaries only available in py 3.7+
-                    metadata = {k: metadata[k] for k in sorted(metadata)}
-                except:
-                    pass
+                if metadata:
+                    try: # Sorted dictionaries only available in py 3.7+
+                        metadata = {k: metadata[k] for k in sorted(metadata)}
+                    except:
+                        pass
+            except Exception as e:
+                logger.error(f"Error loading {item_name} ({type}): {e}")
 
             file_name_no_ext, file_ext = os.path.splitext(item_name)
             # logger.info(f"file_name_no_ext, file_ext: {file_name_no_ext, file_ext}")
@@ -146,7 +149,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
                 "familiar_infos": familiar_infos
             }
         except Exception as e:
-            logger.error(f"Error loading {type}: {e}")
+            logger.error(f"Error parsing {item_name} ({type}): {e}")
         
     return familiar_dictionaries
     
