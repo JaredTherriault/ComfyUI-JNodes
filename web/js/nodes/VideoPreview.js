@@ -86,8 +86,9 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 			const transform = ctx.getTransform();
 			const scale = app.canvas.ds.scale;//gets the litegraph zoom
 			//calculate coordinates with account for browser zoom
-			const x = transform.e * scale / transform.a;
-			const y = transform.f * scale / transform.a;
+        	const bcr = app.canvas.canvas.getBoundingClientRect()
+			const x = transform.e * scale / transform.a + bcr.x;
+			const y = transform.f * scale / transform.a + bcr.y;
 
 			const setting = app.ui.settings.getSettingValue("Comfy.UseNewMenu").toLowerCase();
 			const comfyMenuBar = document.querySelector(".comfyui-body-top");
