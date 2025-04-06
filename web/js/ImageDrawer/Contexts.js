@@ -540,7 +540,7 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 				filename: file.item,
 				file: file,
 				type: this.rootDirectoryName,
-				subdirectory: file.subdirectory ? file.subdirectory : selectedSubdirectory,
+				subdirectory: file.subdirectory ? selectedSubdirectory ? `${selectedSubdirectory}/${file.subdirectory}` : file.subdirectory : selectedSubdirectory,
 				bShouldForceLoad: this.bShouldForceLoad,
 				bShouldSort: false,
 				bShouldApplySearch: false,
