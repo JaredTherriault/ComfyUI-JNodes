@@ -233,6 +233,34 @@ class JNodesUtilities {
 		return metadata;
 	}
 
+	sanitizeHTML(input) {
+		const allowedTags = new Set(['p', 'b', 'i', 'em', 'strong', 'ul', 'ol', 'li', 'br', 'span']);
+		const div = document.createElement('div');
+		div.innerHTML = input;
+	
+		function sanitizeNode(node) {
+			if (node.nodeType === Node.ELEMENT_NODE) {
+				if (!allowedTags.has(node.tagName.toLowerCase())) {
+					// Replace with text content or strip entirely
+					const textNode = document.createTextNode(node.textContent);
+					node.parentNode.replaceChild(textNode, node);
+				} else {
+					// Optional: strip attributes except style
+					[...node.attributes].forEach(attr => {
+						if (attr.name !== 'style') node.removeAttribute(attr.name);
+					});
+					// Recursively sanitize children
+					[...node.childNodes].forEach(sanitizeNode);
+				}
+			} else if (node.nodeType === Node.COMMENT_NODE) {
+				node.remove(); // remove comments
+			}
+		}
+	
+		[...div.childNodes].forEach(sanitizeNode);
+		return div.innerHTML;
+	}
+
 	formatBytesToString(bytes, decimalPlaces = 3) {
 		if (bytes === 0) return "0";
 		const k = 1024;
