@@ -88,7 +88,7 @@ document.addEventListener("keydown", async (event) => {
 
 			VideoControl.toggleVideoMute(elementUnderPointer);
 		}
-	} else if (event.key == 'f') { // Toggle fullscreen
+	} else if (event.key == 's') { // Toggle fullscreen
 		const elementUnderPointer = getElementUnderPointer();
 
 		if (isElementAppropriateForVideoEvent(elementUnderPointer)) {
