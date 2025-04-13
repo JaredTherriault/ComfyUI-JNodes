@@ -100,7 +100,8 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 		lastSeekTime: 0.0,
 		style: {
 			transition: "100ms",
-			cursor: bIsVideoFormat ? "default" : "pointer"
+			cursor: bIsVideoFormat ? "default" : "pointer",
+			pointerEvents: "none",
 		},
 		onload: () => { ImageElementUtils.onLoadImageElement(imageElement); }, // Still / animated images
 		onloadedmetadata: () => { ImageElementUtils.onLoadImageElement(imageElement); }, // Videos

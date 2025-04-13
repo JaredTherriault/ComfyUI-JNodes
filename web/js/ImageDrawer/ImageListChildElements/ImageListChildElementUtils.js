@@ -111,6 +111,7 @@ export function imageElementMouseOverEvent(event, imageElement) {
         addCheckboxSelectorToImageElement(imageElement);
         addToolButtonToImageElement(imageElement);
         updateAndShowTooltip(imageElement.tooltipWidget, imageElement);
+        imageElement.img.style.pointerEvents = "auto";
     }
 }
 
@@ -125,6 +126,7 @@ export function imageElementMouseOutEvent(event, imageElement) {
         removeAndHideToolButtonFromImageElement(imageElement);
         hideImageElementCheckboxSelector(imageElement);
         currentMousedOverImageElement = null;
+        imageElement.img.style.pointerEvents = "none";
     }
 }
 
@@ -379,8 +381,8 @@ export function getOrCreateToolButton(imageElementToUse) {
     const handleClassSuffix = 'imageElement-flyout-handle';
     const menuClassSuffix = 'imageElement-flyout-menu';
     const imageDrawerListInstance = imageElementToUse.imageDrawerInstance.getComponentByName("ImageDrawerList");
-    const parentRect = imageDrawerListInstance.getImageListElement().getBoundingClientRect();
-    const flyout = createFlyoutHandle("⋮", handleClassSuffix, menuClassSuffix, parentRect, imageElementToUse.bIsVideoFormat ? "w" : "");
+    const parentElement = imageDrawerListInstance.getImageListElement();
+    const flyout = createFlyoutHandle("⋮", handleClassSuffix, menuClassSuffix, parentElement);
 
     toolButtonContainer.style.top = '2%';
     toolButtonContainer.style.right = '2%';
