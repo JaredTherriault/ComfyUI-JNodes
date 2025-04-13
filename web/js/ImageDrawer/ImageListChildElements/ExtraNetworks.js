@@ -782,9 +782,9 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
                     createButton(
                         $el("label", {
                             textContent: baseLabelText,
-                            style: {
-                                color: 'rgb(250,250,250)',
-                            }
+							style: {
+								cursor: "pointer",
+							}
                         }),
                         "Open this file's containing directory in your OS's default file manager.",
                         (e) => {
