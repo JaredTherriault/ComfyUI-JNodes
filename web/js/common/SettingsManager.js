@@ -116,11 +116,9 @@ export class ImageDrawerConfigSetting extends ConfigSetting {
 
 export let setting_bEnabled = new ImageDrawerConfigSetting("bEnabled", true);
 export let setting_ImageDrawerInstanceCount = new ImageDrawerConfigSetting("ImageDrawerInstanceCount", 1);
-export let setting_bMasterVisibility = new ImageDrawerConfigSetting("bMasterVisibility", true);
 export let setting_DrawerAnchor = new ImageDrawerConfigSetting("DrawerAnchor", "top-left");
 export let setting_bRememberLastDrawerContext = new ImageDrawerConfigSetting("Drawer.bRememberLastDrawerContext", true);
 export let setting_SidebarSplitterHandleSize = new ImageDrawerConfigSetting("Drawer.Sidebar.Splitter.Width", 0);
-
 export let setting_KeyList = new ImageDrawerConfigSetting("ImageVideo.KeyList", defaultKeyList);
 export let setting_bKeyListAllowDenyToggle = new ImageDrawerConfigSetting("ImageVideo.bKeyListAllowDenyToggle", false);
 export let setting_bMetadataTooltipToggle = new ImageDrawerConfigSetting("ImageVideo.bMetadataTooltipToggle", true);
@@ -552,7 +550,7 @@ export function addJNodesSetting(nameWidget, settingWidget, tooltip, bUseExpanda
     }
 }
 
-export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClassSuffix = "", parentRect = window, forcedAnchor = "") {
+export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClassSuffix = "", parentElement = null, forcedAnchor = "") {
     let handle = $el(`section.flyout-handle.${handleClassSuffix}`, [
         $el("label.flyout-handle-label", { textContent: handleText })
     ]);
@@ -561,14 +559,24 @@ export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClass
 
     handle.appendChild(menu);
 
+    const viewportRect = {
+        top: 0,
+        left: 0,
+        right: window.innerWidth,
+        bottom: window.innerHeight,
+        width: window.innerWidth,
+        height: window.innerHeight,
+      };
+
     handle.determineTransformLayout = function () {
 
         const handleRect = handle.getBoundingClientRect();
+        const parentRect = parentElement ? parentElement.getBoundingClientRect() : viewportRect;
 
         let transformOriginX = "0%";
         let transformOriginY = "0%";
 
-        const halfHeight = (parentRect.innerHeight || parentRect.height) / 2;
+        const halfHeight = ((parentRect.innerHeight || parentRect.height) / 2) + (parentRect.top || 0);
 
         const bIsHandleInTopHalf = (handleRect.top < halfHeight || forcedAnchor.includes("n")) && !forcedAnchor.includes("s");
         if (bIsHandleInTopHalf) {
@@ -584,7 +592,7 @@ export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClass
             menu.style.maxHeight = `${handleRect.top - parentRect.top - 50}px`;
         }
 
-        const halfWidth = (parentRect.innerWidth || parentRect.width) / 2;
+        const halfWidth = ((parentRect.innerWidth || parentRect.width) / 2) + (parentRect.left || 0);
 
         const bIsHandleInLeftHalf = (handleRect.left < halfWidth || forcedAnchor.includes("e")) && !forcedAnchor.includes("w");
         if (bIsHandleInLeftHalf) {
