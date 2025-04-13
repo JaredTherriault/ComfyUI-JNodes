@@ -3,7 +3,7 @@ import { $el } from "/scripts/ui.js";
 
 import {
 	ImageDrawerConfigSetting, createDrawerSelectionWidget,
-	setting_bEnabled, setting_bMasterVisibility, setting_DrawerAnchor,
+	setting_bEnabled, setting_DrawerAnchor,
 	createFlyoutHandle, createLabeledSliderRange, options_LabeledSliderRange,
 	setting_bQueueTimerEnabled, setting_SidebarSplitterHandleSize,
 	setting_bRememberLastDrawerContext
@@ -37,6 +37,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		this._minimumDrawerSize = 15;
 		this._maximumDrawerSize = 100;
 
+		this.setting_bIsDrawerVisible = new ImageDrawerConfigSetting(`ImageDrawer_Visibility_Instance_${this.imageDrawerInstance.getIndex()}`, true);
 		this.setting_ColumnCount = new ImageDrawerConfigSetting(`ImageDrawer_ColumnCount_Instance_${this.imageDrawerInstance.getIndex()}`, 4);
 		this.setting_DrawerHeight = new ImageDrawerConfigSetting(`ImageDrawer_Height_Instance_${this.imageDrawerInstance.getIndex()}`, 25);
 		this.setting_DrawerWidth = new ImageDrawerConfigSetting(`ImageDrawer_Width_Instance_${this.imageDrawerInstance.getIndex()}`, 25);
@@ -412,26 +413,15 @@ class ImageDrawerMain extends ImageDrawerComponent {
 		const showButtonClickListener = () => {
 			utilitiesInstance.setElementVisible(this.imageDrawer, true, "flex");
 			utilitiesInstance.setElementVisible(showButton, false);
-			utilitiesInstance.setElementVisible(showButtonClone, false);
-			setting_bMasterVisibility.value = true;
+			this.setting_bIsDrawerVisible.value = true;
 		};
-		utilitiesInstance.setElementVisible(showButton, !setting_bMasterVisibility.value);
+		utilitiesInstance.setElementVisible(showButton, !this.setting_bIsDrawerVisible.value);
 		showButton.addEventListener("click", showButtonClickListener);
-
-		const showButtonClone = showButton.cloneNode(true);
-		utilitiesInstance.setElementVisible(showButtonClone, !setting_bMasterVisibility.value);
-		showButtonClone.addEventListener("click", showButtonClickListener);
 
 		try {
 			app.menu?.settingsGroup.element.after(showButton); // insert Show after comfy buttons menu
 		} catch {
 			console.warn("Could not add showButton to app.menu.settingsGroup.element")
-		}
-
-		try {
-			document.querySelector(".comfy-settings-btn").after(showButtonClone); // insert Show after Settings
-		} catch {
-			console.warn("Could not add showButton beside comfy-settings-btn")
 		}
 
 		// A button to queue at a set interval with the current workflow
@@ -502,8 +492,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 
 				utilitiesInstance.setElementVisible(this.imageDrawer, false);
 				utilitiesInstance.setElementVisible(showButton, true);
-				utilitiesInstance.setElementVisible(showButtonClone, true);
-				setting_bMasterVisibility.value = false;
+				this.setting_bIsDrawerVisible.value = false;
 			},
 			style: {
 				width: "fit-content",
@@ -670,7 +659,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			this.registerAsAnchored();
 
 			// If not supposed to be visible on startup, close it
-			if (!setting_bMasterVisibility.value) {
+			if (!this.isSidebarTab() && !this.setting_bIsDrawerVisible.value) {
 				hideButton.onclick();
 			}
 		}
