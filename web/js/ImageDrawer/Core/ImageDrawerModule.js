@@ -182,7 +182,7 @@ export function removeImageDrawerInstance(index = -1) {
 
     if (index < -1 || index >= _imageDrawerComponentManagerInstances.length) {
 
-        console.log(`removeImageDrawerInstance: Can't remove ImageDrawerInstance at index ${index}: Index out of range!`);
+        console.error(`removeImageDrawerInstance: Can't remove ImageDrawerInstance at index ${index}: Index out of range!`);
         return;
     }
 
@@ -192,6 +192,35 @@ export function removeImageDrawerInstance(index = -1) {
 
     _imageDrawerComponentManagerInstances[index].destroy();
     _imageDrawerComponentManagerInstances.splice(index, 1);
+}
+
+export function getImageDrawerInstanceByIndex(index) {
+
+    if (!index || index < 0 || index >= _imageDrawerComponentManagerInstances.length) {
+
+        console.error(`removeImageDrawerInstance: Can't get ImageDrawerInstance at index ${index}: Index out of range!`);
+        return;
+    }
+
+    return _imageDrawerComponentManagerInstances[index];
+}
+
+export function findFirstImageDrawerInstanceWithGivenContext(inContextName) {
+
+    for (const instance of _imageDrawerComponentManagerInstances) {
+
+        const contextSelector = instance.getComponentByName("ImageDrawerContextSelector");
+
+        if (contextSelector) {
+
+            if (contextSelector.getCurrentContextName() == inContextName) {
+
+                return instance;
+            }
+        }
+    }
+
+    return null;
 }
 
 export async function onImageDrawerInstanceCountChanged(newCount) {
