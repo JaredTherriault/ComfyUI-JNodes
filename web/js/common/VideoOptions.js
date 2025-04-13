@@ -10,7 +10,7 @@ export class info_VideoPlaybackOptions {
     loop = { tooltip: 'Should the videos automatically play again when the end is reached?', forEachElement: forEachElement_genericPropagatation, widgetType: 'checkbox' }; 
     controls = { tooltip: 'Should controls such as play/pause, volume, etc be displayed on the video?', forEachElement: forEachElement_genericPropagatation, widgetType: 'checkbox' }; 
     muted = { tooltip: 'Should videos play without audio?', forEachElement: forEachElement_genericPropagatation, widgetType: 'checkbox' };
-    useWheelSeek = { tooltip: 'Should videos seek when mousing over a video and using the scroll wheel?', forEachElement: forEachElement_genericPropagatation, widgetType: 'checkbox' };
+    useWheelSeek = { tooltip: 'Should videos seek when mousing over a video and using the scroll wheel? If unchecked, you can still mouse wheel seek by holding the alt key.', forEachElement: forEachElement_genericPropagatation, widgetType: 'checkbox' };
     invertWheelSeek = { tooltip: 'Should scroll wheel seeking be inverted? (If true, scrolling up will seek forward. If false, will seek backward)', 
         forEachElement: forEachElement_genericPropagatation, widgetType: 'checkbox' };
     defaultVolume = { tooltip: 'The default volume at which videos should play if not muted', forEachElement: forEachElement_Volume, widgetType: 'range' };

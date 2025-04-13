@@ -119,7 +119,9 @@ document.addEventListener("keydown", async (event) => {
 
 document.addEventListener('wheel', (event) => {
 
-	if (setting_VideoPlaybackOptions.value.useWheelSeek) {
+	if (setting_VideoPlaybackOptions.value.useWheelSeek ||
+		(!setting_VideoPlaybackOptions.value.useWheelSeek && event.altKey)
+	) {
 		const elementUnderPointer = getElementUnderPointer();
 
 		if (isElementAppropriateForVideoEvent(elementUnderPointer)) {

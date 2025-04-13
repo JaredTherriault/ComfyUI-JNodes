@@ -157,7 +157,8 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 
 		img.addEventListener('wheel', (event) => {
 
-			if (setting_VideoPlaybackOptions.value.useWheelSeek) {
+			if (setting_VideoPlaybackOptions.value.useWheelSeek || 
+				(!setting_VideoPlaybackOptions.value.useWheelSeek && event.altKey)) {
 				// Prevent scrolling the list
 				event.preventDefault();
 			}
