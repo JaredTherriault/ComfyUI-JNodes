@@ -47,14 +47,14 @@ class JNodesUtilities {
 		return '#' + Math.floor(Math.random()*16777215).toString(16);
 	}
 
-	createDarkContainer(identifier, paddingOverride) {
+	createDarkContainer(identifier = "dark-container", padding = "1%") {
 		return $el("div", {
 			id: identifier,
 			style: {
 				position: "absolute",
 				backgroundColor: utilitiesInstance.getDarkColor(),
 				display: "inline-block", // Size to content, "-block" to allow vertical margin and padding
-				padding: paddingOverride ? paddingOverride : "1%",
+				padding: padding,
 			},
 		});
 	}
