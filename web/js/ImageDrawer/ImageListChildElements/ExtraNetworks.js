@@ -708,8 +708,8 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 				));
 			}
 
-			// Go to civit.ai link
-			if (cardInfo.modelId) {
+			// Go to model link
+			if (cardInfo.modelId || userCardInfoOverrides.linkOverride) {
 				const href = getModelLink();
 				buttonsRow.appendChild(
 					createButton(
@@ -721,7 +721,7 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 								cursor: "pointer",
 							}
 						}),
-						`View model on civit.ai (${href})`
+						`View model in browser (${href})`
 					)
 				);
 			}
