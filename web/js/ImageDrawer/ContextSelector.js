@@ -90,7 +90,7 @@ class ImageDrawerContextSelector extends ImageDrawerComponent {
 
 		const sortType = NewContext.getDesiredSortType();
 		if (sortType && typeof sortType === 'object') {
-			imageDrawerListSortingInstance.setOptionSelectedFromSortType(sortType.type, sortType.bIsAscending);
+			imageDrawerListSortingInstance.setOptionSelectedFromSortType(sortType.type || sortType.constructor, sortType.bIsAscending);
 		} else if (sortType && typeof sortType === 'string') {
 			imageDrawerListSortingInstance.setOptionSelectedFromOptionName(sortType);
 		}
