@@ -17,6 +17,7 @@ export class SearchableDropDown {
         this._labelPanel = null;
         this._selectedOption = "";
         this._bIsContentShown = false;
+        this._lastScrollAmount = 0;
 
         // Events
         this._ON_SELECT_EVENT_NAME = "selectoption";
@@ -71,7 +72,7 @@ export class SearchableDropDown {
         // Close when clicking off this widget stack
         document.addEventListener('click', (event) => { // For when any widget in this stack loses focus
 
-            if (!this._container.contains(event.target)) {
+            if (this._bIsContentShown && !this._container.contains(event.target)) {
                 this.closeContent();
             }
         });
@@ -297,13 +298,38 @@ export class SearchableDropDown {
         this.filterOptions(this.getFilterText());
         this._searchInput.focus();
         this._searchInput.select();
+
+        // Restore scroll amount two frames later
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                this.setScrollAmount(this._lastScrollAmount);
+            })
+        });
     }
 
     closeContent() {
 
+        this._lastScrollAmount = this.getCurrentScrollAmount();
+
         this._bIsContentShown = false;
 
         this._dropDownContent.classList.remove("dropdown-show");
+    }
+
+    getCurrentScrollAmount() {
+
+        return this._labelPanel.scrollTop;
+    }
+    
+    getLastScrollAmount() {
+
+        return this._lastScrollAmount;
+    }
+
+    setScrollAmount(scrollAmount) {
+
+        this._labelPanel.scrollTop = scrollAmount;
+        this._lastScrollAmount = scrollAmount;
     }
 
     _selectOption(optionName, bInvokeCallbacks) {
