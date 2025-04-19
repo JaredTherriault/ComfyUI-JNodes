@@ -344,14 +344,21 @@ class SelectRandomFileFromDirectory:
         # List to store the paths of all the files
         file_paths = []
 
+        # Convert comma-separated string into a list of file types (extensions), lowercase and stripped
+        optional_file_type = [
+            x.strip().lower() if x.strip().startswith(".") else f".{x.strip().lower()}"
+            for x in optional_file_type.split(",") if x.strip()
+        ]
+
         # Walk through the directory
         for root, dirs, files in os.walk(resolve_file_path(base_directory)):
             for file in files:
-                if optional_file_type:
-                    if file.lower().endswith(optional_file_type.lower()):
-                        file_paths.append(os.path.join(root, file))
-                else:
-                    file_paths.append(os.path.join(root, file))
+                ext = os.path.splitext(file)[1].lower()
+                file_path = os.path.join(root, file)
+
+                # Append file based on optional file type filtering
+                if not optional_file_type or ext in optional_file_type:
+                    file_paths.append(file_path)
 
             # If not including subdirectories, break after the first iteration
             if not include_subdirectories:
