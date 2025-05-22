@@ -124,8 +124,9 @@ export let setting_bKeyListAllowDenyToggle = new ImageDrawerConfigSetting("Image
 export let setting_bMetadataTooltipToggle = new ImageDrawerConfigSetting("ImageVideo.bMetadataTooltipToggle", true);
 
 export let setting_FavouritesDirectory = new ImageDrawerConfigSetting("Directories.Favourites", "output/Favourites");
-export let setting_CopyLoraTextPattern = new ImageDrawerConfigSetting("Models.CopyLoraTextPattern", "<lora:{{modelName}}:{{strengthModel}}:{{strengthClip}}>");
-export let setting_CopyModelTrainedWordsEndCharacter = new ImageDrawerConfigSetting("Models.CopyLoraTrainedWordsEndCharacter", ", ");
+export let setting_CopyLoraTextPattern_Default = new ImageDrawerConfigSetting("Models.CopyLoraTextPattern", "<lora:{{modelName}}:{{strengthModel}}:{{strengthClip}}>");
+export let setting_ModelRules = new ImageDrawerConfigSetting("Models.ModelRules", []);
+export let setting_CopyModelTrainedWordsEndCharacter_Default = new ImageDrawerConfigSetting("Models.CopyLoraTrainedWordsEndCharacter", ", ");
 
 export let setting_ModelCardAspectRatio = new ImageDrawerConfigSetting("Models.AspectRatio", 0.67);
 
@@ -337,43 +338,59 @@ export const setupUiSettings = async (onImageDrawerInstanceCountChanged) => {
     // Copy Lora Text pattern
     {
         const labelWidget = $el("label", {
-            textContent: "'Copy Lora as Text' pattern:",
+            textContent: "'Copy Lora as Text' default pattern:",
         });
 
         const settingWidget = $el(
             "input",
             {
-                defaultValue: setting_CopyLoraTextPattern.value,
+                defaultValue: setting_CopyLoraTextPattern_Default.value,
                 oninput: (e) => {
-                    setting_CopyLoraTextPattern.value = e.target.value;
+                    setting_CopyLoraTextPattern_Default.value = e.target.value;
                 },
             },
         );
 
         const tooltip = "Define the way text loras are constructed when copied to the clipboard. " +
-            "put variable names in double braces '{{}}'. Variables are 'modelName', 'strengthModel', and 'strengthClip'. " +
-            `For example, '${setting_CopyLoraTextPattern.getDefaultValue()}'`;
+            "Put variable names in double braces '{{}}'. Variables are 'modelName', 'strengthModel', and 'strengthClip'. " +
+            `For example, '${setting_CopyLoraTextPattern_Default.getDefaultValue()}'. ` +
+            "This applies to any loras that do not fit any specified rules.";
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+
+    // Model rules
+    {
+        const labelWidget = $el("label", {
+            textContent: "Model rules:",  
+        });
+
+        const settingWidget = createModelRulesWidget();
+
+        const tooltip = "Define rules to apply to different models such as copy text patterns. " +
+            "For example, have different patterns for WAN, Hunyuan, SDXL and SD1.5 loras. " +
+            "Make a new rule by clicking the '+New Rule' button.";
         addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
 
     // Copy Model Trained Words End Character
     {
         const labelWidget = $el("label", {
-            textContent: "'Copy Model Trained Words' end character:",
+            textContent: "'Copy Model Trained Words' default end character:",
         });
 
         const settingWidget = $el(
             "input",
             {
-                defaultValue: setting_CopyModelTrainedWordsEndCharacter.value,
+                defaultValue: setting_CopyModelTrainedWordsEndCharacter_Default.value,
                 oninput: (e) => {
-                    setting_CopyModelTrainedWordsEndCharacter.value = e.target.value;
+                    setting_CopyModelTrainedWordsEndCharacter_Default.value = e.target.value;
                 },
             },
         );
 
         const tooltip = "Define the text appended to the end of the trained words when copying " +
-            "a model's trained words or full text.";
+            "a model's trained words or full text, be default." +
+            "This applies to any models that do not fit any specified rules.";
         addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
 
@@ -413,6 +430,151 @@ export const setupUiSettings = async (onImageDrawerInstanceCountChanged) => {
     //     addJNodesSetting(labelWidget, settingWidget, tooltip);
     // }
 };
+
+export function createModelRulesWidget() {
+
+    // Define modelRules object map.
+    const modelRules = {
+        MatchingDirectoryRegex: { type: "string", toolTip: "A regex string that can be used to match against a model's file path."},
+        CopyLoraTextPattern: { type: "string", toolTip: "If the model is a lora, define how it's constructed when copied as text. " +
+            "Put variable names in double braces '{{}}'. Variables are 'modelName', 'strengthModel', and 'strengthClip'. " +
+            `For example, '${setting_CopyLoraTextPattern_Default.getDefaultValue()}'. `},
+        CopyModelTrainedWordsEndCharacter: { type: "string", toolTip: "Define the text appended to the end of the trained words when copying " +
+            "a model's trained words or full text."},
+    };
+
+    const container = $el("div");
+
+    container.updateSetting = () => {
+        if (!container.rulesetsContainer) return;
+    
+        const newRules = [];
+    
+        for (const rulesetDiv of container.rulesetsContainer.children) {
+            const ruleObj = {};
+            const inputs = rulesetDiv.querySelectorAll("input");
+    
+            inputs.forEach(input => {
+                if (!input.id) return;
+            
+                let value;
+                switch (input.type) {
+                    case "checkbox":
+                        value = input.checked;
+                        break;
+                    case "number":
+                        value = Number(input.value);
+                        break;
+                    default:
+                        value = input.value;
+                }
+            
+                ruleObj[input.id] = value;
+            });
+    
+            newRules.push(ruleObj);
+        }
+    
+        setting_ModelRules.value = newRules;
+    };
+
+    container.createAndAddRuleset = (inRuleset = null) => {
+
+        const ruleset =  $el("div", { 
+            id: "ruleset", 
+            style: { 
+                width: "100%",
+                border: "1px solid #ccc",
+                margin: "10px 0",
+                padding: "10px",
+                borderRadius: "4px"
+            } 
+        });
+    
+        const removeButton = $el("button", {
+            textContent: "✕ Remove Ruleset",
+            title: "Remove this ruleset",
+            onclick: (e) => {
+                container.rulesetsContainer.removeChild(ruleset);
+            },
+            style: {
+                marginLeft: "8px",
+                color: "#c00",
+                cursor: "pointer"
+            }
+        });
+
+        ruleset.appendChild(removeButton);
+
+        const table = $el("table", {
+            style: {
+                width: "100%",
+            }
+        });
+
+        ruleset.appendChild(table);
+
+        const keys = Object.keys(modelRules);
+        for (const key of keys) {
+
+            const data = modelRules[key];
+
+            let inputWidget;
+            if (data.type == "string") {
+
+                inputWidget = $el("input", {
+                    oninput: () => {
+                        container.updateSetting();
+                    },
+                });
+                inputWidget.value = inRuleset?.[key] || "";
+            }
+
+            inputWidget.id = key;
+            inputWidget.title = data.toolTip;
+    
+            const tableRow = $el("tr");
+        
+            tableRow.appendChild($el("td", [$el("label", { textContent: `${key}:` })]));
+            tableRow.appendChild($el("td", [inputWidget]));
+
+            table.appendChild(tableRow);
+        }
+    
+        container.rulesetsContainer.appendChild(ruleset);
+    };
+
+    container.newRulesetButton = $el("button", {
+        textContent: "+ New Ruleset",
+        onclick: () => { 
+            
+            container.createAndAddRuleset(); 
+        },
+        style: {
+            marginLeft: "8px",
+            color: "#63e563",
+            cursor: "pointer",
+        }
+    });
+
+    container.appendChild(container.newRulesetButton);
+
+    container.rulesetsContainer = $el("div", { id: "rulesets-container", style: { width: "100%" } });
+    
+    container.appendChild(container.rulesetsContainer);
+
+    try{
+        let existingRulesets = setting_ModelRules.value;
+
+        for (const ruleset of existingRulesets) {
+            container.createAndAddRuleset(ruleset);
+        }
+    } catch {
+        //pass
+    }
+
+    return container;
+}
 
 export function createDrawerSelectionWidget(defaultValue, onInput, isSelected = null) {
 
