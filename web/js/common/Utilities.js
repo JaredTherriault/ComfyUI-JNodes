@@ -261,6 +261,22 @@ class JNodesUtilities {
 		return div.innerHTML;
 	}
 
+	parseRegexFromInputWidget(str) {
+		try {
+			const match = str.match(/^\/(.+)\/([gimsuy]*)$/);
+			if (match) {
+				const [, pattern, flags] = match;
+				return new RegExp(pattern, flags);
+			} else {
+				// fallback: treat the whole string as pattern, no flags
+				return new RegExp(str);
+			}
+		} catch (e) {
+			console.warn("Invalid regex pattern:", str, e);
+			return null;
+		}
+	}
+
 	formatBytesToString(bytes, decimalPlaces = 3) {
 		if (bytes === 0) return "0";
 		const k = 1024;
