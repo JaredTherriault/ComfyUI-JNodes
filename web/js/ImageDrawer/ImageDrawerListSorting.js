@@ -15,7 +15,7 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 		this.sortingWidget;
 		this.sortSelectionWidget;
 		this.sortShuffleButton;
-		this.sortTypes;
+		this.sortTypes = {};
 
 		this.lastShuffleInterval = 1000;
 
@@ -25,25 +25,29 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 	}
 
 	initializeSortTypes() {
-		this.sortTypes = {
-			filenameAscending: new SortTypes.SortTypeFilename(true, this.imageDrawerInstance),
-			filenameDescending: new SortTypes.SortTypeFilename(false, this.imageDrawerInstance),
-			friendlyNameAscending: new SortTypes.SortTypeFriendlyName(true, this.imageDrawerInstance),
-			friendlyNameDescending: new SortTypes.SortTypeFriendlyName(false, this.imageDrawerInstance),
-			dateAscending: new SortTypes.SortTypeDate(true, this.imageDrawerInstance),
-			dateDescending: new SortTypes.SortTypeDate(false, this.imageDrawerInstance),
-			fileSizeAscending: new SortTypes.SortTypeFileSize(true, this.imageDrawerInstance),
-			fileSizeDescending: new SortTypes.SortTypeFileSize(false, this.imageDrawerInstance),
-			imageWidthAscending: new SortTypes.SortTypeImageWidth(true, this.imageDrawerInstance),
-			imageWidthDescending: new SortTypes.SortTypeImageWidth(false, this.imageDrawerInstance),
-			imageHeightAscending: new SortTypes.SortTypeImageHeight(true, this.imageDrawerInstance),
-			imageHeightDescending: new SortTypes.SortTypeImageHeight(false, this.imageDrawerInstance),
-			imageAspectRatioAscending: new SortTypes.SortTypeImageAspectRatio(true, this.imageDrawerInstance),
-			imageAspectRatioDescending: new SortTypes.SortTypeImageAspectRatio(false, this.imageDrawerInstance),
-			fileTypeAscending: new SortTypes.SortTypeFileType(true, this.imageDrawerInstance),
-			fileTypeDescending: new SortTypes.SortTypeFileType(false, this.imageDrawerInstance),
-			shuffle: new SortTypes.SortTypeShuffle(this.imageDrawerInstance),
-		}
+		this.addSortType("filenameAscending", SortTypes.SortTypeFilename, true);
+		this.addSortType("filenameDescending", SortTypes.SortTypeFilename, false);
+		this.addSortType("pathAscending", SortTypes.SortTypePath, true);
+		this.addSortType("pathDescending", SortTypes.SortTypePath, false);
+		this.addSortType("friendlyNameAscending", SortTypes.SortTypeFriendlyName, true);
+		this.addSortType("friendlyNameDescending", SortTypes.SortTypeFriendlyName, false);
+		this.addSortType("dateAscending", SortTypes.SortTypeDate, true);
+		this.addSortType("dateDescending", SortTypes.SortTypeDate, false);
+		this.addSortType("fileSizeAscending", SortTypes.SortTypeFileSize, true);
+		this.addSortType("fileSizeDescending", SortTypes.SortTypeFileSize, false);
+		this.addSortType("imageWidthAscending", SortTypes.SortTypeImageWidth, true);
+		this.addSortType("imageWidthDescending", SortTypes.SortTypeImageWidth, false);
+		this.addSortType("imageHeightAscending", SortTypes.SortTypeImageHeight, true);
+		this.addSortType("imageHeightDescending", SortTypes.SortTypeImageHeight, false);
+		this.addSortType("imageAspectRatioAscending", SortTypes.SortTypeImageAspectRatio, true);
+		this.addSortType("imageAspectRatioDescending", SortTypes.SortTypeImageAspectRatio, false);
+		this.addSortType("fileTypeAscending", SortTypes.SortTypeFileType, true);
+		this.addSortType("fileTypeDescending", SortTypes.SortTypeFileType, false);
+		this.addSortType("shuffle", SortTypes.SortTypeShuffle);
+	}
+
+	addSortType(internalName, type, bIsAscending) {
+		this.sortTypes[internalName] = new type(bIsAscending, this.imageDrawerInstance);
 	}
 
 	getSortTypes() {
@@ -83,7 +87,30 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 		if (foundSortType) {
 			return foundSortType;
 		} else {
-			console.error(`SortType with name '${foundSortType}' not found.`);
+			console.error(`SortType with name '${sortName}' not found.`);
+			return null;
+		}
+	}
+
+	getSortTypeObjectFromClassName(className, bIsAscending = undefined) {
+		const sortValues = Object.values(this.sortTypes);
+
+		let foundSortType;
+
+		for (const value of sortValues) {
+			// returns true if the name at least partially matched and bIsAscending is not specified, 
+			// or is specified and matches the SortType instance
+			const valueType = value.constructor.name;
+			if (valueType == className && (value.bIsAscending == undefined || value.bIsAscending == bIsAscending)) {
+				foundSortType = value;
+				break;
+			}
+		}
+
+		if (foundSortType) {
+			return foundSortType;
+		} else {
+			console.error(`SortType with class name '${className}' not found.`);
 			return null;
 		}
 	}
@@ -127,10 +154,10 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 
 	onOptionSelected(option) {
 
-		const NewType = this.getSortTypeObjectFromName(option);
-		NewType.sortImageList();
+		const newType = this.getSortTypeObjectFromName(option);
+		newType.sortImageList();
 
-		if (NewType instanceof SortTypes.SortTypeShuffle) {
+		if (newType instanceof SortTypes.SortTypeShuffle) {
 
 			this.sortShuffleButton.style.display = "unset";
 		} else {
@@ -138,6 +165,9 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 			this.sortShuffleButton.style.display = "none";
 			this.stopAutomaticShuffle();
 		}
+
+		const imageDrawerContextSelectorInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
+		imageDrawerContextSelectorInstance.getCurrentContextObject().setLastSelectedSorting(newType);
 	}
 
 	_addSortingOption(optionName) {
