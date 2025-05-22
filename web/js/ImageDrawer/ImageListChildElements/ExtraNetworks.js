@@ -3,12 +3,14 @@ import { $el } from "/scripts/ui.js";
 import { utilitiesInstance } from "../../common/Utilities.js"
 
 import { 
-	setting_CopyLoraTextPattern, setting_ModelCardAspectRatio, 
-	setting_CopyModelTrainedWordsEndCharacter 
+	setting_CopyLoraTextPattern_Default, setting_ModelCardAspectRatio, 
+	setting_CopyModelTrainedWordsEndCharacter_Default as setting_CopyModelTrainedWordsEndCharacter_Default, 
+	setting_ModelRules
 } from "../../common/SettingsManager.js";
 
 import { ModalManager } from "../../common/ModalManager.js";
 import { ModelEditForm, FormObject, FormInfo } from "../../common/ModelEditForm.js";
+import { findFirstImageDrawerInstanceWithGivenContext } from "../Core/ImageDrawerModule.js";
 
 const NoImagePlaceholder = new URL(`../../assets/NoImage.png`, import.meta.url);
 
@@ -75,6 +77,8 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 			},
 		});
 
+	modelElement.fileInfo = {};
+
 	let cardInfo = {
 		nameText: nameText,
 		trainedWords: "",
@@ -95,6 +99,40 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 		defaultWeightClip: 1.0,
 		loraTextPatternOverride: "",
 		linkOverride: "",
+	}
+
+	function getModelRules() {
+
+		if (setting_ModelRules.value?.length > 0) {
+
+			for (const rules of setting_ModelRules.value) {
+
+				if (rules.MatchingDirectoryRegex) {
+
+					try {
+						const regex = utilitiesInstance.parseRegexFromInputWidget(rules.MatchingDirectoryRegex);
+						if (regex?.test(familiars.full_name)) {
+							return rules;
+						}
+					} catch (e) {
+						console.warn("Invalid regex in model rule:", rules.MatchingDirectoryRegex, e);
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	function getCopyLoraTextPattern() {
+
+		const rules = getModelRules();
+
+		if (rules?.CopyLoraTextPattern) {
+
+			return rules.CopyLoraTextPattern;
+		}
+
+		return setting_CopyLoraTextPattern_Default.value;
 	}
 
 	function getUserCardInfoFormObjects() {
@@ -158,10 +196,10 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 				"",
 				"Define the way text loras are constructed when copied to the clipboard for this specific lora. DOES NOT APPLY TO OTHER MODEL TYPES. " +
 					"put variable names in double braces '{{}}'. Variables are 'modelName', 'strengthModel', and 'strengthClip'. " +
-					`For example, '${setting_CopyLoraTextPattern.getDefaultValue()}'`,
+					`For example, '${setting_CopyLoraTextPattern_Default.getDefaultValue()}'`,
 				{},
 				(inputWidget) => { 
-					inputWidget.value = setting_CopyLoraTextPattern.value || "<lora:{{modelName}}:{{strengthModel}}:{{strengthClip}}>";;
+					inputWidget.value = getCopyLoraTextPattern() || "<lora:{{modelName}}:{{strengthModel}}:{{strengthClip}}>";;
 				 }
 			),
 			new FormObject(
@@ -222,10 +260,24 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 		if (trainedWords) {
 			trainedWords = trainedWords.trim()
 
-			if (!trainedWords.endsWith(setting_CopyModelTrainedWordsEndCharacter.value.trim())) {
-				trainedWords += setting_CopyModelTrainedWordsEndCharacter.value;
+			function getEndCharacter() {
+
+				const rules = getModelRules();
+
+				if (rules?.CopyModelTrainedWordsEndCharacter) {
+
+					return rules.CopyModelTrainedWordsEndCharacter;
+				}
+
+				return setting_CopyModelTrainedWordsEndCharacter_Default.value;
 			}
-			trainedWords = trainedWords.replace("\\(", "(").replace("\\)", ")").replace('\\"', '"');
+
+			const endCharacter = getEndCharacter();
+
+			if (!trainedWords.endsWith(endCharacter.trim())) {
+				trainedWords += endCharacter;
+			}
+			trainedWords = trainedWords.replace(/\\\(/g, "(").replace(/\\\)/g, ")").replace(/\\"/g, '"');
 		}
 
 		return trainedWords;
@@ -309,7 +361,8 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 						}
 					}
 				} catch (jsonError) {
-					console.error(`Error parsing JSON: ${jsonError} for item: ${familiar_info.file_name}, orginal text: ${familiar_info.loaded_text}`);
+
+					// pass
 				}
 			}
 		}
@@ -402,7 +455,7 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 			backgroundImageContainer.backgroundImage.style.display = "none";
 			backgroundImageContainer.backgroundVideo.style.display = "none";
 
-			let newHref = getHrefForFamiliarImage(backgroundImageContainer.lastViewedImageIndex);
+			let newHref = modelElement.fileInfo.imageHref = getHrefForFamiliarImage(backgroundImageContainer.lastViewedImageIndex);
 			let bIsVideoPreview = utilitiesInstance.isHrefVideo(newHref);
 
 			if (bIsVideoPreview) {
@@ -468,7 +521,7 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 				}
 			},
 		);
-	backgroundImageContainer.dataSrc = getHrefForFamiliarImage(startIndex);
+	modelElement.fileInfo.imageHref = backgroundImageContainer.dataSrc = getHrefForFamiliarImage(startIndex);
 
 	backgroundImageContainer.backgroundImage = $el("img");
 	backgroundImageContainer.appendChild(backgroundImageContainer.backgroundImage);
@@ -616,10 +669,11 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 				const replacements = getModelInfo();
 			
 				// Access the template pattern
-				// local model override is the first priority, then settings default, then fallback pattern
+				// local model override is the first priority, then model rules, then settings default, then fallback pattern
+
 				const settingPattern = 
 					userCardInfoOverrides.loraTextPatternOverride || 
-					setting_CopyLoraTextPattern.value || 
+					getCopyLoraTextPattern() ||
 					"<lora:{{modelName}}:{{strengthModel}}:{{strengthClip}}>";
 				
 				// Replace placeholders with values
@@ -793,6 +847,100 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
                     )
                 );
             }
+			
+			// ✉️ Send current image to metadata viewer
+			{
+				const baseLabelText = "✉️";
+				buttonsRow.appendChild(
+					createButton(
+						$el("label", {
+							textContent: baseLabelText,
+							style: {
+								cursor: "pointer",
+							}
+						}),
+						"Send Current Image to Metadata Viewer: Send this to any drawer instance with the 'Metadata Viewer' context currently selected. If it's in a sidebar, you may have to switch manually. " +
+						"If no drawer instance is using the 'Metadata Viewer' context, the current instance will change to it. " +
+						"Note that not all items will have metadata to show, so when switching it may seem that nothing has happened.",
+						async function (e) {
+
+							const metaDataContextName = "Metadata Viewer";
+							let metadataViewerInstance = findFirstImageDrawerInstanceWithGivenContext(metaDataContextName);
+							
+							if (!metadataViewerInstance) { // Need to switch to it
+
+								const imageDrawerContextSelectorInstance = imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
+								imageDrawerContextSelectorInstance.setOptionSelected(metaDataContextName);
+								metadataViewerInstance = imageDrawerInstance;
+							}
+
+							if (metadataViewerInstance) {
+
+								const imageDrawerContextSelectorInstance = metadataViewerInstance.getComponentByName("ImageDrawerContextSelector");
+								const metadataViewerContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
+
+								const response = await fetch(modelElement.fileInfo.imageHref);
+								let blob = await response.blob();
+
+								if (blob.type === "application/octet-stream" && modelElement.fileInfo.file?.format) {
+									blob = new Blob([blob], { type: modelElement.fileInfo.file.format });
+								}
+
+								metadataViewerContextObject.setImageOrVideo(blob, true);
+							}
+						}
+					)
+				);
+			}
+
+			// ✉️ Send model info to metadata viewer
+			{
+				const baseLabelText = "📦";
+				buttonsRow.appendChild(
+					createButton(
+						$el("label", {
+							textContent: baseLabelText,
+							style: {
+								cursor: "pointer",
+							}
+						}),
+						"Send Model Info to Metadata Viewer: Send this to any drawer instance with the 'Metadata Viewer' context currently selected. If it's in a sidebar, you may have to switch manually. " +
+						"If no drawer instance is using the 'Metadata Viewer' context, the current instance will change to it. " +
+						"Note that not all items will have metadata to show, so when switching it may seem that nothing has happened.",
+						async function (e) {
+
+							const metaDataContextName = "Metadata Viewer";
+							let metadataViewerInstance = findFirstImageDrawerInstanceWithGivenContext(metaDataContextName);
+							
+							if (!metadataViewerInstance) { // Need to switch to it
+
+								const imageDrawerContextSelectorInstance = imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
+								imageDrawerContextSelectorInstance.setOptionSelected(metaDataContextName);
+								metadataViewerInstance = imageDrawerInstance;
+							}
+
+							if (metadataViewerInstance) {
+
+								const imageDrawerContextSelectorInstance = metadataViewerInstance.getComponentByName("ImageDrawerContextSelector");
+								const metadataViewerContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
+
+								const response = await fetch(modelElement.fileInfo.imageHref);
+								let blob = await response.blob();
+
+								if (blob.type === "application/octet-stream" && modelElement.fileInfo.file?.format) {
+									blob = new Blob([blob], { type: modelElement.fileInfo.file.format });
+								}
+
+								let modelInfo = modelElement.fileInfo;
+								modelInfo.familiars = familiars; 
+								modelInfo.name = getNameToUse();
+
+								metadataViewerContextObject.setModel(modelInfo, blob, true);
+							}
+						}
+					)
+				);
+			}
 		}
 
 		const buttonsRow = $el("div", {
@@ -1009,12 +1157,17 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 	modelElement.filename = cardInfo.nameText;
 	modelElement.friendlyName = getNameToUse();
 	modelElement.file_age = familiars.file_age;
-	modelElement.lora_meta = familiars.metadata
+	modelElement.lora_meta = familiars.metadata;
+	modelElement.path = familiars.full_name;
 
 	modelElement.searchTerms = 
 		`${familiars.full_name} ${modelElement.filename} ${modelElement.friendlyName} ${getTrainedWords()} ${getTags().join(" ")} ${modelElement.lora_meta}`;
 
 	modelElement.draggable = true; // Made draggable to allow image drag and drop onto canvas / nodes / file explorer
+
+	modelElement.addEventListener('dragstart', function (event) {
+		event.dataTransfer.setData('text/jnodes_image_drawer_payload', `${JSON.stringify(modelElement.fileInfo)}`);
+	});
 
 	return modelElement;
 }

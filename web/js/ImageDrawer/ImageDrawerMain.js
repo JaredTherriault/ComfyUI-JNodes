@@ -646,7 +646,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 				BasicControlsGroup,
 				CollapsibleArea
 			]);
-		this.imageDrawer.append(this.ImageDrawerMenu, imageDrawerListInstance.getImageListElement());
+		this.imageDrawer.append(this.ImageDrawerMenu, imageDrawerListInstance.getImageListContainerElement());
 
 		if (this.isSidebarTab()) {
 			this.registerAsSidebarTab();

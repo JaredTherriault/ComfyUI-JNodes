@@ -214,9 +214,36 @@ $el("style", {
 		cursor: 'pointer';
 	}
 
+	.JNodes-image-drawer-list-container {
+		overflow-y: scroll;
+		scrollbar-gutter: stable;
+		padding: 5px;
+		background: var(--comfy-input-bg);
+		border-radius: 5px;
+		margin: 5px;
+		margin-top: 0px;
+		height: 100%;
+	}
+
+	/* Scrollbar styling for container */
+	.JNodes-image-drawer-list-container::-webkit-scrollbar {
+		background: var(--comfy-input-bg);
+		border-radius: 5px;
+	}
+	.JNodes-image-drawer-list-container::-webkit-scrollbar-thumb {
+		background: var(--comfy-menu-bg);
+		border: 5px solid transparent;
+		border-radius: 8px;
+		background-clip: content-box;
+		color: rgb(255, 255, 255);
+	}
+	.JNodes-image-drawer-list-container::-webkit-scrollbar-thumb:hover {
+		background: var(--border-color);
+		background-clip: content-box;
+	}
+
 	.JNodes-image-drawer-list {
 		flex: 1 1 auto;
-		overflow-y: scroll;
 		display: grid;
 		align-items: center;
 		justify-content: center;
@@ -224,30 +251,9 @@ $el("style", {
 		grid-auto-rows: min-content;
 		grid-template-columns: repeat(var(--column-count, 3), 1fr);
 		transition: 100ms linear;
-		scrollbar-gutter: stable;
-		padding: 5px;
-		background: var(--comfy-input-bg);
-		border-radius: 5px;
-		margin: 5px;
-		margin-top: 0px;
 	}
 	.JNodes-image-drawer-list:empty {
 		display: none;
-	}
-	.JNodes-image-drawer-list::-webkit-scrollbar {
-		background: var(--comfy-input-bg);
-		border-radius: 5px;
-	}
-	.JNodes-image-drawer-list::-webkit-scrollbar-thumb {
-		background:var(--comfy-menu-bg);
-		border: 5px solid transparent;
-		border-radius: 8px;
-		background-clip: content-box;
-		color: rgb(255,255,255);
-	}
-	.JNodes-image-drawer-list::-webkit-scrollbar-thumb:hover {
-		background: var(--border-color);
-		background-clip: content-box;
 	}
 	.JNodes-image-drawer-list div:hover {
 		filter: brightness(1.05);

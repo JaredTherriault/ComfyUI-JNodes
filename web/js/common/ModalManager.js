@@ -371,7 +371,7 @@ export class ModalManager {
 					newImageIndex
 				)
 			);
-			modalManager.createModal(modalManager.createModalReadyImage(newImage.fileInfo.href));
+			modalManager.createModal(modalManager.createModalReadyImage(newImage.fileInfo.imageHref));
 
 			this.closeModal();
 		}

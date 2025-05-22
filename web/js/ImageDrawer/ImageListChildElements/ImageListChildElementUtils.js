@@ -14,6 +14,7 @@ import { isPointerDown } from "../../common/EventManager.js";
 import { setting_FontSize, setting_FontFamily } from "../../TextareaFontControl.js"
 
 import { getVideoMetadata, isVideoFile } from "../../nodes/MediaMetadata.js";
+import { findFirstImageDrawerInstanceWithGivenContext } from "../Core/ImageDrawerModule.js";
 
 const toolTipOffsetX = 10; // Adjust the offset from the mouse pointer
 const toolTipOffsetY = 10;
@@ -316,6 +317,51 @@ export function getOrCreateToolButton(imageElementToUse) {
                 );
             }
 
+            // ✉️ Send to metadata viewer
+            {
+                const baseLabelText = "✉️ Send to Metadata Viewer";
+                flyout.menu.appendChild(
+                    createButton(
+                        $el("label", {
+                            textContent: baseLabelText,
+                            style: {
+                                color: 'rgb(240,240,255)',
+                            }
+                        }),
+                        "Send this to any drawer instance with the 'Metadata Viewer' context currently selected. If it's in a sidebar, you may have to switch manually. " +
+                        "If no drawer instance is using the 'Metadata Viewer' context, the current instance will change to it. " +
+                        "Note that not all items will have metadata to show, so when switching it may seem that nothing has happened.",
+                        async function (e) {
+
+                            const metaDataContextName = "Metadata Viewer";
+                            let metadataViewerInstance = findFirstImageDrawerInstanceWithGivenContext(metaDataContextName);
+                            
+                            if (!metadataViewerInstance) { // Need to switch to it
+
+                                const imageDrawerContextSelectorInstance = imageElementToUse.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
+                                imageDrawerContextSelectorInstance.setOptionSelected(metaDataContextName);
+                                metadataViewerInstance = imageElementToUse.imageDrawerInstance;
+                            }
+
+                            if (metadataViewerInstance) {
+
+                                const imageDrawerContextSelectorInstance = metadataViewerInstance.getComponentByName("ImageDrawerContextSelector");
+                                const metadataViewerContextObject = imageDrawerContextSelectorInstance.getCurrentContextObject();
+
+                                const response = await fetch(imageElementToUse.fileInfo.imageHref);
+                                let blob = await response.blob();
+
+                                if (blob.type === "application/octet-stream" && imageElementToUse.filename && imageElementToUse.fileInfo.file?.format) {
+                                    blob = new Blob([blob], { name: imageElementToUse.filename, type: imageElementToUse.fileInfo.file.format });
+                                }
+
+                                metadataViewerContextObject.setImageOrVideo(blob, true);
+                            }
+                        }
+                    )
+                );
+            }
+
             if (imageElementToUse?.promptMetadata && Object.keys(imageElementToUse.promptMetadata).length > 0) {
 
                 const positivePrompt = getPositivePromptInMetadata(imageElementToUse.promptMetadata);
@@ -359,6 +405,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                             }),
                             `Copy ${key}`,
                             function (e) {
+                                if (!data) { return; }
                                 if (data.startsWith('"')) { data = data.slice(1); }
                                 if (data.endsWith('"')) { data = data.slice(0, data.length - 1); }
                                 utilitiesInstance.copyToClipboard(data);
@@ -480,6 +527,99 @@ export function hideImageElementCheckboxSelector(imageElementToUse) {
     imageElementToUse.checkboxSelector.style.visibility = "hidden";
 }
 
+export async function getNonPngImageMetadata(file) {
+
+    let metadata = null;
+    let jsonString = null;
+
+    if (file) {
+
+        const webpArrayBuffer = await file.arrayBuffer();
+
+        // Use the exif library to extract Exif data
+        const exifData = ExifReader.load(webpArrayBuffer);
+        //console.log("exif: " + JSON.stringify(exifData));
+
+        const exif = exifData['UserComment'];
+
+        if (exif) {
+
+            // Convert the byte array to a Uint16Array
+            const uint16Array = new Uint16Array(exif.value);
+
+            // Create a TextDecoder for UTF-16 little-endian
+            const textDecoder = new TextDecoder('utf-16le');
+
+            // Decode the Uint16Array to a string
+            const decodedString = textDecoder.decode(uint16Array);
+
+            // Remove null characters
+            const cleanedString = decodedString.replace(/\u0000/g, '');
+            jsonString = cleanedString.replace("UNICODE", "")
+
+            try {
+
+                metadata = JSON.parse(jsonString);
+
+            } catch (error) {
+
+                console.error(`${error} (${file.name})`);
+            }
+        }
+    } else {
+        console.error("getNonPngImageMetadata: file not valid!");
+    }
+
+    return { metadata: metadata, jsonString: jsonString};
+}
+
+export async function getMetaData(file, format) {
+
+    let metadata = null;
+
+    function appendA111Metadata(metadata) {
+
+        if (metadata && "parameters" in metadata) {
+
+            const a111Metadata = makeMetaDataFromA111(metadata.parameters);
+            metadata = { ...metadata, ...a111Metadata }; // Append a111 meta
+        }
+
+        return metadata;
+    }
+    
+    try {
+        if (format === "image/png") {
+            metadata = await pngInfo.getPngMetadata(file);
+            metadata = appendA111Metadata(metadata);
+        } else if (isVideoFile(file)) {
+            metadata = await getVideoMetadata(file);
+            metadata = appendA111Metadata(metadata);
+        } else if (format === "image/webp" || format === "image/jpeg" || format === "image/gif") {
+
+            const metadataStruct = await getNonPngImageMetadata(file);
+            metadata = metadataStruct.metadata;
+            metadata = appendA111Metadata(metadata);
+            
+            if (!metadata) {
+
+                // see if it's an a111 prompt at its base
+                const a111Metadata = makeMetaDataFromA111(metadataStruct.jsonString);
+                if (a111Metadata) {
+                    metadata = a111Metadata;
+                }
+            }
+        }
+
+    } catch (error) {
+        if (error.name != "MetadataMissingError") {
+            console.log(`${error} (${file.name})`);
+        }
+    }
+
+    return metadata;
+}
+
 export async function onLoadImageElement(imageElement) {
     if (imageElement.img.complete || imageElement.bIsVideoFormat) {
         if (imageElement.bComplete) {
@@ -487,82 +627,20 @@ export async function onLoadImageElement(imageElement) {
             return;
         }
 
-        const response = await fetch(imageElement.fileInfo.href);
+        const response = await fetch(imageElement.fileInfo.imageHref);
         const blob = await response.blob();
 
         // Hover mouse over image to show meta
-        //console.log(imageElement.fileInfo.href);
-        let metadata = null;
-        try {
-            if (imageElement.fileInfo.file.format === "image/png") {
-                metadata = await pngInfo.getPngMetadata(blob);
-
-                if (metadata.parameters) {
-                    let a111Metadata = makeMetaDataFromA111(metadata.parameters);
-                    metadata = { ...metadata, ...a111Metadata };
-                }
-            } else if (isVideoFile(blob)) {
-                metadata = await getVideoMetadata(blob);
-
-                if (metadata.parameters) {
-                    let a111Metadata = makeMetaDataFromA111(metadata.parameters);
-                    metadata = { ...metadata, ...a111Metadata };
-                }
-            } else if (imageElement.fileInfo.file.format === "image/webp" || 
-                imageElement.fileInfo.file.format === "image/jpeg" || 
-                imageElement.fileInfo.file.format === "image/gif") {
-
-                const webpArrayBuffer = await blob.arrayBuffer();
-
-                // Use the exif library to extract Exif data
-                const exifData = ExifReader.load(webpArrayBuffer);
-                //console.log("exif: " + JSON.stringify(exifData));
-
-                const exif = exifData['UserComment'];
-
-                if (exif) {
-
-                    // Convert the byte array to a Uint16Array
-                    const uint16Array = new Uint16Array(exif.value);
-
-                    // Create a TextDecoder for UTF-16 little-endian
-                    const textDecoder = new TextDecoder('utf-16le');
-
-                    // Decode the Uint16Array to a string
-                    const decodedString = textDecoder.decode(uint16Array);
-
-                    // Remove null characters
-                    const cleanedString = decodedString.replace(/\u0000/g, '');
-                    const jsonReadyString = cleanedString.replace("UNICODE", "")
-
-                    try {
-
-                        metadata = JSON.parse(jsonReadyString);
-
-                        if (metadata.parameters) {
-                            let a111Metadata = makeMetaDataFromA111(metadata.parameters);
-                            metadata = { ...metadata, ...a111Metadata };
-                        }
-
-                    } catch (error) {
-
-                        // see if it's an a111 prompt
-                        metadata = makeMetaDataFromA111(jsonReadyString);
-                        if (!metadata) {
-                            console.log(`${error} (${imageElement.fileInfo.href})`);
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            if (error.name != "MetadataMissingError") {
-                console.log(`${error} (${imageElement.fileInfo.href})`);
-            }
-        }
+        //console.log(imageElement.fileInfo.imageHref);
+        
 
         if (!imageElement.displayData.FileSize || imageElement.displayData.FileSize < 1) {
             imageElement.displayData.FileSize = blob.size;
         }
+
+        const metadata = await getMetaData(blob, imageElement.fileInfo.file.format);
+
+        imageElement.metadata = metadata;
 
         setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata);
 
@@ -623,6 +701,12 @@ export function makeMetaDataFromA111(inString) {
     const negativePromptKey = "Negative prompt";
 
     let metadata = null;
+
+    if (!inString) {
+
+        return metadata;
+    }
+
     if (inString.startsWith("\"")) {
         inString = inString.substring(1);  // Remove the leading quote
     }

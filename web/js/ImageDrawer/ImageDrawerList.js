@@ -13,6 +13,7 @@ class ImageDrawerList extends ImageDrawerComponent {
 
 		this.onStartChangingImageListMulticastFunctions = [];
 		this.onFinishChangingImageListMulticastFunctions = [];
+		this.imageListContainer = $el("div.JNodes-image-drawer-list-container");
 		this.imageList = $el("div.JNodes-image-drawer-list", {
 			style: {
 				visibility: 'visible',
@@ -20,8 +21,10 @@ class ImageDrawerList extends ImageDrawerComponent {
 			}
 		});
 
+		this.imageListContainer.append(this.imageList);
+
 		this._scrollLevel = 0;
-		this.imageList.addEventListener("scroll", (event) => {
+		this.imageListContainer.addEventListener("scroll", (event) => {
 			this._scrollLevel = event.target.scrollTop;
 		});
 	}
@@ -40,7 +43,7 @@ class ImageDrawerList extends ImageDrawerComponent {
     }
 
 	scrollToLastScrollLevel() {
-		this.imageList.scrollTop = this._scrollLevel;
+		this.imageListContainer.scrollTop = this._scrollLevel;
 	}
 
 	// To be called externally when a context or another component begins adding a batch of elements to the imageList
@@ -61,6 +64,10 @@ class ImageDrawerList extends ImageDrawerComponent {
         for (const func of this.onFinishChangingImageListMulticastFunctions) {
             func();
         }
+	}
+
+	getImageListContainerElement() {
+		return this.imageListContainer;
 	}
 
 	getImageListElement() {
@@ -185,14 +192,14 @@ class ImageDrawerList extends ImageDrawerComponent {
 	};
 
 	getImageListScrollLevel() {
-		if (this.imageList) {
-			return this.imageList.scrollTop;
+		if (this.imageListContainer) {
+			return this.imageListContainer.scrollTop;
 		}
 	}
 
 	setImageListScrollLevel(newScrollPosition) {
-		if (this.imageList) {
-			this.imageList.scrollTop = newScrollPosition;
+		if (this.imageListContainer) {
+			this.imageListContainer.scrollTop = newScrollPosition;
 		}
 	}
 }

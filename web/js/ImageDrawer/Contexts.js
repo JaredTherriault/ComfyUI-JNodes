@@ -4,6 +4,7 @@ import { api } from "/scripts/api.js";
 
 import * as ExtraNetworks from "./ImageListChildElements/ExtraNetworks.js";
 import * as ImageElements from "./ImageListChildElements/ImageElements.js";
+import { getMetaData } from "./ImageListChildElements/ImageListChildElementUtils.js";
 
 import * as SortTypes from "../common/SortTypes.js"
 
@@ -12,7 +13,8 @@ import { utilitiesInstance } from "../common/Utilities.js"
 import {
 	createLabeledCheckboxToggle, createLabeledSliderRange, createVideoPlaybackOptionsFlyout,
 	options_LabeledCheckboxToggle, options_LabeledSliderRange, setting_ModelCardAspectRatio,
-	setting_FavouritesDirectory
+	setting_FavouritesDirectory,
+	ImageDrawerConfigSetting
 } from "../common/SettingsManager.js";
 
 import { SearchableDropDown } from "../common/SearchableDropDown.js";
@@ -28,8 +30,8 @@ export function initializeContexts(imageDrawerInstance) {
 		lora: new ContextLora(imageDrawerInstance),
 		embeddings: new ContextEmbeddings(imageDrawerInstance),
 		preview: new ContextPreview(imageDrawerInstance),
+		metadata: new ContextMetadataViewer(imageDrawerInstance),
 		//savedPrompts: new ContextSavedPrompts(imageDrawerInstance),
-		//			metadata: new ContextMetadataReader(imageDrawerInstance),
 	};
 };
 
@@ -49,6 +51,7 @@ export class ImageDrawerContext {
 		this.tooltip = tooltip;
 		this.imageDrawerInstance = imageDrawerInstance;
 		this.cache = null;
+		this.setting_LastSelectedSorting = new ImageDrawerConfigSetting(`ImageDrawer_LastSelectedSorting_Context_${this.constructor.name}_Instance_${this.imageDrawerInstance.getIndex()}`, this.getDefaultSortType());
 	}
 
 	hasCache() {
@@ -82,7 +85,19 @@ export class ImageDrawerContext {
 		const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 		imageDrawerListSortingInstance.stopAutomaticShuffle();
 
-		const bSuccessfulRestore = bSkipRestore || await this.checkAndRestoreContextCache();
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
+		const imageListElement = imageDrawerListInstance.getImageListElement();
+
+		const mainWidget = this.getMainWidget();
+
+		const bUseImageList = mainWidget == imageListElement;
+
+		if (imageDrawerListInstance.getImageListContainerElement().firstChild) {
+			imageDrawerListInstance.getImageListContainerElement().removeChild(imageDrawerListInstance.getImageListContainerElement().firstChild);
+		}
+		imageDrawerListInstance.getImageListContainerElement().appendChild(mainWidget);
+
+		const bSuccessfulRestore = bSkipRestore || bUseImageList ? await this.checkAndRestoreContextCache(bUseImageList) : false;
 		if (!bSuccessfulRestore) {
 			const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
 			imageDrawerSearchInstance.clearAndExecuteSearch(); // Reset search if no cache
@@ -124,9 +139,10 @@ export class ImageDrawerContext {
 		return container;
 	}
 
-	async checkAndRestoreContextCache() {
+	async checkAndRestoreContextCache(bUseImageList) {
 		if (this.hasCache()) {
-			if (this.cache.imageListElements.length > 0) {
+
+			if (bUseImageList && this.cache.imageListElements.length > 0) {
 
 				const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 				const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
@@ -192,16 +208,58 @@ export class ImageDrawerContext {
 		}
 	}
 
+	// Override this function to use your own widget instead of the default image list grid.
+	getMainWidget() {
+
+		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
+		return imageDrawerListInstance.getImageListElement();
+	}
+
 	getSupportedSortTypes() {
 		return [SortTypes.SortTypeFilename, SortTypes.SortTypeDate, SortTypes.SortTypeShuffle];
 	}
 
 	getDesiredSortType() {
-		return this.cache?.sortType || this.getDefaultSortType();
+
+		let desiredType = this.cache?.sortType;
+		
+		if (!desiredType) {
+			
+			try {
+
+				const lastSelectedType = JSON.parse(this.setting_LastSelectedSorting.value);
+
+				const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
+
+				desiredType = imageDrawerListSortingInstance.getSortTypeObjectFromClassName(lastSelectedType.name, lastSelectedType.bIsAscending);
+
+			} catch {
+
+				// pass
+			}
+		} 
+		
+		if (!desiredType) {
+			
+			desiredType = this.getDefaultSortType();
+		}
+
+		const supportedTypes = this.getSupportedSortTypes();
+	
+		if (supportedTypes.includes(desiredType.constructor)) {
+
+			return desiredType;
+		}
+
+		return this.getDefaultSortType();
 	}
 
 	getDefaultSortType() {
 		return { type: SortTypes.SortTypeFilename, bIsAscending: true };
+	}
+
+	setLastSelectedSorting(sortType) {
+		this.setting_LastSelectedSorting.value = JSON.stringify({ name: sortType.constructor.name, bIsAscending: sortType.bIsAscending });
 	}
 
 	shouldCancelAsyncOperation() {
@@ -375,7 +433,7 @@ export class ContextModel extends ContextRefreshable {
 	}
 
 	getSupportedSortTypes() {
-		return super.getSupportedSortTypes().concat([SortTypes.SortTypeFriendlyName]);
+		return super.getSupportedSortTypes().concat([SortTypes.SortTypeFriendlyName, SortTypes.SortTypePath]);
 	}
 
 	getDefaultSortType() {
@@ -629,7 +687,8 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 	makeCache() {
 		super.makeCache();
 		this.cache.customContextCacheData = {
-			selectedSubdirectory: this.subdirectorySelector?.data?.getSelectedOptionName(), subdirectorySearchToken: this.subdirectorySelector?.data?.getFilterText()
+			selectedSubdirectory: this.subdirectorySelector?.data?.getSelectedOptionName(), subdirectorySearchToken: this.subdirectorySelector?.data?.getFilterText(),
+			subdirectorySelectorScrollAmount: this.subdirectorySelector?.data?.getLastScrollAmount()
 		};
 	}
 
@@ -642,8 +701,11 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 		if (this.cache?.customContextCacheData?.selectedSubdirectory) { // Restore subdirectory selection from custom cache data
 			this.subdirectorySelector.data.setOptionSelected(this.cache.customContextCacheData.selectedSubdirectory);
 		}
-		if (this.cache?.customContextCacheData?.subdirectorySearchToken) { // Restore subdirectory selection from custom cache data
+		if (this.cache?.customContextCacheData?.subdirectorySearchToken) {
 			this.subdirectorySelector.data.setFilterTextAndExecuteSearch(this.cache.customContextCacheData.subdirectorySearchToken);
+		}
+		if (this.cache?.customContextCacheData?.subdirectorySelectorScrollAmount) {
+			this.subdirectorySelector.data.setScrollAmount(this.cache.customContextCacheData.subdirectorySelectorScrollAmount);
 		}
 	}
 
@@ -654,8 +716,8 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 
 	getSupportedSortTypes() {
 		const NewSortTypes = [
-			SortTypes.SortTypeFileSize, SortTypes.SortTypeImageWidth,
-			SortTypes.SortTypeImageHeight, SortTypes.SortTypeImageAspectRatio, SortTypes.SortTypeFileType
+			SortTypes.SortTypeFileSize, SortTypes.SortTypeImageWidth, SortTypes.SortTypeImageHeight, 
+			SortTypes.SortTypeImageAspectRatio, SortTypes.SortTypeFileType, SortTypes.SortTypePath
 		];
 		return super.getSupportedSortTypes().concat(NewSortTypes);
 	}
@@ -846,16 +908,1135 @@ export class ContextSavedPrompts extends ContextSubdirectoryExplorer {
 	}
 }
 
-export class ContextMetadataReader extends ImageDrawerContext {
+export class ContextMetadataViewer extends ImageDrawerContext {
 	constructor(imageDrawerInstance) {
 		super(
-			"Metadata Reader", 
-			"Read and display metadata from a generation", 
+			"Metadata Viewer", 
+			"Read and display metadata from an image or video", 
 			imageDrawerInstance);
+	}
+
+	async switchToContext() {
+		if (!await super.switchToContext()) {
+
+			if (this.mainWidget) {
+
+				return;
+			}
+
+			this.makeMainWidget();
+	
+
+		} else {
+
+			if (this.viewingItem) {
+				this._refreshPreviewFromBlob(this.viewingItem, this.container.firstChild);
+			}
+		}
+	}
+
+	makeMainWidget() {
+
+		if (!this.container) {
+			this.container = $el("div", {
+				style: {
+					height: "100%",
+					width: "100%",
+				}
+			});
+		}
+
+		this.makeDefaultDragAndDropAreaContent();
+
+		this.mainWidget = $el("div", {
+			textContent: "Metadata Viewer",
+			style: {
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "center",
+				justifyContent: "center",
+				padding: "20px",
+				fontFamily: "sans-serif",
+				position: "relative", 
+				fontWeight: "bold",
+				fontSize: "24px",
+				textAlign: "center",
+				marginBottom: "10px",
+				height: "97%", // Avoids inner scrolling
+			},
+		});
+
+		// Drag-and-drop listeners
+		this.mainWidget.addEventListener("dragover", (e) => {
+			e.preventDefault();
+			this.dropOverlay.textContent = "Drop here to extract metadata!";
+			this.dropOverlay.style.opacity = 1;
+		});
+		
+		this.mainWidget.addEventListener("dragleave", () => {
+			this.dropOverlay.style.opacity = 0;
+		});
+		
+		this.mainWidget.addEventListener("drop", async (e) => {
+			e.preventDefault();
+
+			// Temporarily disable comfy file handling
+			const handleFileFunction = app.handleFile;
+			app.handleFile = (src) => {};
+
+			this.dropOverlay.textContent = "Processing file metadata...";
+
+			let payload = null;
+			
+			if (e.dataTransfer) {
+
+				let bIsBinary = false;
+
+				if (e.dataTransfer.files.length > 0) { // For file drag and drop
+
+					const file = e.dataTransfer.files[0];
+					console.log("Dropped: " + JSON.stringify(file));
+					if (file && (file.type.startsWith("image/") || file.type.startsWith("video/"))) {
+						payload = file;
+						bIsBinary = true;
+					}
+
+				} else if (e.dataTransfer.items.length > 0) { // For image drawer drag and drop
+
+					const item = e.dataTransfer.items[0];
+					console.log("Dropped: " + JSON.stringify(item));
+					if (item && item.type == "text/jnodes_image_drawer_payload") {
+						payload = item;
+					} 
+				}
+
+				if (payload) {
+
+					await this.handleDrop(payload, bIsBinary);
+
+				} else {
+					
+					this.dropOverlay.textContent = "Please drop a valid image or video file.";
+
+					setTimeout( () => {
+						this.dropOverlay.style.opacity = 0;
+					}, 1000);
+
+				}
+			}
+
+			// Reenable comfy file handling
+			app.handleFile = handleFileFunction;
+		});
+
+		this.dropOverlay = $el("div", {
+			style: {
+				position: "absolute",
+				top: 0,
+				left: 0,
+				width: "100%",
+				height: "100%",
+				backgroundColor: "rgba(0, 0, 0, 0.95)",
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				color: "#fff",
+				fontSize: "20px",
+				zIndex: 1000,
+				pointerEvents: "none",
+				opacity: 0,
+				transition: "opacity 0.3s ease",
+			}
+		});
+
+		this.mainWidget.appendChild(this.container);
+		this.mainWidget.appendChild(this.dropOverlay);
+	}
+
+	makeDefaultDragAndDropAreaContent() {
+
+		this.dragAndDropArea = $el("div", {
+			style: {
+				width: "100%",
+				height: "200px",
+				border: "2px dashed #aaa",
+				borderRadius: "10px",
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				color: "#666",
+				fontSize: "16px",
+				transition: "border-color 0.3s, background-color 0.3s",
+				marginTop: "20px",
+				cursor: "pointer",
+			},
+		});
+
+		this.dropMessage = $el("span", { textContent: "Drag & drop an image or video here to view metadata, or use 'Send To...' on any imange/video/model from the image drawer.", 
+			style: { padding: "5%"}
+		 });
+		this.dragAndDropArea.appendChild(this.dropMessage);
+		this.setContent(this.dragAndDropArea); // Add area to container
+	}
+
+	async handleDrop(payload, bIsBinary) {
+
+		console.log("Dropped: " + JSON.stringify(payload));
+
+		let filenameItem;
+		let fileUrlItem;
+
+		if (bIsBinary) { 
+
+			// file = payload.getAsFile();
+			await this.setImageOrVideo(payload, true);
+
+		} else if (payload.type == 'text/jnodes_image_drawer_payload') { // a payload specific to media from the drawer
+
+			let bSuccessfulLoad = false;
+
+			// Create a promise to encapsulate the asynchronous operation
+			const loadItemAsString = (payload) => {
+				return new Promise((resolve, reject) => {
+					payload.getAsString(async (value) => {
+						if (value) {
+							try {
+								const jnodesPayload = JSON.parse(value);
+								let href = `/jnodes_view_image?`;
+
+								if (jnodesPayload.imageHref) { // Use existing href if it exists
+
+									href = jnodesPayload.imageHref;
+
+								} else { // Otherwise construct it
+
+									if (jnodesPayload.filename) {
+										href += `filename=${encodeURIComponent(jnodesPayload.filename)}&`;
+									}
+									if (jnodesPayload.type) {
+										href += `type=${jnodesPayload.type}&`;
+									}
+									if (jnodesPayload.subdirectory || jnodesPayload.subfolder) {
+										href += `subfolder=${encodeURIComponent(jnodesPayload.subdirectory || jnodesPayload.subfolder || "")}&`;
+									}
+								
+									href += `t=${+new Date()}`; // Add Timestamp
+								}
+
+								const response = await fetch(href);
+        						const blob = await response.blob();
+
+								if (blob) {
+									this.setImageOrVideo(blob, true);
+								}
+
+								// Resolve the promise with the result of updateNode()
+								resolve(bSuccess);
+							} catch (e) {
+								console.error(`Error getting file from dropped item: ${e}`);
+								// Reject the promise in case of an error
+								reject(e);
+							}
+						} else {
+							// Resolve with false if value is empty
+							resolve(false);
+						}
+					});
+				});
+			};
+
+			// Wait for the return of the Promise
+			await loadItemAsString(payload)
+				.then((success) => {
+					bSuccessfulLoad = success;
+				})
+				.catch((error) => {
+					console.error('Error loading item as string:', error);
+				});
+
+			if (bSuccessfulLoad) {
+				return true; // Early out for jnodes_image_drawer_payload
+			}
+
+		} else if (payload.type == 'application/x-moz-file-promise-url') { // Firefox specific pair fallback
+
+			if (!fileUrlItem) { fileUrlItem = payload; }
+
+		} else if (payload.type == 'application/x-moz-file-promise-dest-filename') { // Firefox specific pair fallback
+
+			if (!filenameItem) { filenameItem = payload; }
+
+		}
+
+		// Manually get filename and load file (Mozilla) if 
+		if (fileUrlItem) {
+
+			let filename;
+
+			if (filenameItem) {
+				await filenameItem.getAsString(async (value) => {
+					if (value) { filename = value; }
+				});
+			}
+
+			fileUrlItem.getAsString(async (value) => {
+				let file = await utilitiesInstance.loadFileFromURL(value);
+
+				if (!filename) {
+					// Set filename from url maybe
+					filename = `${Math.random()}.${file.type.split('/')[1]}`;
+				}
+
+				file.filename = filename;
+
+				if (file) {
+					return conditionallyUploadFile(file);
+				} else {
+					console.error("Error getting file from dropped item.");
+				}
+			});
+		}
+	}
+
+	removeContent() {
+
+		while (this.container && this.container.firstChild) {
+			this.container.removeChild(this.container.firstChild);
+		  }
+	}
+
+	setContent(inWidget) {
+
+		if (this.container && inWidget) {
+
+			this.widget = inWidget;
+			this.removeContent();
+			this.container.appendChild(inWidget);
+		}
+	}
+
+	_createTableRow(key, value, bCreateCopyButton, bCreateEditButton, bCreateDeleteButton) {
+		const row = $el("tr");
+	
+		// Container for key text + edit button
+		const keyContainer = $el("div", {
+			style: {
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "space-between",
+				gap: "10px",
+				width: "100%",
+			}
+		});
+
+		let keyText = $el("span", {
+			textContent: key,
+			style: {
+				wordBreak: "break-word",
+				flex: "1",
+			}
+		});
+
+		keyContainer.appendChild(keyText);
+
+		if (bCreateEditButton) {
+			const editKeyButton = $el("button", {
+				textContent: "✏️",
+				title: "Edit key",
+				style: {
+					background: "none",
+					border: "none",
+					color: "#fff",
+					cursor: "pointer",
+					fontSize: "16px",
+					padding: "0",
+					margin: "0",
+					opacity: "0.6",
+				}
+			});
+
+			editKeyButton.addEventListener("click", () => {
+				const input = $el("input", {
+					type: "text",
+					value: keyText.textContent,
+					style: {
+						flex: "1",
+						padding: "4px",
+						borderRadius: "4px",
+						border: "1px solid #ccc",
+					}
+				});
+
+				const save = () => {
+					keyText.textContent = input.value;
+					keyContainer.replaceChild(keyText, input);
+				};
+
+				keyContainer.replaceChild(input, keyText);
+				input.focus();
+
+				input.addEventListener("blur", save);
+				input.addEventListener("keydown", (e) => {
+					if (e.key === "Enter") input.blur();
+				});
+			});
+
+			keyContainer.appendChild(editKeyButton);
+		}
+
+		const keyCell = $el("td", {
+			style: {
+				padding: "8px",
+				borderBottom: "1px solid #eee",
+				fontWeight: "bold",
+				width: "40%",
+				color: "#fff",
+				backgroundColor: "rgba(0, 0, 0, 0.4)",
+			}
+		});
+		keyCell.appendChild(keyContainer);
+	
+		// Container for value + button
+		const valueContainer = $el("div", {
+			style: {
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "space-between",
+				gap: "10px",
+			}
+		});
+	
+		const valueText = $el("span", {
+			textContent: value !== null && value !== undefined ? JSON.stringify(value) : "",
+			style: {
+				wordBreak: "break-word",
+				flex: "1",
+			}
+		});
+	
+		valueContainer.appendChild(valueText);
+	
+		if (bCreateCopyButton) {
+			const copyButton = $el("button", {
+				textContent: "📋",
+				title: "Copy to clipboard",
+				style: {
+					background: "none",
+					border: "none",
+					color: "#fff",
+					cursor: "pointer",
+					fontSize: "16px",
+					padding: "0",
+					margin: "0",
+					opacity: "0.6",
+				}
+			});
+		
+			copyButton.addEventListener("click", () => {
+				navigator.clipboard.writeText(valueText.textContent).then(() => {
+					copyButton.textContent = "✅";
+					setTimeout(() => (copyButton.textContent = "📋"), 1000);
+				});
+			});
+
+			valueContainer.appendChild(copyButton);
+		}
+
+		// ✏️ Edit button
+		if (bCreateEditButton) {
+			const editButton = $el("button", {
+				textContent: "✏️",
+				title: "Edit value",
+				style: {
+					background: "none",
+					border: "none",
+					color: "#fff",
+					cursor: "pointer",
+					fontSize: "16px",
+					padding: "0",
+					margin: "0",
+					opacity: "0.6",
+				}
+			});
+
+			editButton.addEventListener("click", () => {
+				// Replace valueText with input
+				const input = $el("input", {
+					type: "text",
+					value: valueText.textContent,
+					style: {
+						flex: "1",
+						padding: "4px",
+						borderRadius: "4px",
+						border: "1px solid #ccc",
+					}
+				});
+
+				// Replace and focus
+				valueContainer.replaceChild(input, valueText);
+				input.focus();
+
+				// Save on blur or enter
+				const save = () => {
+					valueText.textContent = input.value;
+					valueContainer.replaceChild(valueText, input);
+				};
+
+				input.addEventListener("blur", save);
+				input.addEventListener("keydown", (e) => {
+					if (e.key === "Enter") {
+						input.blur(); // triggers save
+					}
+				});
+			});
+			
+			valueContainer.appendChild(editButton);
+		}
+
+		// 🗑️ Delete button
+		if (bCreateDeleteButton) {
+			const deleteButton = $el("button", {
+				textContent: "🗑️",
+				title: "Delete row",
+				style: {
+					background: "none",
+					border: "none",
+					color: "#fff",
+					cursor: "pointer",
+					fontSize: "16px",
+					padding: "0",
+					margin: "0",
+					opacity: "0.6",
+				}
+			});
+
+			deleteButton.confirmState = false;
+
+			deleteButton.addEventListener("click", () => {
+
+				if (deleteButton.confirmState) {
+
+					row.remove();
+
+				} else {
+
+					deleteButton.confirmState = true;
+					deleteButton.textContent = "🗑️?";
+					setTimeout(() => {
+						deleteButton.confirmState = false;
+						deleteButton.textContent = "🗑️";
+					}, 2000);
+				}
+			});
+
+			valueContainer.appendChild(deleteButton);
+		}
+	
+		const valueCell = $el("td", {
+			style: {
+				padding: "8px",
+				borderBottom: "1px solid #eee",
+				color: "#fff",
+				backgroundColor: "rgba(0, 0, 0, 0.4)",
+			}
+		});
+	
+		valueCell.appendChild(valueContainer);
+	
+		row.appendChild(keyCell);
+		row.appendChild(valueCell);
+	
+		return row;
+	}
+
+	_makeMediaPreview(inImageOrVideo) {
+
+		this.previewElement = null;
+		if (inImageOrVideo.type.startsWith("image/")) {
+			this.previewElement = $el("img", {
+				src: this.imageOrVideoUrl,
+				style: {
+					maxHeight: "10vh",
+					marginBottom: "10px",
+					borderRadius: "8px",
+					boxShadow: "0 0 10px rgba(0, 0, 0, 0.5)",
+				}
+			});
+		} else if (inImageOrVideo.type.startsWith("video/")) {
+			this.previewElement = $el("video", {
+				src: this.imageOrVideoUrl,
+				controls: true,
+				autoplay: true,
+				muted: true,
+				loop: true,
+				style: {
+					maxHeight: "10vh",
+					marginBottom: "10px",
+					borderRadius: "8px",
+					boxShadow: "0 0 10px rgba(0, 0, 0, 0.5)",
+				}
+			});
+		}
+	}
+
+	_refreshPreviewFromBlob(inImageOrVideo, container) {
+
+		if (this.previewElement) {
+			this.previewElement.remove();
+			this.previewElement = null;
+		}
+	
+		if (this.imageOrVideoUrl) {
+			URL.revokeObjectURL(this.imageOrVideoUrl);
+		}
+	
+		this.imageOrVideoUrl = URL.createObjectURL(inImageOrVideo);
+	
+		this._makeMediaPreview(inImageOrVideo);
+	
+		if (this.previewElement) {
+
+			if (container.firstChild?.nextSibling) {
+				container.insertBefore(this.previewElement, container.firstChild?.nextSibling);
+			} else {
+				container.appendChild(this.previewElement);
+			}
+		}
+	}
+
+	async _generateMetadataWidgetFromImageOrVideo(inImageOrVideo) {
+		let metadata = null;
+		try {
+			metadata = await getMetaData(inImageOrVideo, inImageOrVideo.type);
+		} catch {
+			// pass
+		}
+	
+		if (metadata) {
+			const container = $el("div", {
+				style: {
+					display: "flex",
+					flexDirection: "column",
+					alignItems: "center",
+					width: "100%",
+					color: "#fff",
+					height: "100%",
+				}
+			});
+	
+			// Title
+			const title = $el("h3", {
+				textContent: inImageOrVideo.name || "",
+				style: {
+					margin: "10px 0",
+					fontSize: "22px",
+					color: "#fff",
+				}
+			});
+			container.appendChild(title);
+	
+			// Media preview
+			this._refreshPreviewFromBlob(inImageOrVideo, container);
+	
+			// Metadata table
+			const table = $el("table", {
+				style: {
+					width: "100%",
+					borderCollapse: "collapse",
+					fontSize: "14px",
+				}
+			});
+	
+			const tbody = $el("tbody");
+	
+			let entries = Object.entries(metadata);
+	
+			entries.sort(([keyA], [keyB]) => {
+				if (keyA === "workflow") return 1;
+				if (keyB === "workflow") return -1;
+				if (keyA === "prompt") return 1;
+				if (keyB === "prompt") return -1;
+				return keyA.localeCompare(keyB);
+			});
+
+			const bCreateCopyButton = true;
+			const bCreateEditButton = false; // TODO: No reason to edit until I implement saving meta back to the original image
+			const bCreateDeleteButton = false;
+	
+			for (const [key, value] of entries) {
+				if (key !== "parameters") {
+					const row = this._createTableRow(
+						key, value, bCreateCopyButton, bCreateEditButton, bCreateDeleteButton);
+					tbody.appendChild(row);
+				}
+			}
+	
+			table.appendChild(tbody);
+
+			// Create a container to hold input + button side-by-side
+			const filterContainer = $el("div", {
+				style: {
+					display: "flex",
+					alignItems: "center",
+					gap: "8px",
+					width: "100%",
+					margin: "10px 0",
+				}
+			});
+
+			// Text input
+			const filterInput = $el("input", {
+				type: "text",
+				placeholder: "Filter metadata...",
+				style: {
+					flexGrow: "1",
+					padding: "8px",
+					borderRadius: "4px",
+					border: "1px solid #ccc",
+					boxSizing: "border-box",
+				}
+			});
+
+			// Clear "X" button
+			const clearButton = $el("button", {
+				textContent: "❌",
+				title: "Clear filter",
+				style: {
+					padding: "6px 10px",
+					borderRadius: "4px",
+					border: "1px solid #ccc",
+					backgroundColor: "#500",
+					color: "#fff",
+					cursor: "pointer",
+				}
+			});
+
+			clearButton.addEventListener("click", () => {
+				filterInput.value = "";
+				filterInput.dispatchEvent(new Event("input"));
+			});
+
+			// Toggle button
+			let filterMode = "ANY"; // default mode
+
+			const filterToggleButton = $el("button", {
+				textContent: "ANY",
+				style: {
+					padding: "8px 12px",
+					borderRadius: "4px",
+					border: "1px solid #ccc",
+					backgroundColor: "#222",
+					color: "#fff",
+					cursor: "pointer",
+				}
+			});
+
+			filterToggleButton.addEventListener("click", () => {
+				filterMode = filterMode === "ANY" ? "ALL" : "ANY";
+				filterToggleButton.textContent = filterMode;
+				filterInput.dispatchEvent(new Event("input")); // reapply filter
+			});
+
+			filterInput.addEventListener("input", () => {
+				const query = filterInput.value.toLowerCase();
+				const terms = query.split(" ").filter(Boolean);
+			
+				Array.from(tbody.children).forEach((row) => {
+					const key = row.children[0]?.textContent.toLowerCase() || "";
+					const value = row.children[1]?.textContent.toLowerCase() || "";
+					const combined = key + " " + value;
+			
+					let matches = true;
+			
+					if (terms.length > 0) {
+						if (filterMode === "ANY") {
+							matches = terms.some(term => combined.includes(term));
+						} else if (filterMode === "ALL") {
+							matches = terms.every(term => combined.includes(term));
+						}
+					}
+			
+					row.style.display = matches ? "" : "none";
+				});
+			});
+
+			filterContainer.appendChild(filterInput);
+			filterContainer.appendChild(clearButton);		
+			filterContainer.appendChild(filterToggleButton);	
+	
+			// Scrollable wrapper for the table
+			const scrollContainer = $el("div", {
+				style: {
+					overflowY: "auto",
+					width: "100%",
+					padding: "10px",
+					border: "1px solid rgba(255, 255, 255, 0.2)",
+					borderRadius: "6px",
+					backgroundColor: "rgba(0, 0, 0, 0.3)",
+					boxShadow: "inset 0 0 10px rgba(0,0,0,0.2)",
+					marginTop: "10px",
+				}
+			});
+			scrollContainer.appendChild(table);
+	
+			container.appendChild(filterContainer);
+			container.appendChild(scrollContainer);
+	
+			return container;
+		}
+	
+		return null;
+	}
+	
+	async setImageOrVideo(inImageOrVideoBlob, bUpdateOverlayWidget = false) {
+
+		let widget;
+		
+		try {
+			widget = await this._generateMetadataWidgetFromImageOrVideo(inImageOrVideoBlob);
+		} catch {
+
+			// pass
+		}
+
+		if (widget) {
+
+			this.viewingItem = inImageOrVideoBlob;
+			this.setContent(widget);
+
+			if (bUpdateOverlayWidget) {
+				this.dropOverlay.style.opacity = 0;
+			}
+		} else {
+		
+			console.warn("setImageOrVideo: Iamge or video has no metadata!");
+
+			if (bUpdateOverlayWidget) {
+
+				this.dropOverlay.style.opacity = 1;
+				this.dropOverlay.textContent = "No metadata...";
+				setTimeout( () => {
+					this.dropOverlay.style.opacity = 0;
+				}, 1000);
+			}
+		}
+	}
+
+	_renderMetadataTree(data, collectedTbodyList = []) {
+		const container = $el("div", {
+			style: {
+				display: "flex",
+				flexDirection: "column",
+				width: "100%",
+				color: "#fff",
+			}
+		});
+	
+		const table = $el("table", {
+			style: {
+				width: "100%",
+				borderCollapse: "collapse",
+				fontSize: "14px",
+			}
+		});
+		const tbody = $el("tbody");
+		collectedTbodyList.push(tbody); // ✅ collect for filtering
+	
+		for (const [key, value] of Object.entries(data)) {
+			const row = $el("tr");
+			const keyCell = $el("td", {
+				textContent: key,
+				style: {
+					padding: "6px",
+					fontWeight: "bold",
+					verticalAlign: "top",
+					width: "40%",
+					backgroundColor: "rgba(255,255,255,0.05)",
+					borderBottom: "1px solid rgba(255,255,255,0.1)"
+				}
+			});
+	
+			const valueCell = $el("td", {
+				style: {
+					padding: "6px",
+					borderBottom: "1px solid rgba(255,255,255,0.1)",
+					wordBreak: "break-word",
+					whiteSpace: "normal",
+					overflowWrap: "anywhere",
+					maxWidth: "40%",
+				}
+			});
+	
+			if (typeof value === "object" && value !== null) {
+				const toggle = $el("details", {
+					open: false,
+					style: {
+						cursor: "pointer"
+					}
+				});
+	
+				const summary = $el("summary", {
+					textContent: Array.isArray(value) ? `Array [${value.length}]` : "Object",
+					style: {
+						marginBottom: "4px",
+						color: "#ccc"
+					}
+				});
+	
+				toggle.appendChild(summary);
+				toggle.appendChild(this._renderMetadataTree(value, collectedTbodyList)); // recursive pass
+				valueCell.appendChild(toggle);
+			} else {
+				valueCell.innerHTML = utilitiesInstance.sanitizeHTML(String(value));
+			}
+	
+			row.appendChild(keyCell);
+			row.appendChild(valueCell);
+			tbody.appendChild(row);
+		}
+	
+		table.appendChild(tbody);
+		container.appendChild(table);
+		return container;
+	}	
+
+	async _generateMetadataWidgetFromModel(inModelInfo, inImageOrVideo = null) {
+		const container = $el("div", {
+			style: {
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "center",
+				gap: "10px",
+				color: "#fff",
+				width: "100%",
+				height: "100%",
+				
+			}
+		});
+	
+		if (!inModelInfo?.familiars?.familiar_infos) return null;
+	
+		// Title
+		const title = $el("h3", {
+			textContent: inModelInfo.name || "",
+			style: {
+				margin: "10px 0",
+				fontSize: "22px",
+				color: "#fff",
+			}
+		});
+		container.appendChild(title);
+	
+		// Media preview
+		if (inImageOrVideo) {
+			this._refreshPreviewFromBlob(inImageOrVideo, container);
+		}
+
+		// Create a container to hold input + button side-by-side
+		const filterContainer = $el("div", {
+			style: {
+				display: "flex",
+				alignItems: "center",
+				gap: "8px",
+				width: "100%",
+				margin: "10px 0",
+			}
+		});
+
+		// Text input
+		const filterInput = $el("input", {
+			type: "text",
+			placeholder: "Filter metadata...",
+			style: {
+				flexGrow: "1",
+				padding: "8px",
+				borderRadius: "4px",
+				border: "1px solid #ccc",
+				boxSizing: "border-box",
+			}
+		});
+
+		// Clear "X" button
+		const clearButton = $el("button", {
+			textContent: "❌",
+			title: "Clear filter",
+			style: {
+				padding: "6px 10px",
+				borderRadius: "4px",
+				border: "1px solid #ccc",
+				backgroundColor: "#500",
+				color: "#fff",
+				cursor: "pointer",
+			}
+		});
+
+		clearButton.addEventListener("click", () => {
+			filterInput.value = "";
+			filterInput.dispatchEvent(new Event("input"));
+		});
+
+		// Toggle button
+		let filterMode = "ANY"; // default mode
+
+		const filterToggleButton = $el("button", {
+			textContent: "ANY",
+			style: {
+				padding: "8px 12px",
+				borderRadius: "4px",
+				border: "1px solid #ccc",
+				backgroundColor: "#222",
+				color: "#fff",
+				cursor: "pointer",
+			}
+		});
+
+		filterToggleButton.addEventListener("click", () => {
+			filterMode = filterMode === "ANY" ? "ALL" : "ANY";
+			filterToggleButton.textContent = filterMode;
+			filterInput.dispatchEvent(new Event("input")); // reapply filter
+		});
+
+		const collectedTbodyList = [];
+
+		filterInput.addEventListener("input", () => {
+			const query = filterInput.value.toLowerCase();
+			const terms = query.split(" ").filter(Boolean);
+		
+			for (const tbody of collectedTbodyList) {
+				Array.from(tbody.children).forEach((row) => {
+					const key = row.children[0]?.textContent.toLowerCase() || "";
+					const value = row.children[1]?.textContent.toLowerCase() || "";
+					const combined = key + " " + value;
+		
+					let matches = true;
+		
+					if (terms.length > 0) {
+						if (filterMode === "ANY") {
+							matches = terms.some(term => combined.includes(term));
+						} else if (filterMode === "ALL") {
+							matches = terms.every(term => combined.includes(term));
+						}
+					}
+		
+					row.style.display = matches ? "" : "none";
+				});
+			}
+		});
+
+		filterContainer.appendChild(filterInput);
+		filterContainer.appendChild(clearButton);		
+		filterContainer.appendChild(filterToggleButton);	
+
+		container.appendChild(filterContainer);
+
+		const scrollContainer = $el("div", {
+			style: {
+				maxHeight: "100%",
+				overflowY: "auto",
+				width: "100%",
+				padding: "10px",
+				border: "1px solid rgba(255, 255, 255, 0.2)",
+				borderRadius: "6px",
+				backgroundColor: "rgba(0, 0, 0, 0.3)",
+				boxShadow: "inset 0 0 10px rgba(0,0,0,0.2)",
+				marginTop: "10px",
+			}
+		});
+	
+		for (const info of inModelInfo.familiars.familiar_infos) {
+			const section = $el("details", {
+				open: false,
+				style: {
+					border: "1px solid rgba(255,255,255,0.2)",
+					borderRadius: "6px",
+					backgroundColor: "rgba(0, 0, 0, 0.4)",
+					width: "100%"
+				}
+			});
+		
+			const summary = $el("summary", {
+				textContent: info.file_name || "Unnamed Info File",
+				style: {
+					fontSize: "16px",
+					fontWeight: "bold",
+					margin: "10px",
+					cursor: "pointer",
+				}
+			});
+			section.appendChild(summary);
+		
+			let parsed = null;
+			let rendered;
+		
+			try {
+				parsed = JSON.parse(info.loaded_text);
+				rendered = this._renderMetadataTree(parsed, collectedTbodyList); // ✅ pass in the list
+			} catch {
+				rendered = $el("pre", {
+					textContent: info.loaded_text,
+					style: {
+						whiteSpace: "pre-wrap",
+						wordBreak: "break-word",
+						fontSize: "13px",
+						lineHeight: "1.4"
+					}
+				});
+			}
+		
+			section.appendChild(rendered);
+			scrollContainer.appendChild(section);
+		}
+
+		container.appendChild(scrollContainer);
+	
+		return container;
+	}
+
+	// Only inModelInfo is necessary, inImageOrVideo is optional and purely visual
+	async setModel(inModelInfo, inImageOrVideo = null, bUpdateOverlayWidget = false) {
+
+		let widget;
+		
+		try {
+			widget = await this._generateMetadataWidgetFromModel(inModelInfo, inImageOrVideo);
+		} catch {
+
+			// pass
+		}
+
+		if (widget) {
+
+			this.viewingItem = inModelInfo;
+			this.setContent(widget);
+
+			if (bUpdateOverlayWidget) {
+				this.dropOverlay.style.opacity = 0;
+			}
+		} else {
+		
+			console.warn("setModel: Model has no metadata!");
+
+			if (bUpdateOverlayWidget) {
+
+				this.dropOverlay.style.opacity = 1;
+				this.dropOverlay.textContent = "No metadata...";
+				setTimeout( () => {
+					this.dropOverlay.style.opacity = 0;
+				}, 1000);
+			}
+		}
 	}
 
 	getSupportedSortTypes() {
 		return [];
+	}
+
+	getMainWidget() {
+		
+		if (!this.mainWidget) {
+			this.makeMainWidget();
+		}
+		return this.mainWidget;
 	}
 }
 
@@ -870,14 +2051,10 @@ export class ContextPreview extends ImageDrawerContext {
 
 	async switchToContext() {
 		if (!await super.switchToContext()) {
-			const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
-			imageDrawerListInstance.clearImageListChildren();
 
 			if (!this.link) {
 				this.createPreviewElement();
 			}
-
-			imageDrawerListInstance.addElementToImageList(this.link);
 	
 			api.addEventListener("b_preview", ({ detail }) => {
 				if (this.animateInterval) { return; }
@@ -949,5 +2126,13 @@ export class ContextPreview extends ImageDrawerContext {
 
 	getSupportedSortTypes() {
 		return [];
+	}
+
+	getMainWidget() {
+
+		if (!this.link) {
+			this.createPreviewElement();
+		}
+		return this.link;
 	}
 }

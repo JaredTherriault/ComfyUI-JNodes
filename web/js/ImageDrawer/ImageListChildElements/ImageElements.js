@@ -25,7 +25,7 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 
 	href += `t=${+new Date()}`; // Add Timestamp
 
-	fileInfo.href = href;
+	fileInfo.imageHref = href;
 	const bIsVideoFormat = fileInfo.file?.is_video || fileInfo.filename.endsWith(".mp4") || fileInfo.filename.endsWith(".webm"); // todo: fetch acceptable video types from python
 
 	const imageElement =
@@ -43,7 +43,7 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 
 	imageElement.deleteItem = async function (bAlsoRemoveFromImageList = true, bNotifyImageListChanged = true) {
 
-		const deleteCall = imageElement.fileInfo.href.replace("jnodes_view_image", "jnodes_delete_item");
+		const deleteCall = imageElement.fileInfo.imageHref.replace("jnodes_view_image", "jnodes_delete_item");
 		const response = await api.fetchApi(deleteCall, { method: "DELETE" });
 
 		let jsonResponse;
@@ -64,7 +64,7 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 	imageElement.copyItem = async function (destinationDirectory) {
 
 		const destination = utilitiesInstance.joinPaths([destinationDirectory, fileInfo.filename]);
-		const copyCall = imageElement.fileInfo.href.replace("jnodes_view_image", "jnodes_copy_item") + `&destination=${encodeURIComponent(destination)}`;
+		const copyCall = imageElement.fileInfo.imageHref.replace("jnodes_view_image", "jnodes_copy_item") + `&destination=${encodeURIComponent(destination)}`;
 		const response = await api.fetchApi(copyCall, { method: "POST" });
 
 		let jsonResponse;
@@ -175,6 +175,7 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 	imageElement.fileType = imageElement.filename.split(".")[1];
 	imageElement.file_age = fileInfo.file?.file_age || utilitiesInstance.getCurrentSecondsFromEpoch(); // todo: fix for feed images
 	imageElement.subdirectory = fileInfo.subdirectory || null;
+	imageElement.path = fileInfo.subdirectory ? `${fileInfo.subdirectory}/${fileInfo.filename}` : fileInfo.filename;
 	imageElement.displayData.FileSize = fileInfo.file?.file_size || -1;
 
 	if (fileInfo?.file?.duration_in_seconds && fileInfo.file.duration_in_seconds > 0) {
@@ -223,7 +224,7 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 
 			imageElement.showInFileManager = async function () {
 
-				const call = imageElement.fileInfo.href.replace("jnodes_view_image", "jnodes_request_open_file_manager");
+				const call = imageElement.fileInfo.imageHref.replace("jnodes_view_image", "jnodes_request_open_file_manager");
 				api.fetchApi(call, { method: "POST" });
 			}
 
