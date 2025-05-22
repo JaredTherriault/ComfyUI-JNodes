@@ -277,9 +277,15 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			icon: `ImageDrawerTabIcon_${this.imageDrawerInstance.getIndex()}`, type: "custom",
 			render: (e) => {
 
+				 // Remove all children
+				while (e.firstChild) {
+					e.removeChild(e.firstChild);
+				}
+				
+				// And append the incoming one
 				e.appendChild(
 					$el("div", {
-						id: "jnodes-sidebar-image-drawer-wrapper",
+						id: `jnodes-sidebar-image-drawer-wrapper_${this.imageDrawerInstance.getIndex()}`,
 						style: {
 							height: "100%",
 							width: "100%",
@@ -290,31 +296,34 @@ class ImageDrawerMain extends ImageDrawerComponent {
 				);
 
 				// Perform some visual workarounds on next frame
+				requestAnimationFrame(() => {
 
-				if (!this._bHasRenderedSidebarTabAtLeastOnce) {
-					// Do once
-					setTimeout(() => {
+					// Restore last drawer width / splitter position and
+					// cache splitter position so it can be restored on next session.
+					// We're specifically not using '.p-splitter-gutter-handle' here because
+					// the handle width is reset after dragging
+					const splitterElement = document.querySelector(".p-splitter-gutter:not(.hidden)");
+					if (splitterElement) {
+						
+						let savedWidthPercentage = this.setting_DrawerWidth.value / 100;
+						if (!this.isComfySidebarLeft()) {
+							savedWidthPercentage = 1.0 - savedWidthPercentage;
+						}
+						const endX = window.innerWidth * savedWidthPercentage;
+						const rect = splitterElement.getBoundingClientRect();
+						utilitiesInstance.simulateDrag(splitterElement, rect.x, rect.y, endX, rect.y);
 
-						// Restore last drawer width / splitter position
-						const splitterElement = document.querySelector(".p-splitter-gutter:not(.hidden)");
-						if (splitterElement) {
-							
-							let savedWidthPercentage = this.setting_DrawerWidth.value / 100;
-							if (!this.isComfySidebarLeft()) {
-								savedWidthPercentage = 1.0 - savedWidthPercentage;
-							}
-							const endX = window.innerWidth * savedWidthPercentage;
-							const rect = splitterElement.getBoundingClientRect();
-							utilitiesInstance.simulateDrag(splitterElement, rect.x, rect.y, endX, rect.y);
+						// Set handle width
+						if (setting_SidebarSplitterHandleSize.value != 0) {
+
+							splitterElement.style.width = `${setting_SidebarSplitterHandleSize.value}px`;
 						}
 
-						this._bHasRenderedSidebarTabAtLeastOnce = true;
-
-					}, 1);
-				}
-
-				// Do every time
-				setTimeout(() => {
+						// Bind to pointerup for splitter so we can cache the width
+						splitterElement.addEventListener("pointerup", (e) => {
+							this.cacheDrawerWidthFromSplitterElement(splitterElement);
+						});
+					}
 
 					// Ensure that custom tooltips and such are not constrained to the bounds of the drawer
 					const panelElement = document.querySelector(".p-splitterpanel.side-bar-panel");
@@ -332,24 +341,10 @@ class ImageDrawerMain extends ImageDrawerComponent {
 					// Restore scroll level
 					const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 					imageDrawerListInstance.scrollToLastScrollLevel();
-
-					// Cache splitter position so it can be restored on next session
-					// we're specifically not using '.p-splitter-gutter-handle' here because
-					// the handle width is reset after dragging
-					const splitterElement = document.querySelector(".p-splitter-gutter:not(.hidden)");
 					if (splitterElement) {
-
-						// Set handle width
-						if (setting_SidebarSplitterHandleSize.value != 0) {
-
-							splitterElement.style.width = `${setting_SidebarSplitterHandleSize.value}px`;
-						}
-
-						// Bind to pointerup for splitter so we can cache the width
-						splitterElement.addEventListener("pointerup", (e) => {
-							this.cacheDrawerWidthFromSplitterElement(splitterElement);
-						});
 					}
+
+					this._bHasRenderedSidebarTabAtLeastOnce = true;
 
 				}, 1);
 
