@@ -46,6 +46,16 @@ export class SortTypeFriendlyName extends SortType {
 	}
 }
 
+export class SortTypePath extends SortType {
+	constructor(bIsAscending, imageDrawerInstance) {
+		super('Path', bIsAscending, imageDrawerInstance)
+	}
+
+	getSortingLambda() {
+		return (a, b) => this.bIsAscending ? a.path.localeCompare(b.path) : b.path.localeCompare(a.path);
+	}
+}
+
 export class SortTypeDate extends SortType {
 	constructor(bIsAscending, imageDrawerInstance) {
 		super('Date', bIsAscending, imageDrawerInstance)
@@ -107,7 +117,7 @@ export class SortTypeFileType extends SortType {
 }
 
 export class SortTypeShuffle extends SortType {
-	constructor(imageDrawerInstance) {
+	constructor(bIsAscending, imageDrawerInstance) {
 		super('Shuffle', undefined, imageDrawerInstance)
 	}
 
