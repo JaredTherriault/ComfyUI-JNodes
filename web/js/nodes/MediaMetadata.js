@@ -1,70 +1,77 @@
 import { app } from '/scripts/app.js'
 import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 
-export function getVideoMetadata(file) {
-    return new Promise((r) => {
+export function getVideoMetadata(file, timeoutMs = 3000) {
+    return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (event) => {
-            const videoData = new Uint8Array(event.target.result);
-            const dataView = new DataView(videoData.buffer);
+        const decoder = new TextDecoder();
 
-            let decoder = new TextDecoder();
-            // Check for known valid magic strings
-            if (dataView.getUint32(0) == 0x1A45DFA3) {
-                //webm
-                //see http://wiki.webmproject.org/webm-metadata/global-metadata
-                //and https://www.matroska.org/technical/elements.html
-                //contrary to specs, tag seems consistently at start
-                //COMMENT + 0x4487 + packed length?
-                //length 0x8d8 becomes 0x48d8
-                //
-                //description for variable length ints https://github.com/ietf-wg-cellar/ebml-specification/blob/master/specification.markdown
-                let offset = 4 + 8; //COMMENT is 7 chars + 1 to realign
-                while (offset < videoData.length - 16) {
-                    //Check for text tags
-                    if (dataView.getUint16(offset) == 0x4487) {
-                        //check that name of tag is COMMENT
-                        const name = String.fromCharCode(...videoData.slice(offset - 7, offset));
-                        if (name === "COMMENT") {
-                            let vint = dataView.getUint32(offset + 2);
-                            let n_octets = Math.clz32(vint) + 1;
-                            if (n_octets < 4) {//250MB sanity cutoff
-                                let length = (vint >> (8 * (4 - n_octets))) & ~(1 << (7 * n_octets));
-                                const content = decoder.decode(videoData.slice(offset + 2 + n_octets, offset + 2 + n_octets + length));
+        // Timeout fallback
+        const timeout = setTimeout(() => {
+            console.warn("getVideoMetadata: timeout");
+            resolve(null); // or reject(new Error("Timeout")); if you prefer
+        }, timeoutMs);
+
+        reader.onload = (event) => {
+            try {
+                const videoData = new Uint8Array(event.target.result);
+                const dataView = new DataView(videoData.buffer);
+
+                // WEBM
+                if (dataView.getUint32(0) === 0x1A45DFA3) {
+                    let offset = 4 + 8;
+                    while (offset < videoData.length - 16) {
+                        if (dataView.getUint16(offset) === 0x4487) {
+                            const name = String.fromCharCode(...videoData.slice(offset - 7, offset));
+                            if (name === "COMMENT") {
+                                let vint = dataView.getUint32(offset + 2);
+                                let n_octets = Math.clz32(vint) + 1;
+                                if (n_octets < 4) {
+                                    let length = (vint >> (8 * (4 - n_octets))) & ~(1 << (7 * n_octets));
+                                    const content = decoder.decode(videoData.slice(offset + 2 + n_octets, offset + 2 + n_octets + length));
+                                    const json = JSON.parse(content);
+                                    clearTimeout(timeout);
+                                    resolve(json);
+                                    return;
+                                }
+                            }
+                        }
+                        offset += 1;
+                    }
+                }
+
+                // MP4
+                if (dataView.getUint32(4) === 0x66747970 && dataView.getUint32(8) === 0x69736F6D) {
+                    let offset = videoData.length - 4;
+                    while (offset > 16) {
+                        if (dataView.getUint32(offset) === 0x64617461) {
+                            if (dataView.getUint32(offset - 8) === 0xa9636d74) {
+                                let size = dataView.getUint32(offset - 4) - 4 * 4;
+                                const content = decoder.decode(videoData.slice(offset + 12, offset + 12 + size));
                                 const json = JSON.parse(content);
-                                r(json);
+                                clearTimeout(timeout);
+                                resolve(json);
                                 return;
                             }
                         }
+                        offset -= 1;
                     }
-                    offset += 1;
                 }
-            } else if (dataView.getUint32(4) == 0x66747970 && dataView.getUint32(8) == 0x69736F6D) {
-                //mp4
-                //see https://developer.apple.com/documentation/quicktime-file-format
-                //Seems to make no guarantee for alignment
-                let offset = videoData.length - 4;
-                while (offset > 16) {//rough safe guess
-                    if (dataView.getUint32(offset) == 0x64617461) {//any data tag
-                        if (dataView.getUint32(offset - 8) == 0xa9636d74) {//cmt data tag
-                            let type = dataView.getUint32(offset + 4); //seemingly 1
-                            let locale = dataView.getUint32(offset + 8); //seemingly 0
-                            let size = dataView.getUint32(offset - 4) - 4 * 4;
-                            const content = decoder.decode(videoData.slice(offset + 12, offset + 12 + size));
-                            const json = JSON.parse(content);
-                            r(json);
-                            return;
-                        }
-                    }
 
-                    offset -= 1;
-                }
-            } else {
-                console.error("Unknown magic: " + dataView.getUint32(0))
-                r();
-                return;
+                // No known format matched
+                console.warn("getVideoMetadata: unsupported format");
+                clearTimeout(timeout);
+                resolve(null);
+            } catch (err) {
+                console.error("getVideoMetadata: error", err);
+                clearTimeout(timeout);
+                reject(err);
             }
+        };
 
+        reader.onerror = (err) => {
+            clearTimeout(timeout);
+            reject(err);
         };
 
         reader.readAsArrayBuffer(file);
