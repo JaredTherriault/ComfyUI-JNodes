@@ -1307,7 +1307,7 @@ export class ContextMetadataViewer extends ImageDrawerContext {
 		});
 	
 		const valueText = $el("span", {
-			textContent: value !== null && value !== undefined ? JSON.stringify(value) : "",
+			textContent: utilitiesInstance.decodeUnicodeForeignLanguageText(value !== null && value !== undefined ? JSON.stringify(value) : ""),
 			style: {
 				wordBreak: "break-word",
 				flex: "1",
