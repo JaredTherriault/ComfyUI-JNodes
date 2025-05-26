@@ -260,6 +260,12 @@ class JNodesUtilities {
 		[...div.childNodes].forEach(sanitizeNode);
 		return div.innerHTML;
 	}
+	
+	decodeUnicodeForeignLanguageText(str) {
+		return String(str).replace(/\\u[\dA-Fa-f]{4}/g, match =>
+			String.fromCharCode(parseInt(match.replace("\\u", ""), 16))
+		);
+	}
 
 	parseRegexFromInputWidget(str) {
 		try {
