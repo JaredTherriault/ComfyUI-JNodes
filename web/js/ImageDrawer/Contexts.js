@@ -2043,7 +2043,7 @@ export class ContextMetadataViewer extends ImageDrawerContext {
 export class ContextPreview extends ImageDrawerContext {
 	constructor(imageDrawerInstance) {
 		super(
-			"Preview", 
+			"Inference Preview", 
 			"Show the current preview of whatever is being generated, the same as what would show on a sampler node",
 			imageDrawerInstance
 		);
