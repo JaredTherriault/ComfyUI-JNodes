@@ -234,6 +234,7 @@ class JNodesUtilities {
 	}
 
 	sanitizeHTML(input) {
+		// Tags that can be rendered by html viewer, others are removed
 		const allowedTags = new Set(['p', 'b', 'i', 'em', 'strong', 'ul', 'ol', 'li', 'br', 'span']);
 		const div = document.createElement('div');
 		div.innerHTML = input;
