@@ -805,7 +805,9 @@ export function makeTooltipWidgetFromMetadata(metadata) {
                 $el('td', {
                     colSpan: '2',
                 }, [
-                    $el("div", { textContent: textContent })
+                    $el("span", { style:{
+                            wordBreak: 'break-word',
+                        }, textContent: utilitiesInstance.decodeUnicodeForeignLanguageText(textContent) })
                 ])
             ])
         );
@@ -829,7 +831,9 @@ export function makeTooltipWidgetFromMetadata(metadata) {
                 $el('td', {
                     colSpan: '2',
                 }, [
-                    $el("div", { textContent: textContent })
+                    $el("span", { style:{
+                            wordBreak: 'break-word',
+                        }, textContent: utilitiesInstance.decodeUnicodeForeignLanguageText(textContent) })
                 ])
             ])
         );
@@ -849,7 +853,7 @@ export function makeTooltipWidgetFromMetadata(metadata) {
             (bIsAllowList && bIsKeySpecified) || (!bIsAllowList && !bIsKeySpecified);
 
         if (bIncludeKey) {
-            let formattedValue = metadata[key].replace(/\n/g, '').replace(/\\n/g, '');
+            let formattedValue = utilitiesInstance.decodeUnicodeForeignLanguageText(metadata[key].replace(/\n/g, '').replace(/\\n/g, ''));
 
             const row =
                 $el('tr', [
