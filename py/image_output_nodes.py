@@ -7,6 +7,9 @@ from .logger import logger
 from .misc import *
 from .utils import *
 
+from datetime import datetime
+import locale
+
 import copy
 import cv2
 import json
@@ -128,7 +131,7 @@ class SaveVideoWithOptions():
                 "images": ("IMAGE",),
                 "frame_rate": ("INT", {"default": 8, "min": 1, "step": 1},),
                 "loop_count": ("INT", {"default": 0, "min": 0, "max": 100, "step": 1}),
-                "filename_format": ("STRING", {"default": "Comfy%counter%"}),
+                "filename_format": ("STRING", {"default": "Comfy_%date%_%time%_%counter%"}),
                 "output_format": (["image/gif", "image/webp", "image/apng"] + video_formats,),
                 "save_to_output_dir": ("BOOLEAN", {"default": True}),
                 "quality": ("INT", {"default": 95, "min": 0, "max": 100, "step": 1}),
@@ -161,16 +164,32 @@ class SaveVideoWithOptions():
  
         file_path = os.path.join(full_output_folder, f"{filename}.{format_ext}")
 
-        counter_token = "%counter%"
-        if counter_token in filename:
-            counter = len(os.listdir(full_output_folder)) + 1
-            new_filename = filename.replace(counter_token, str(counter).zfill(5))
-            file_path = os.path.join(full_output_folder, f"{new_filename}.{format_ext}")
-            
+        new_filename = filename
+
+        locale.setlocale(locale.LC_TIME, '')
+        local_time = datetime.now()
+
+        date_token = "%date%"
+        if date_token in new_filename:
+            safe_date_str = local_time.strftime('%Y-%m-%d')
+            new_filename = new_filename.replace(date_token, str(safe_date_str))
+
+        time_token = "%time%"
+        if time_token in new_filename:
+            safe_time_str = local_time.strftime('%H-%M-%S')
+            new_filename = new_filename.replace(time_token, str(safe_time_str))
+
+        if "%counter%" in new_filename:
+            counter = 1
+            candidate_filename = new_filename.replace("%counter%", str(counter).zfill(5))
+            file_path = os.path.join(full_output_folder, f"{candidate_filename}.{format_ext}")
+
             while os.path.exists(file_path):
                 counter += 1
-                new_filename = filename.replace(counter_token, str(counter).zfill(5))
-                file_path = os.path.join(full_output_folder, f"{new_filename}.{format_ext}")
+                candidate_filename = new_filename.replace("%counter%", str(counter).zfill(5))
+                file_path = os.path.join(full_output_folder, f"{candidate_filename}.{format_ext}")
+        else:
+            file_path = os.path.join(full_output_folder, f"{new_filename}.{format_ext}")
 
         return file_path, format_type, format_ext_mime, format_ext
 
