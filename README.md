@@ -59,6 +59,7 @@ Free, open-source software (FOSS) donations are my only source of income. If thi
 * Clone this repo into "ComfyUI/custom_nodes" OR
 * Install via ComfyUI Manager (search "JNodes") OR
 * Download the zip file and unzip it into "ComfyUI/custom_nodes"
+* Install requirements (pip install -r requirements.txt)
 
   ![image](https://github.com/JaredTherriault/ComfyUI-JNodes/assets/8760446/56c3f73b-75d8-4cd2-a191-178e03c417dc)
 
