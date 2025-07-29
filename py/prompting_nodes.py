@@ -116,6 +116,12 @@ class ParseDynamicPrompts:
                 weight = float(option_components[1].strip()) if len(option_components) > 1 else 0.1 if should_get_index else 1.0
                 weighted_options.extend([choice] * int(weight * 10))  # Multiply weight by 10 for better granularity
 
+            if len(weighted_options) == 0:
+                text = self.replace_first_occurrence(text, group, "")
+                re_match = self.find_match(text)
+                match_count += 1
+                continue
+
             seed_to_use = seed if should_get_index or use_same_seed_for_all_groups else seed + (match_count * return_random_int(0))
             selected_option = weighted_options[seed_to_use if should_get_index else seed_to_use % len(weighted_options)]
             
