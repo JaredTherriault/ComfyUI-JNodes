@@ -125,7 +125,7 @@ export class ImageDrawerContext {
 			title: "Jump to top of list",
 			onclick: async () => {
 				const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
-				imageDrawerListInstance.getImageListElement().scrollTop = 0;
+				imageDrawerListInstance.getImageListContainerElement().scrollTop = 0;
 				scrollToTopButton.blur();
 			},
 			style: {
