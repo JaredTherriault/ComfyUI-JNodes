@@ -368,27 +368,24 @@ class RemoveParseableDataForInference:
         return {
             "required": {
                 "in_string": ("STRING", {"default": "", "multiline": True}),
+            }
         }
-    }
     
     RETURN_TYPES = ("STRING",)
     FUNCTION = "remove_parseable_data_from_string_wrapper"
 
     def remove_parseable_data_from_string(self, in_string):
-        # Use regular expression to find text enclosed in <>
-        # and newline characters, and replace double commas
-        pattern = r'<(.*?)>|(\n)|(\\n)'
+        # Step 1: Remove <...> blocks entirely
+        result = re.sub(r'<.*?>', '', in_string, flags=re.DOTALL)
         
-        def remove_match(match):
-            return ''
-
-        # Use re.sub with a custom replacement function
-        result = re.sub(pattern, remove_match, in_string)
+        # Step 2: Remove actual newlines and escaped newlines without touching spaces
+        result = re.sub(r'\n|\\n', ' ', result)
         
-        # Split the string by commas, remove empty elements, and join back into a string
-        result = ','.join(filter(None, result.split(',')))
+        # Step 3: Remove empty comma elements, preserve spaces exactly as typed
+        parts = [p for p in result.split(',') if p != '']
+        result = ','.join(parts)
         
-        return result.strip()
+        return result
     
     def remove_parseable_data_from_string_wrapper(self, in_string):
         return (self.remove_parseable_data_from_string(in_string),)
