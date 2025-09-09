@@ -594,6 +594,12 @@ export async function getMetaData(file, format) {
             metadata = appendA111Metadata(metadata);
         } else if (isVideoFile(file)) {
             metadata = await getVideoMetadata(file);
+            if (!metadata) {
+                const iso = await window.comfyAPI.isobmff.getFromIsobmffFile(file);
+                if (Object.entries(iso).length > 0) {
+                    metadata = iso;
+                }
+            }
             metadata = appendA111Metadata(metadata);
         } else if (format === "image/webp" || format === "image/jpeg" || format === "image/gif") {
 
