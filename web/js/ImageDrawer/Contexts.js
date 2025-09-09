@@ -2068,7 +2068,7 @@ export class ContextPreview extends ImageDrawerContext {
 				if (!setting) {
 					return;
 				}
-				this.nodeId = app.runningNodeId;
+				this.nodeId = detail.id;
 				if (this.nodeId == null) {
 					return;
 				}
@@ -2081,7 +2081,7 @@ export class ContextPreview extends ImageDrawerContext {
 					clearInterval(this.animateInterval);
 				}
 				this.animateInterval = setInterval(() => {
-					if (app.runningNodeId != this.nodeId) {
+					if (detail.id != this.nodeId) {
 						clearInterval(this.animateInterval);
 						this.animateInterval = undefined;
 						return;
