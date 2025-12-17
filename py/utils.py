@@ -389,3 +389,11 @@ def is_pil_image(obj):
 # Check if an object is a PyTorch tensor
 def is_torch_tensor(obj):
     return isinstance(obj, torch.Tensor)
+
+def get_creation_time(file_path):
+    """Get file creation time if available, otherwise fallback to modification time."""
+    try:
+        stat = os.stat(file_path)
+        return stat.st_birthtime  # Works on some Linux filesystems
+    except AttributeError:
+        return os.path.getmtime(file_path)

@@ -118,7 +118,7 @@ def create_familiar_dictionaries(names, type, image_extension_filter, info_exten
             # logger.info(f"file_name_no_ext, file_ext: {file_name_no_ext, file_ext}")
             
             # Get time of creation since the last epoch, in seconds
-            file_age = os.path.getctime(file_path)
+            file_age = get_creation_time(file_path)
 
             file_path = file_path.replace("\\", "/")
             # logger.info(f'file_path: {file_path}')
