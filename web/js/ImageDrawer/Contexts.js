@@ -221,15 +221,15 @@ export class ImageDrawerContext {
 
 	getDesiredSortType() {
 
-		let desiredType = this.cache?.sortType;
+		let desiredType = this.cache?.sortType;			
+		
+		const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 		
 		if (!desiredType) {
 			
 			try {
 
 				const lastSelectedType = JSON.parse(this.setting_LastSelectedSorting.value);
-
-				const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 
 				desiredType = imageDrawerListSortingInstance.getSortTypeObjectFromClassName(lastSelectedType.name, lastSelectedType.bIsAscending);
 
@@ -245,10 +245,12 @@ export class ImageDrawerContext {
 		}
 
 		const supportedTypes = this.getSupportedSortTypes();
-	
-		if (supportedTypes.includes(desiredType.constructor)) {
 
-			return desiredType;
+		const desiredTypeObject = imageDrawerListSortingInstance.getSortTypeObjectFromName(desiredType) || desiredType;
+	
+		if (supportedTypes.includes(desiredTypeObject.constructor)) {
+
+			return desiredTypeObject;
 		}
 
 		return this.getDefaultSortType();
@@ -259,7 +261,9 @@ export class ImageDrawerContext {
 	}
 
 	setLastSelectedSorting(sortType) {
-		this.setting_LastSelectedSorting.value = JSON.stringify({ name: sortType.constructor.name, bIsAscending: sortType.bIsAscending });
+		const value = JSON.stringify({ name: sortType.constructor.name, bIsAscending: sortType.bIsAscending });
+		this.setting_LastSelectedSorting.value = value;
+		return value;
 	}
 
 	shouldCancelAsyncOperation() {
@@ -2072,15 +2076,23 @@ export class ContextPreview extends ImageDrawerContext {
 				if (this.nodeId == null) {
 					return;
 				}
+
+				let previewNode = app.graph.getNodeById(this.nodeId);
+				if (!previewNode?.widgets) { return; }
+				
+				let previewWidget = previewNode.widgets.find((w) => w.name == "vhslatentpreview");
+				if (!previewWidget) { return; }
+
 				this.canvas.style.display = "unset";
 				this.img.style.display = "none";
-				let previewNode = app.graph.getNodeById(this.nodeId);
-				let previewWidget = previewNode.widgets.find((w) => w.name == "vhslatentpreview");
 				let ctx;
 				if (this.animateInterval) {
 					clearInterval(this.animateInterval);
 				}
 				this.animateInterval = setInterval(() => {
+
+					if (!this) return;
+					
 					if (detail.id != this.nodeId) {
 						clearInterval(this.animateInterval);
 						this.animateInterval = undefined;
