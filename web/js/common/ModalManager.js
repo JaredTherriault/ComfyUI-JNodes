@@ -116,28 +116,28 @@ export class ModalManager {
 				this._zoom(event); 
 			}
 		});
-		this._modalContainer.addEventListener("mousedown", (event) => { 
+		this._modalContainer.addEventListener("pointerdown", (event) => { 
 			
 			if (this._modalOptions.bIsImageContainer) {
 				event.preventDefault(); 
 				this._startPan(event);
 			} 
 		});
-		this._modalContainer.addEventListener("mousemove", (event) => { 
+		this._modalContainer.addEventListener("pointermove", (event) => { 
 			
 			if (this._modalOptions.bIsImageContainer) {
 				event.preventDefault(); 
 				this._pan(event); 
 			}
 		});
-		this._modalContainer.addEventListener("mouseup", (event) => { 
+		this._modalContainer.addEventListener("pointerup", (event) => { 
 			
 			if (this._modalOptions.bIsImageContainer) {
 				event.preventDefault(); 
 			}
 			this._onMouseUp(event); 
 		});
-		this._modalContainer.addEventListener("mouseleave", (event) => { 
+		this._modalContainer.addEventListener("pointerleave", (event) => { 
 			
 			if (this._modalOptions.bIsImageContainer) {
 				event.preventDefault(); 

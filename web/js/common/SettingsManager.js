@@ -773,7 +773,7 @@ export function createFlyoutHandle(handleText, handleClassSuffix = "", menuClass
         menu.style.transformOrigin = `${transformOriginX} ${transformOriginY}`;
     };
 
-    handle.addEventListener("mouseover", handle.determineTransformLayout);
+    handle.addEventListener("pointerover", handle.determineTransformLayout);
 
     return { handle: handle, menu: menu };
 }

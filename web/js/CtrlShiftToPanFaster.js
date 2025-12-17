@@ -28,7 +28,7 @@ app.registerExtension({
             }
         }
 
-        document.addEventListener("mousemove", processMouseMove);
-        document.addEventListener("mouseup", (event) => {last_mouse = [event.clientX, event.clientY];});
+        document.addEventListener("pointermove", processMouseMove);
+        document.addEventListener("pointerup", (event) => {last_mouse = [event.clientX, event.clientY];});
     }
 });

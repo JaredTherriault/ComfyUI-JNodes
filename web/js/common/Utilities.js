@@ -1,5 +1,6 @@
 import { $el } from "/scripts/ui.js";
 import { api } from "/scripts/api.js";
+import { app } from "/scripts/app.js";
 
 class JNodesUtilities {
 
@@ -92,9 +93,9 @@ class JNodesUtilities {
 			}
 		}
 
-		button.addEventListener('mousedown', startTimer);
-		button.addEventListener('mouseup', inputRelease);
-		button.addEventListener('mouseleave', clearTimer);
+		button.addEventListener("pointerdown", startTimer);
+		button.addEventListener("pointerup", inputRelease);
+		button.addEventListener("pointerleave", clearTimer);
 		button.addEventListener('touchstart', startTimer);
 		button.addEventListener('touchend', inputRelease);
 		button.addEventListener('touchcancel', clearTimer);
@@ -367,7 +368,7 @@ class JNodesUtilities {
 
 	simulateDrag(element, startX, startY, endX, endY) {
 		// Dispatch mousedown event at the starting position
-		let mousedownEvent = new MouseEvent('mousedown', {
+		let mousedownEvent = new MouseEvent("pointerdown", {
 			bubbles: true,
 			cancelable: true,
 			clientX: startX,
@@ -376,7 +377,7 @@ class JNodesUtilities {
 		element.dispatchEvent(mousedownEvent);
 	
 		// Dispatch mousemove event to simulate dragging
-		let mousemoveEvent = new MouseEvent('mousemove', {
+		let mousemoveEvent = new MouseEvent("pointermove", {
 			bubbles: true,
 			cancelable: true,
 			clientX: endX,
@@ -385,7 +386,7 @@ class JNodesUtilities {
 		document.dispatchEvent(mousemoveEvent);
 	
 		// Dispatch mouseup event to release the drag
-		let mouseupEvent = new MouseEvent('mouseup', {
+		let mouseupEvent = new MouseEvent("pointerup", {
 			bubbles: true,
 			cancelable: true
 		});
