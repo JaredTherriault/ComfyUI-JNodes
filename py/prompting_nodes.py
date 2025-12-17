@@ -235,7 +235,10 @@ class ParseWildcards:
                 "mode": (["seed", "index"],),
                 "seed": ("INT", {"default": 0, "max": 0xffffffffffffffff}),
                 "use_same_seed_for_multiple_occurrences": ("BOOLEAN", {"default":False}),
-        }
+        },
+            "optional": {
+                "inline_wildcards": ("STRING", {"multiline": True, "tooltip": "A list of variable=value pairs, separated by newlines. For example, one line could say 'subject=1girl' and the next line could say 'action=jumping rope'. Then your prompt '__subject__ is __action__' will be replaced with '1girl is jumping rope'."}),
+            }
     }
 
     RETURN_TYPES = ("STRING",)
@@ -279,7 +282,7 @@ class ParseWildcards:
 
     def parse_wildcards(
             self, text: str, absolute_path_to_wildcards_directory: str, 
-            mode, seed, use_same_seed_for_multiple_occurrences):
+            mode, seed, use_same_seed_for_multiple_occurrences, inline_wildcards=None):
         
         """
         Takes in a string with wildcard notation, e.g. "My hair is __HairColors__"
@@ -304,23 +307,43 @@ class ParseWildcards:
         subsequent occurrence of the same wildcard. For example, two instances of "__HairColors__" 
         might both return "brown" if True, or "brown" and "blonde" if False. Note that deterministic results
         are not possible when this option is set to False and there are multiple similar wildcards in the input text.
-        
+
+        "inline_wildcards" is a list of variable=value pairs, separated by newlines. 
+        For example, one line could say 'subject=1girl' and the next line could say 'action=jumping rope'. 
+        Then your prompt '__subject__ is __action__' will be replaced with '1girl is jumping rope'."}),
+
         Returns the original string with wildcards replaced. 
         """
         
+        # 1️⃣ Read files from directory
         files, folders_all = folder_paths.recursive_search(absolute_path_to_wildcards_directory)
-        
         previously_found_wildcards = []
 
+        # 2️⃣ Parse inline wildcards into a dict
+        inline_dict = {}
+        if inline_wildcards:
+            for line in inline_wildcards.strip().splitlines():
+                line = line.strip()
+                if not line or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)  # only split on the first '='
+                inline_dict[key.strip()] = value.strip()
+
+        # 3️⃣ Replace wildcards
         re_match = self.find_match(text)
         while re_match is not None:
-            group = re_match.group(0)
+            group = re_match.group(0)  # e.g. "__subject__"
             wildcard_name = group[2:len(group) - 2]
             wildcard_filename = wildcard_name.replace("\\", "/") + ".txt"
-            
-            if wildcard_filename in files:
+
+            # 4️⃣ Check for inline wildcard first
+            if wildcard_name in inline_dict:
+                wildcard_replacement_text = inline_dict[wildcard_name]
+                text = self.replace_first_occurrence(text, group, wildcard_replacement_text)
+
+            # 5️⃣ Then check for file-based wildcard
+            elif wildcard_filename in files:
                 seed_to_use = seed
-                
                 if not use_same_seed_for_multiple_occurrences:
                     if wildcard_name in previously_found_wildcards:
                         seed_to_use = return_random_int(0)
@@ -331,13 +354,14 @@ class ParseWildcards:
                     os.path.join(
                         absolute_path_to_wildcards_directory, wildcard_filename), 
                     mode, seed_to_use)
-                
+
                 text = self.replace_first_occurrence(text, group, wildcard_replacement_text)
+
+            # 6️⃣ If not found, remove it (avoid infinite loop)
             else:
-                print(f"Wildcard file not found for {group}")
-                # Remove the wilcard from the output text so it doesn't get continuously evaluated
+                print(f"Wildcard not found for {group}")
                 text = self.replace_first_occurrence(text, group, "")
-            
+
             re_match = self.find_match(text)
 
         return (text.strip(),)
