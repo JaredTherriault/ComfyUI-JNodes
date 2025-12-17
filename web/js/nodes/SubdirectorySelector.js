@@ -77,9 +77,7 @@ app.registerExtension({
 						"none",
 						(value, graphCanvas, affectedNode, pos, event) => {
 
-							if (value !== "none") {
-								node.rebuildWidgets();
-							}
+							node.rebuildWidgets();
 						},
 						{ values: newValues }
 					);
