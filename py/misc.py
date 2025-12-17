@@ -1,5 +1,6 @@
 import os
 
+import torch
 import folder_paths
 from .logger import logger
 from .utils import any, AnyType, get_clean_filename, get_leaf_directory
@@ -147,6 +148,29 @@ class GetLeafDirectory:
     def get_string(self, path):
         return (get_leaf_directory(path),)
 
+class EmptyCudaCache:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "passthrough": (any,),
+            },
+    }
+
+    RETURN_TYPES = (any,)
+    FUNCTION = "func"
+
+    def func(self, passthrough):
+
+        torch.cuda.empty_cache()
+
+        return (passthrough,)
+
+    @classmethod
+    def IS_CHANGED(s, passthrough):
+
+        return True
+
 NODE_CLASS_MAPPINGS = {
     
     "JNodes_GetTempDirectory": GetTempDirectory,
@@ -161,6 +185,7 @@ NODE_CLASS_MAPPINGS = {
     "JNodes_AnyToString" : AnyToString,
     "JNodes_GetCleanFilename": GetCleanFilename,
     "JNodes_GetLeafDirectory": GetLeafDirectory,
+    "JNodes_EmptyCudaCache": EmptyCudaCache,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -177,5 +202,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "JNodes_AnyToString" : "Anything To String",
     "JNodes_GetCleanFilename": "Get Clean Filename",
     "JNodes_GetLeafDirectory": "Get Leaf Directory",
+    "JNodes_EmptyCudaCache": "Empty Cuda Cache",
 
 }
