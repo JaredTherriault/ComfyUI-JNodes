@@ -230,7 +230,7 @@ def process_acceptable_item(item, current_subdirectory, full_path):
     file_size = os.path.getsize(full_path)
     dimensions = [0, 0]
     is_video_item = is_video(item)
-    file_age = os.path.getctime(full_path)
+    file_age = get_creation_time(full_path)
     frame_count = -1
     fps = -1
 
