@@ -4,12 +4,35 @@ import { utilitiesInstance } from "./Utilities.js";
 import { setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
 import * as VideoControl from './VideoControl.js';
 
+// Canvas movement event
+
+let lastOffset = [0, 0];
+
+function determineIfCanvasMoved() {
+    const current = app?.canvas?.ds.offset;
+    if (!current) return;
+
+    if (current[0] !== lastOffset[0] || current[1] !== lastOffset[1]) {
+        lastOffset = [...current];
+
+        // Dispatch event
+        const ev = new CustomEvent("canvasMoved", {
+            detail: { offset: current }
+        });
+
+        window.dispatchEvent(ev);
+    }
+}
+
 // Mouse tracking
 
 let lastMouseX = 0;
 let lastMouseY = 0;
 
-document.addEventListener("mousemove", (event) => {
+window.addEventListener("pointermove", (event) => {
+
+	determineIfCanvasMoved();
+
 	lastMouseX = event.clientX;
 	lastMouseY = event.clientY;
 });
@@ -29,7 +52,7 @@ export function getElementUnderPointer() {
 
 export function simulateMouseClickAtPoint(x, y) {
 	// Create the synthetic mouse event
-	const event = new MouseEvent('mousedown', {
+	const event = new MouseEvent("pointerdown", {
 		view: window,
 		bubbles: true,
 		cancelable: true,
