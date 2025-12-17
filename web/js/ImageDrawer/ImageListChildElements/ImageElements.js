@@ -96,7 +96,7 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 	const img = $el(bIsVideoFormat ? "video" : "img", {
 		// Store the image source as a data attribute for easy access
 		dataSrc: href,
-		preload: "metadata",
+		preload: fileInfo.bShouldForceLoad ? "auto" : "metadata",
 		lastSeekTime: 0.0,
 		style: {
 			transition: "100ms",
@@ -210,7 +210,7 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 		if (!imageElement.bHasEverMousedOver) {
 			imageElement.addEventListener("pointerleave", (event) => {
 
-				ImageElementUtils.imageElementMouseOutEvent(event, imageElement);
+				ImageElementUtils.imageElementMouseLeaveEvent(event, imageElement);
 			});
 
 			imageElement.draggable = true;
