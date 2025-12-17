@@ -102,7 +102,7 @@ export function imageElementMouseOverEvent(event, imageElement) {
     // If mouseOver was called without the previous imageElement having mouseOut called on it, manually call it
     if (currentMousedOverImageElement && currentMousedOverImageElement != imageElement) {
 
-        imageElementMouseOutEvent(event, currentMousedOverImageElement);
+        imageElementMouseLeaveEvent(event, currentMousedOverImageElement);
     }
 
     // Only show tooltip if a mouse button is not being held
@@ -116,19 +116,15 @@ export function imageElementMouseOverEvent(event, imageElement) {
     }
 }
 
-export function imageElementMouseOutEvent(event, imageElement) {
+export function imageElementMouseLeaveEvent(event, imageElement) {
     if (!event) { return; }
 
     hideToolTip();
 
-    // If the new actively moused over element is not a child of imageElement, then hide the button
-    if (!imageElement.contains(event.relatedTarget)) {
-
-        removeAndHideToolButtonFromImageElement(imageElement);
-        hideImageElementCheckboxSelector(imageElement);
-        currentMousedOverImageElement = null;
-        imageElement.img.style.pointerEvents = "none";
-    }
+    removeAndHideToolButtonFromImageElement(imageElement);
+    hideImageElementCheckboxSelector(imageElement);
+    currentMousedOverImageElement = null;
+    imageElement.img.style.pointerEvents = "none";
 }
 
 export function getOrCreateToolButton(imageElementToUse) {
