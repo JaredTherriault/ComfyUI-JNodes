@@ -154,7 +154,10 @@ class ImageDrawerListSorting extends ImageDrawerComponent {
 
 	onOptionSelected(option) {
 
-		const newType = this.getSortTypeObjectFromName(option);
+		const newType = typeof option === 'object' && option !== null ? 
+			this.getSortTypeObjectFromClassName(option.name, option.bIsAscending) : 
+			this.getSortTypeObjectFromName(option);		
+		
 		newType.sortImageList();
 
 		if (newType instanceof SortTypes.SortTypeShuffle) {
