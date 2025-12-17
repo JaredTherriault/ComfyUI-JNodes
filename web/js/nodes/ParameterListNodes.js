@@ -4,7 +4,7 @@ const get_param_node_helpers = {
 	name: 'JNodes.get_param_node_helpers',
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
 
-		if (nodeData.name == "JNodes_GetParameterGlobal" || nodeData.name == "JNodes_GetParameterFromList") {
+		if (nodeData.name == "JNodes_GetParameterFromTable" || nodeData.name == "JNodes_GetParameterFromList") {
 
 			nodeType.prototype.onAdded = function() {
 				if (this.widgets) {
