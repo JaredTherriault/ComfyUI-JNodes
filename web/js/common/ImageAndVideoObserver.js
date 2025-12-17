@@ -55,56 +55,60 @@ export function unobserveVisualElement(element) {
 	imageAndVideoObserver.unobserve(element);
 }
 
+const UNLOAD_DELAY_MS = 500; // Wait 0.5s before unloading, avoids flashing when DOM changes
+const unloadTimeouts = new WeakMap();
+
 const imageAndVideoObserver = new IntersectionObserver((entries) => {
-	entries.forEach(async entry => {
+    entries.forEach(async entry => {
+        const element = entry.target;
+        if (!element) {
+            unobserveVisualElement(element);
+            return;
+        }
 
-		const element = entry.target;
+        // If it’s visible
+        if (entry.isIntersecting) {
+            // Cancel any pending unload
+            const timeout = unloadTimeouts.get(element);
+            if (timeout) {
+                clearTimeout(timeout);
+                unloadTimeouts.delete(element);
+            }
 
-		if (!element) {
-			unobserveVisualElement(element);
-			return;
-		}
-		// Check if the video is intersecting with the viewport
-		if (entry.isIntersecting) {
+            // Handle intersecting
+            if (element.onObserverIntersect) {
+                element.onObserverIntersect();
+            } else if (!element.src || element.src === '') {
+                if (element.forceLoad) element.forceLoad();
+            }
 
-			if (element.onObserverIntersect) {
-				element.onObserverIntersect();
-			}
-			else if (!element.src || element.src === '') {
+            if (element.tagName === 'VIDEO' && setting_VideoPlaybackOptions.value.autoplay) {
+                tryPlayVideo(element);
+            }
 
-				if (element.forceLoad) {
-					element.forceLoad();
-				}
-				
-				if (element.tagName !== 'VIDEO') {
-					unobserveVisualElement(element);
-					return;
-				}
-			}
+        } else {
+            // Not visible — schedule unload
+            if (element.onObserverUnintersect) {
+                element.onObserverUnintersect();
+            } else if (element.tagName === 'VIDEO') {
+                // Debounce unloading to prevent flicker when DOM changes
+                const timeout = setTimeout(() => {
+                    tryStopVideo(element);
+                    if (element.currentTime) {
+                        element.lastSeekTime = element.currentTime;
+                    }
 
-			if (setting_VideoPlaybackOptions.value.autoplay) {
-				tryPlayVideo(element);
-			}
-		} else {
+                    if ('src' in element) {
+                        element.removeAttribute('src'); // unload
+                        try {
+                            if (element.load) { element.load(); } // release memory
+                        } catch { }
+                    }
+                    unloadTimeouts.delete(element);
+                }, UNLOAD_DELAY_MS);
 
-			if (element.onObserverUnintersect) {
-				element.onObserverUnintersect();
-			}
-			else if (element.tagName === 'VIDEO') {
-				// Pause the video if it's not intersecting with the viewport
-				tryStopVideo(element);
-
-				if (element.currentTime) {
-					element.lastSeekTime = element.currentTime;
-				}
-
-				if ('src' in element) {
-					element.removeAttribute('src'); // Unload unobserved videos
-					try {
-						if (element.load) { element.load(); } // Release memory
-					} catch { }
-				}
-			}
-		}
-	});
+                unloadTimeouts.set(element, timeout);
+            }
+        }
+    });
 }, { threshold: observerOptions.playbackThreshold });
