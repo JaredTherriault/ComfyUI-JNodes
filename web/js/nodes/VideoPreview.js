@@ -18,39 +18,6 @@ const StillImageTypes = [
 
 export const AcceptableFileTypes = VideoTypes.concat(AnimatedImagetypes, StillImageTypes);
 
-function offsetDOMWidget(
-	widget,
-	ctx,
-	node,
-	widgetWidth,
-	widgetY,
-	height
-) {
-	const margin = 10
-	const elRect = ctx.canvas.getBoundingClientRect()
-	const transform = new DOMMatrix()
-		.scaleSelf(
-			elRect.width / ctx.canvas.width,
-			elRect.height / ctx.canvas.height
-		)
-		.multiplySelf(ctx.getTransform())
-		.translateSelf(0, widgetY + margin)
-
-	const scale = new DOMMatrix().scaleSelf(transform.a, transform.d)
-	Object.assign(widget.inputEl.style, {
-		transformOrigin: '0 0',
-		transform: scale,
-		left: `${transform.e}px`,
-		top: `${transform.d + transform.f}px`,
-		width: `${widgetWidth}px`,
-		height: `${(height || widget.parent?.inputHeight || 32) - margin}px`,
-		position: 'absolute',
-		background: !node.color ? '' : node.color,
-		color: !node.color ? '' : 'white',
-		zIndex: 5, //app.graph._nodes.indexOf(node),
-	})
-}
-
 export const hasWidgets = (node) => {
 	if (!node.widgets || !node.widgets?.[Symbol.iterator]) {
 		return false
@@ -58,24 +25,31 @@ export const hasWidgets = (node) => {
 	return true
 }
 
-export const cleanupNode = (node) => {
-	if (!hasWidgets(node)) {
-		return
-	}
-
-	for (const w of node.widgets) {
-		if (w.canvas) {
-			w.canvas.remove()
-		}
-		if (w.inputEl) {
-			w.inputEl.remove()
-		}
-		// calls the widget remove callback
-		w.onRemoved?.()
-	}
-}
-
 const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => {
+
+	let container = $el("div", {
+		style: {
+			display: "flex",
+			flexDirection: "column",
+			alignItems: "center",
+			draggable: false,
+			maxHeight: "100%",
+			position: "absolute",
+			width: "0px",
+		}
+	});
+
+    function setIsVisible(bNewSetting) {
+        container.style.display = bNewSetting ? "flex" : "none";
+    }
+
+    function cleanupNode() {
+
+        if (container) {
+            container.remove();
+        }
+    }
+
 	const [type] = format.split('/');
 	const widget = {
 		name,
@@ -84,9 +58,16 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 		draw: function (ctx, node, widgetWidth, widgetY, height) {
 			//update widget position, hide if off-screen
 			const transform = ctx.getTransform();
-			const scale = app.canvas.ds.scale;//gets the litegraph zoom
 			//calculate coordinates with account for browser zoom
         	const bcr = app.canvas.canvas.getBoundingClientRect()
+
+			const ds = app.canvas.ds;
+			const scale = ds.scale; // gets the litegraph zoom
+
+			// As other events can set the element invisible, 
+			// we must set it visible explicitly every draw call
+			setIsVisible(true);
+
 			const x = transform.e * scale / transform.a + bcr.x;
 			const y = transform.f * scale / transform.a + bcr.y;
 
@@ -100,7 +81,6 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 				width: ((widgetWidth - 30) * scale) + "px",
 				zIndex: 2 + (node.is_selected ? 1 : 0),
 			});
-			this._boundingCount = 0;
 
 			// Fit node once everything has been loaded in and displayed
 			if (!this.inputEl.bHasAutoResized) {
@@ -118,10 +98,10 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 			return [width, -4];//no loaded src, widget should not display
 		},
 		onRemoved: function () {
-			if (this.inputEl) {
-				this.inputEl.remove();
-			}
+			cleanupNode();
 		},
+        setIsVisible,
+        cleanupNode,
 	}
 
 	function fitNode() {
@@ -148,18 +128,6 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 			return false;
 		}
 	}
-
-	let container = $el("div", {
-		style: {
-			display: "flex",
-			flexDirection: "column",
-			alignItems: "center",
-			draggable: false,
-			maxHeight: "100%",
-			position: "absolute",
-			width: "0px",
-		}
-	});
 
 	const bIsVideo = type === 'video';
 
@@ -210,6 +178,8 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 		}
 	}
 
+	let currentInfo = null;
+
 	if (displayData && Object.keys(displayData).length > 0) {
 		// Set immediately
 		setInfoTextFromDisplayData(displayData);
@@ -236,40 +206,39 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 				constructAndDisplayData(displayData);
 			});
 		}
-	}
 
-	let currentInfo = null;
+		// Good for all videos
+		if (bIsVideo) {
 
-	// Good for all videos
-	if (bIsVideo) {
+			mediaElement.muted = true;
+			mediaElement.autoplay = true
+			mediaElement.loop = true
+			mediaElement.controls = true;
 
-		mediaElement.muted = true;
-		mediaElement.autoplay = true
-		mediaElement.loop = true
-		mediaElement.controls = true;
+			// Function to update the label text dynamically
+			container.updateCurrentInfo = function () {
+				// Update the text content of CurrentInfo based on updated currentTime and fps
+				if (mediaElement.currentTime) {
+					currentInfo.textContent = `Current Time: ${mediaElement.currentTime.toFixed(0)}`;
+					// console.log(currentInfo.textContent);
 
-		// Function to update the label text dynamically
-		container.updateCurrentInfo = function () {
-			// Update the text content of CurrentInfo based on updated currentTime and fps
-			if (mediaElement.currentTime) {
-				currentInfo.textContent = `Current Time: ${mediaElement.currentTime.toFixed(0)}`;
+					let fps = displayData?.FramesPerSecond;
 
-				let fps = displayData?.FramesPerSecond;
-
-				if (fps) {
-					const currentFrame = mediaElement.currentTime * fps;
-					currentInfo.textContent += ` Current Frame: ${currentFrame.toFixed(0)}`;
+					if (fps) {
+						const currentFrame = mediaElement.currentTime * fps;
+						currentInfo.textContent += ` Current Frame: ${currentFrame.toFixed(0)}`;
+					}
 				}
 			}
+
+			currentInfo = $el("label", {
+				textContent: "Current Time: 0",
+			});
+			container.appendChild(currentInfo);
+
+			// Attach an event listener to the MediaElement to trigger updates on time change
+			mediaElement.addEventListener("timeupdate", container.updateCurrentInfo);
 		}
-
-		currentInfo = $el("label", {
-			textContent: "Current Time: 0",
-		});
-		container.appendChild(currentInfo);
-
-		// Attach an event listener to the MediaElement to trigger updates on time change
-		mediaElement.addEventListener("timeupdate", container.updateCurrentInfo);
 	}
 
 	function setFontSizesBasedOnCanvasScale() {
@@ -307,6 +276,58 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 
 	document.body.appendChild(widget.inputEl);
 
+    // When entering/exiting subgraph
+    app.canvas.canvas.addEventListener('litegraph:set-graph', ()=>{
+        if (widget) {
+            widget.setIsVisible(false);
+        }
+    });
+
+    // On Changes to graph
+    const original_beforeChange = app.graph.beforeChange
+    app.graph.beforeChange = function () {
+        if (widget) {
+            widget.setIsVisible(false);
+        }
+        original_beforeChange?.apply(this, arguments)
+    }
+
+    const original_afterChange = app.graph.afterChange
+    app.graph.afterChange = function () {
+        original_afterChange?.apply(this, arguments)
+        if (widget) {
+            widget.setIsVisible(false);
+        }  // afterChange gets called without a beforeChange sometimes
+    }
+    
+    // When a subgraph is made containing this node
+    const original_subgraph = app.graph.convertToSubgraph
+    app.graph.convertToSubgraph = function (nodes) {
+        if (node && nodes.has(node)) {
+            if (widget) {
+                widget.cleanupNode();
+            }
+        }
+        const r = original_subgraph.apply(this, arguments);
+        return r;
+    };
+
+    // Canvas movement events
+    window.addEventListener("canvasMoved", (e) => {
+        if (widget) {
+            widget.setIsVisible(false);
+        }
+    });
+
+    window.addEventListener("pointerdown", (e) => {
+        if (widget) {
+            if (widget.inputEl.contains(e.target)) {
+                return; // ignore clicks inside the widget
+            }
+            widget.setIsVisible(false);
+        }
+    });
+
 	// Set src to JNodes href if available, otherwise use constructed src
 	if (jnodesPayload?.href) {
 		mediaElement.src = jnodesPayload.href;
@@ -343,17 +364,17 @@ const mediaPreview = {
 								const previewUrl = api.apiURL(
 									'/view?' + new URLSearchParams(params).toString()
 								)
-								const w = node.addCustomWidget(
-									CreatePreviewElement(`${prefix}_${i}`, previewUrl, params.format || 'image/webp', node)
-								)
+								node.previewElement = CreatePreviewElement(`${prefix}_${0}`, previewUrl, params.format, node);
+
+								const w = node.addCustomWidget(node.previewElement);
 								node.setSizeForimage?.();
 							})
 						}
 					}
-					const onRemoved = node.onRemoved
+					const onRemoved = node.onRemoved;
 					node.onRemoved = () => {
-						cleanupNode(node)
-						return onRemoved?.()
+						node.previewElement?.cleanupNode(node);
+						return onRemoved?.();
 					};
 
 					return r;
@@ -407,15 +428,15 @@ const mediaPreview = {
 								break;
 							}
 						}
-						const newWidget = ThisNode.addCustomWidget(
-							CreatePreviewElement(`${prefix}_${0}`, previewUrl, format, ThisNode, JnodesPayload)
-						);
+						ThisNode.previewElement = CreatePreviewElement(`${prefix}_${0}`, previewUrl, format, ThisNode, JnodesPayload);
+
+						const newWidget = ThisNode.addCustomWidget(ThisNode.previewElement);
 						ThisNode.setSizeForimage?.();
 					}
 
 					const onRemoved = ThisNode.onRemoved;
 					ThisNode.onRemoved = () => {
-						cleanupNode(ThisNode);
+						ThisNode.previewElement?.cleanupNode(ThisNode);
 						return onRemoved?.();
 					};
 				}
