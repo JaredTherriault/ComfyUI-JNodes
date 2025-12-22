@@ -51,6 +51,10 @@ async def request_open_file_manager_wrapper(request):
 async def request_task_cancellation_wrapper(request):
     return request_task_cancellation(request)
 
+@server.PromptServer.instance.routes.post('/jnodes_find_files')
+async def find_files_wrapper(request):
+    return await find_files(request)
+
 @server.PromptServer.instance.routes.post('/jnodes_save_text')
 async def save_text_wrapper(request):
     return await save_text(request)
