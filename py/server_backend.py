@@ -18,6 +18,8 @@ import shutil
 
 from safetensors import safe_open
 
+from pathlib import Path
+
 CANCELLATION_REQUESTED = False
 
 def should_cancel_task():
@@ -611,20 +613,69 @@ def load_info(request):
 
     return web.Response(status=404)
 
+async def find_files(request):
+    try:
+        request_data = await read_web_request_content(request.content)
+        request_json = json.loads(request_data)
+
+        # Extract base path
+        path = None
+        if "path" in request_json:
+            path = Path(resolve_file_path(request_json["path"]))
+
+        if not path or not os.path.isdir(path):
+            return web.json_response({"success": False, "error": "Invalid or missing directory path"})
+
+        # Optional flags
+        recursive = bool(request_json.get("recursive", False))
+        absolute = bool(request_json.get("absolute", False))
+        extension = request_json.get("extension", "")
+
+        if extension and not extension.startswith("."):
+            extension = "." + extension
+
+        # Build file list
+        if recursive:
+            iterator = path.rglob("*")
+        else:
+            iterator = path.iterdir()
+
+        files = []
+        for f in iterator:
+            if f.is_file() and (f.suffix == extension if extension else True):
+                if absolute:
+                    files.append(str(f.resolve()))
+                else:
+                    files.append(str(f.relative_to(path)))
+
+        return web.json_response({"success": True, "files": files})
+
+    except Exception as e:
+        log_exception("Error finding files:", e)
+        return web.json_response({"success": False, "error": str(e)})
+
 async def save_text(request):
     try:
         request_data = await read_web_request_content(request.content)
         request_json = json.loads(request_data)
+
+        path = None
+        text_to_save = None
+
         if "path" in request_json:
-            path = resolve_file_path(request_json["path"])
+            path = Path(resolve_file_path(request_json["path"]))
+
         if "text" in request_json:
             text_to_save = request_json["text"]
-            
+
         if path and text_to_save:
-            with open(path, 'w', encoding='utf-8') as file:
-                file.write(text_to_save)
-    
+            # 🔹 ensure parent directories exist
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+            path.write_text(text_to_save, encoding="utf-8")
+
             return web.json_response({"success": True})
+
     except Exception as e:
         log_exception("Error saving text:", e)
         return web.json_response({"success": False, "error": str(e)})

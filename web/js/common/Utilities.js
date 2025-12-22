@@ -60,6 +60,85 @@ class JNodesUtilities {
 		});
 	}
 
+	/**
+	 * Creates a slider-style toggle
+	 * @param {Function} onCallback - function to call when toggled ON
+	 * @param {Function} offCallback - function to call when toggled OFF
+	 * @param {Object} [options] - optional settings (width, height, colors)
+	 * @returns {HTMLElement} - the toggle element
+	 */
+	createSliderToggle(onCallback, offCallback, options = {}) {
+		const width = options.width || 50;
+		const height = options.height || 24;
+		const onColor = options.onColor || "#4caf50";
+		const offColor = options.offColor || "#ccc";
+		const knobSize = options.knobSize || height - 6;
+
+		// Container
+		const container = document.createElement("div");
+		container.style.position = "relative";
+		container.style.width = width + "px";
+		container.style.height = height + "px";
+		container.style.borderRadius = height + "px";
+		container.style.backgroundColor = offColor;
+		container.style.cursor = "pointer";
+		container.style.transition = "background-color 0.4s";
+
+		container.bIsOn = false;
+
+		// Knob
+		const knob = document.createElement("div");
+		knob.style.position = "absolute";
+		knob.style.height = knobSize + "px";
+		knob.style.width = knobSize + "px";
+		knob.style.left = "3px";
+		knob.style.top = "3px";
+		knob.style.borderRadius = "50%";
+		knob.style.backgroundColor = "#fff";
+		knob.style.transition = "transform 0.4s";
+
+		// Toggle handler
+		container.addEventListener("click", () => {
+			container.bIsOn = !container.bIsOn;
+			if (container.bIsOn) {
+				knob.style.transform = `translateX(${width - knobSize - 6}px)`;
+				container.style.backgroundColor = onColor;
+				if (typeof onCallback === "function") onCallback();
+			} else {
+				knob.style.transform = "translateX(0)";
+				container.style.backgroundColor = offColor;
+				if (typeof offCallback === "function") offCallback();
+			}
+		});
+
+		container.appendChild(knob);
+		return container;
+	}
+
+	getTimestamp(format = 'full') {
+		const now = new Date();
+
+		const year = now.getFullYear();
+		const month = String(now.getMonth() + 1).padStart(2, '0');
+		const day = String(now.getDate()).padStart(2, '0');
+		const hours = String(now.getHours()).padStart(2, '0');
+		const minutes = String(now.getMinutes()).padStart(2, '0');
+		const seconds = String(now.getSeconds()).padStart(2, '0');
+		const ms = String(now.getMilliseconds()).padStart(3, '0');
+
+		switch(format) {
+			case 'date':      // Only YYYY-MM-DD
+				return `${year}-${month}-${day}`;
+			case 'time':      // Only HH-MM-SS-mmm
+				return `${hours}-${minutes}-${seconds}-${ms}`;
+			case 'datetime':  // YYYY-MM-DDTHH-MM-SS
+				return `${year}-${month}-${day}T${hours}-${minutes}-${seconds}`;
+			case 'full':      // YYYY-MM-DDTHH-MM-SS-mmm
+			default:
+				return `${year}-${month}-${day}T${hours}-${minutes}-${seconds}-${ms}`;
+		}
+	}
+
 	isLightgraphNodeOnscreen(node) {
 		if (!node || !node.pos) return false;
 

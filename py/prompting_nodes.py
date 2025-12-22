@@ -34,6 +34,29 @@ class SyncedStringLiteral:
     
     def get_string(self, path_to_synced_txt, input_text, serialize_input_text):
         return (input_text,)
+
+class TextManager:
+        
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "path_to_saved_prompts": ("STRING", {"default": 'JNodes/TextManager/default', "multiline": False}),
+                "new_prompt": ("STRING", {"default": "", "multiline": True})
+            },
+            "optional": {
+                "input_text": ("STRING", {"forceInput": True}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "get_string"
+
+    CATEGORY = "prompt"
+    
+    def get_string(self, path_to_saved_prompts, new_prompt, input_text = ""):
+        # Return input text and two newline if input text is valid, otherwise just the new prompt
+        return (f"{f"{input_text}\n\n" if input_text else ""}{new_prompt}",)
     
 class ParseDynamicPrompts:
     @classmethod
@@ -841,6 +864,7 @@ class SeparateStringByDelimiters:
 NODE_CLASS_MAPPINGS = {
     
     "JNodes_SyncedStringLiteral": SyncedStringLiteral,
+    "JNodes_TextManager": TextManager,
     "JNodes_ParseDynamicPrompts": ParseDynamicPrompts,
     "JNodes_RemoveCommentedText": RemoveCommentedText,
     "JNodes_SplitAndJoin": SplitAndJoin,
@@ -864,6 +888,7 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     
     "JNodes_SyncedStringLiteral": "Synced String Literal",
+    "JNodes_TextManager": "Text Manager",
     "JNodes_ParseDynamicPrompts": "Parse Dynamic Prompts",
     "JNodes_RemoveCommentedText": "Remove Commented Text",
     "JNodes_SplitAndJoin": "Split And Join",
