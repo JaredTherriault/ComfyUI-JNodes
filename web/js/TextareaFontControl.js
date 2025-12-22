@@ -8,27 +8,55 @@ class CustomizationConfigSetting extends ConfigSetting {
     }
 }
 
+export let setting_bEnabled = new CustomizationConfigSetting("MultilineText.Font.Enabled", false);
 export let setting_FontSize = new CustomizationConfigSetting("MultilineText.Font.Size", 80);
 export let setting_FontFamily = new CustomizationConfigSetting("MultilineText.Font.Family", 'monospace');
 
-function setTextAreaFontSize(textarea, size) {
-	textarea.style.fontSize = size.toString() + "%";
+function setFontSize(text, size) {
+	text.style.fontSize = size.toString() + "%";
 }
 
-function setTextAreaFontFamily(textarea, fontFamily) {
-	textarea.style.fontFamily = fontFamily;
+function setFontFamily(text, fontFamily) {
+	text.style.fontFamily = fontFamily;
 }
 
-function setFontOnGivenTextArea(textarea) {
-	setTextAreaFontSize(textarea,setting_FontSize.value);
-	setTextAreaFontFamily(textarea, setting_FontFamily.value);
+function setFontOnGivenElement(el, bForced = false) {
+    if (!el || !(el instanceof Element)) return;
+
+    if (!bForced && el.dataset?.jnodesFontApplied) return;
+    el.dataset.jnodesFontApplied = "true";
+
+    setFontSize(el, setting_FontSize.value);
+    setFontFamily(el, setting_FontFamily.value);
 }
 
-function setFontOnAllTextAreas() {
-	const textareas = document.querySelectorAll('textarea');
+function setFontOnAllTexts(bForced = false) {
+	loopOverCollection(document.children, bForced);
+}
 
-	for (const textarea of textareas) {
-		setFontOnGivenTextArea(textarea);
+function loopOverCollection(collection, bForced = false) {
+
+	if (!collection) { return; }
+
+	for (const node of collection) {
+
+		// Direct textarea
+		if (node.tagName === "TEXTAREA" ||
+			(node.tagName === "INPUT" && node.type === "text")) {
+			setFontOnGivenElement(node, bForced);
+		}
+
+		// Any text inside newly added subtree
+		const elements = node.querySelectorAll?.(
+			'textarea, input[type="text"]'
+		);
+		if (elements?.length) {
+			for (const element of elements) {
+				setFontOnGivenElement(element, bForced);
+			}
+		}
+
+		loopOverCollection(node.children, bForced);
 	}
 }
 
@@ -36,13 +64,43 @@ app.registerExtension({
 	name: "JNodes.Customization.MultilineText.Font",
 	async loadedGraphNode(node) {
 
+		if (!setting_bEnabled.value) { return; }
+
 		for (const wid in node.widgets) {
-			if (node.widgets[wid]?.element?.type == 'textarea') {
-				setFontOnGivenTextArea(node.widgets[wid]?.element);
+			const element = node.widgets[wid]?.element;
+
+			if (!element) { continue; }
+
+			if (element.tagName === "TEXTAREA" ||
+				(element.tagName === "INPUT" && element.type === "text")) {
+				setFontOnGivenElement(node);
 			}
 		}
 	},
 	async setup() {
+
+		// Font Control Enabled
+		{
+			const labelWidget = $el("label", {
+				textContent: "Text Font Control Enabled (requires page reload):",
+			});
+
+			const settingWidget = $el(
+				"input",
+				{
+					type: "checkbox",
+					checked: setting_bEnabled.value,
+					oninput: (e) => {
+						setting_bEnabled.value = e.target.checked;
+					},
+				},
+			);
+
+			const tooltip =
+				"Whether to affect font typeface and size used in text boxes. " + 
+				"Requires page reload.";
+			addJNodesSetting(labelWidget, settingWidget, tooltip);
+		}
 
 		// Font Family Setting
 		{
@@ -52,7 +110,7 @@ app.registerExtension({
 				];
 
 			const labelWidget = $el("label", {
-				textContent: "Multiline Text Font Family:",
+				textContent: "Text Font Family:",
 			});
 
 			const settingWidget = $el(
@@ -60,7 +118,7 @@ app.registerExtension({
 				{
 					oninput: (e) => {
 						setting_FontFamily.value = e.target.value;
-						setFontOnAllTextAreas();
+						setFontOnAllTexts(true /* bForced */);
 					},
 				},
 				supportedTypefaces.map((m) =>
@@ -73,14 +131,14 @@ app.registerExtension({
 			);
 
 			const tooltip =
-				"The font typeface to use for multiline text boxes";
+				"The font typeface to use for text boxes";
 			addJNodesSetting(labelWidget, settingWidget, tooltip);
 		}
 
 		// Font Size Setting
 		{
 			const labelWidget = $el("label", {
-				textContent: "Multiline Text Font Size (%):",
+				textContent: "Text Font Size (%):",
 			});
 
 			const settingWidget = $el("input", {
@@ -91,13 +149,32 @@ app.registerExtension({
 					let value = e.target.valueAsNumber;
 					if (value <= 1.0) { value = 1.0; }
 					setting_FontSize.value = value;
-					setFontOnAllTextAreas();
+					setFontOnAllTexts(true /* bForced */);
 				},
 			});
 
 			const tooltip =
-				"The font size (expressed as a percentage) to use for multiline text boxes";
+				"The font size (expressed as a percentage) to use for text boxes";
 			addJNodesSetting(labelWidget, settingWidget, tooltip);
 		}
+
+		function observeNewTextAreas() {
+
+			const observer = new MutationObserver((mutations) => {
+				for (const mutation of mutations) {
+
+					loopOverCollection(mutation.addedNodes);
+				}
+			});
+
+			observer.observe(document.body, {
+				childList: true,
+				subtree: true,
+			});
+		}
+
+		if (!setting_bEnabled.value) { return; }
+
+		observeNewTextAreas();
 	}
 });
