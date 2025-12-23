@@ -673,16 +673,6 @@ function createScrollingContainerWidget(node, title = "Container") {
         const filter = searchInstance.getSearchText();
         searchInstance.executeSearch(filter);
     });
-    
-    // When a subgraph is made containing this node
-    // const original_subgraph = app.graph.convertToSubgraph
-    // app.graph.convertToSubgraph = function (nodes) {
-    //     if (node && nodes.has(node)) {
-    //         cleanupNode();
-    //     }
-    //     const r = original_subgraph.apply(this, arguments);
-    //     return r;
-    // };
 
     return container;
 };
@@ -891,33 +881,6 @@ app.registerExtension({
             nodePrototype.onConfigure = function () {
 
                 this.reloadTexts(this.starting_path_widget.value);
-
-			// 	if (!this.textWidget) {
-			// 		console.error("textWidget is not defined");
-			// 		return;
-			// 	}
-
-			// 	if (caches[this.id]) { // If cache exists, restore then delete it
-			// 		this.textWidget.value = caches[this.id];
-			// 		delete caches[this.id];
-			// 	} else { // Otherwise load directly from file
-			// 		if (this.pathWidget && this.pathWidget.value) {
-			// 			try {
-			// 				// Load text from the file specified by pathWidget's value
-			// 				loadText(this.pathWidget.value, this.textWidget, false);
-			// 			} catch (error) {
-			// 				console.error("Failed to load text from file:", error);
-			// 			}
-			// 		} else {
-			// 			console.warn("pathWidget is not defined or has no value");
-			// 		}
-			// 	}
-			// };
-
-			// nodePrototype.onSerialize = function (o) {
-			// 	if (this.serializeToggleWidget && this.serializeToggleWidget.value == false) {
-			// 		o.widgets_values[0] = ''; // Remove string since it should be coming from the synced txt
-				// }
 			};
 		}
 	}
