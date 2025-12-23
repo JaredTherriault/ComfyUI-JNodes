@@ -5,7 +5,7 @@ import {$el} from "/scripts/ui.js";
 
 // Node that loads and saves texts with concatenation, favorites, and live edits
 
-let containerHeightPercentage = 0.8;
+const containerHeightPercentage = 0.8;
 
 // Sanitize string for filename 
 function slugify(str) {
@@ -720,29 +720,17 @@ app.registerExtension({
                 // Create our list widget
                 this.scrollWidget = createScrollingContainerWidget(node, "Texts List");
 
-                // Create an outer container element for custom DOM widget
-                var element = document.createElement("div");
-
-                // Create a LiteGraph DOM widget that wraps our root DOM element
-                var mainWidget = this.addDOMWidget("textlist", "textlist", element, {
-                    serialize: false,
-                    hideOnZoom: false,
-                });
+                const mainWidget = utilitiesInstance.addComfyNodeWidget(
+                    node, this.scrollWidget, "textlist", "textlist", {
+                        serialize: false,
+                        hideOnZoom: false,
+                    });
                 mainWidget.computeSize = function(width) {
 
                     const computedHeight = node.size[1] * containerHeightPercentage; // Percentage of node height
 
                     return [width, computedHeight ?? 300];
                 };
-
-                // Create parent container for our custom DOM element
-                mainWidget.parentEl = document.createElement("div");
-
-                // Manually attach the widget’s parent container inside our root element
-                element.appendChild(mainWidget.parentEl);
-
-                // Add list widget to custom DOM's container
-                mainWidget.parentEl.appendChild(this.scrollWidget);
 
                 this.observer = new IntersectionObserver(
                     (entries) => {
