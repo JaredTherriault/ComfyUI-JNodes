@@ -18,11 +18,24 @@ const StillImageTypes = [
 
 export const AcceptableFileTypes = VideoTypes.concat(AnimatedImagetypes, StillImageTypes);
 
+const containerHeightPercentage = 0.7;
+
 export const hasWidgets = (node) => {
 	if (!node.widgets || !node.widgets?.[Symbol.iterator]) {
 		return false
 	}
 	return true
+}
+
+function getLabelHeight(label) {
+	if (!label || label.style.display === "none") return 0;
+	return label.getBoundingClientRect().height;
+}
+
+function fitHeight(node) {
+    node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]])
+
+    node?.graph?.setDirtyCanvas(true);
 }
 
 const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => {
@@ -35,121 +48,71 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 			draggable: false,
 			maxHeight: "100%",
 			position: "absolute",
-			width: "0px",
+			width: "100%",
 		}
 	});
 
     function setIsVisible(bNewSetting) {
-        container.style.display = bNewSetting ? "flex" : "none";
+        container.style.opacity = bNewSetting ? "1" : "0";
+        container.style.pointerEvents = bNewSetting ? "auto" : "none";
     }
+    container.setIsVisible = setIsVisible;
 
-    function cleanupNode() {
+	container.rebuildMediaElement = (bIsVideo, src) => {
 
-        if (container) {
-            container.remove();
-        }
-    }
+		if (container.mediaElement) {
+			container.removeChild(container.mediaElement);
+		}
 
-	const [type] = format.split('/');
-	const widget = {
-		name,
-		type,
-		value: val,
-		draw: function (ctx, node, widgetWidth, widgetY, height) {
-			//update widget position, hide if off-screen
-			const transform = ctx.getTransform();
-			//calculate coordinates with account for browser zoom
-        	const bcr = app.canvas.canvas.getBoundingClientRect()
+		container.mediaElement = $el(bIsVideo ? 'video' : 'img', {
+			src: src,
+			style: {
+				width: "100%",
+  				height: "100%",
+  				objectFit: "contain"
+			}
+		});
 
-			const ds = app.canvas.ds;
-			const scale = ds.scale; // gets the litegraph zoom
+		if (bIsVideo) {
 
-			// As other events can set the element invisible, 
-			// we must set it visible explicitly every draw call
-			setIsVisible(true);
+			container.mediaElement.addEventListener("loadedmetadata", () => {
 
-			const x = transform.e * scale / transform.a + bcr.x;
-			const y = transform.f * scale / transform.a + bcr.y;
-
-			const setting = app.ui.settings.getSettingValue("Comfy.UseNewMenu").toLowerCase();
-			const comfyMenuBar = document.querySelector(".comfyui-body-top");
-			const topOffset = comfyMenuBar && setting == "top" ? comfyMenuBar.clientHeight : 0; //Comfy.UseNewMenu
-
-			Object.assign(this.inputEl.style, {
-				left: (x + 15 * scale) + "px",
-				top: ((y + widgetY * scale) + topOffset) + "px",
-				width: ((widgetWidth - 30) * scale) + "px",
-				zIndex: 2 + (node.is_selected ? 1 : 0),
+				container.aspectRatio = container.mediaElement.videoWidth / container.mediaElement.videoHeight;
+				fitHeight(node);
 			});
+		} else {
 
-			// Fit node once everything has been loaded in and displayed
-			if (!this.inputEl.bHasAutoResized) {
-				this.inputEl.bHasAutoResized = fitNode();
-			}
-		},
-		computeSize: function (width) {
-			if (this.aspectRatio && !this.inputEl?.hidden) {
-				let height = (node.size[0] - 30) / this.aspectRatio;
-				if (!(height > 0)) {
-					height = 0;
-				}
-				return [width, height];
-			}
-			return [width, -4];//no loaded src, widget should not display
-		},
-		onRemoved: function () {
-			cleanupNode();
-		},
-        setIsVisible,
-        cleanupNode,
-	}
+			container.mediaElement.onload = () => {
+				container.aspectRatio = container.mediaElement.naturalWidth / container.mediaElement.naturalHeight;
+				fitHeight(node);
+			};
+		}
 
-	function fitNode() {
-		try {
-			const constantWidth = bIsVideo ? mediaElement.videoWidth : mediaElement.naturalWidth;
-			let widgetHeights = bIsVideo ? mediaElement.videoHeight : mediaElement.naturalHeight;
-
-			if (constantWidth > 0 && widgetHeights > 0) {
-				for (const widgetChild of container.childNodes) {
-					if (widgetChild && widgetChild != mediaElement) {
-						let childAspect = (widgetChild.clientWidth / widgetChild.clientHeight);
-						widgetHeights += (constantWidth / childAspect);
-					}
-				}
-				widget.aspectRatio = ((constantWidth) / widgetHeights);
-
-				node.setSize([node.size[0], node.computeSize([node.size[0], node.size[1]])[1]])
-				node.graph.setDirtyCanvas(true);
-				return true;
-			} else {
-				return false;
-			}
-		} catch (e) {
-			return false;
+		if (container.firstChild) {
+			container.insertBefore(container.firstChild, container.mediaElement);
+		} else {
+			container.appendChild(container.mediaElement);
 		}
 	}
 
-	const bIsVideo = type === 'video';
+	const bIsVideo = format.startsWith("video");
 
-	let mediaElement = $el(bIsVideo ? 'video' : 'img', {
-		style: {
-			width: "100%"
-		}
-	});
-	container.appendChild(mediaElement);
+	container.rebuildMediaElement(bIsVideo, jnodesPayload?.href? jnodesPayload.href : val);
 
 	// Ideally info can be appended if we have a JNodesPayload since we get this info in python beforehand
-	let infoTextArea = $el("textarea", {
+	container.infoTextArea = $el("textarea", {
 		wrap: "hard",
 		style: {
 			display: "none",
 			resize: "none",
 			color: "inherit",
 			backgroundColor: "inherit",
-			width: "100%"
+			width: "100%",
+			overflow: "hidden",
+			boxSizing: "border-box",
 		}
 	});
-	container.appendChild(infoTextArea);
+	container.appendChild(container.infoTextArea);
 
 	let displayData = jnodesPayload?.displayData;
 
@@ -165,17 +128,29 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 
 					jsonString = utilitiesInstance.removeCurlyBracesFromJsonString(jsonString);
 
-					infoTextArea.value = utilitiesInstance.unindentJsonString(jsonString);
+					container.infoTextArea.value = utilitiesInstance.unindentJsonString(jsonString);
 
-					infoTextArea.style.display = "unset";
-					infoTextArea.rows = infoTextArea.value.split('\n').length || 5;
-					infoTextArea.readOnly = true;
+					container.infoTextArea.style.display = "unset";
+					container.infoTextArea.readOnly = true;
+
+					function autoResize() {
+						container.infoTextArea.style.height = 'auto';                 // reset
+						container.infoTextArea.style.height = container.infoTextArea.scrollHeight + 'px';
+					}
+
+					// Resize after DOM paint
+					requestAnimationFrame(() => autoResize());
 				}
 
 			} catch (e) {
 				console.error(e);
 			}
 		}
+	};
+
+	container.getTextareaHeight = function() {
+		if (container.infoTextArea.style.display === "none") return 0;
+		return container.infoTextArea.scrollHeight || container.infoTextArea.offsetHeight || 0;
 	}
 
 	let currentInfo = null;
@@ -189,20 +164,19 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 				inDisplayData.AspectRatio = inDisplayData.FileDimensions[0] / inDisplayData.FileDimensions[1];
 			}
 			setInfoTextFromDisplayData(inDisplayData);
-			setFontSizesBasedOnCanvasScale();
 			container.bHasAutoResized = false; // Resize node on next draw call
 		}
 		// Construct DisplayData on load
 		if (bIsVideo) {
-			mediaElement.addEventListener("loadedmetadata", () => {
+			container.mediaElement.addEventListener("loadedmetadata", () => {
 				let displayData = {};
-				displayData.FileDimensions = [mediaElement.videoWidth, mediaElement.videoHeight];
+				displayData.FileDimensions = [container.mediaElement.videoWidth, container.mediaElement.videoHeight];
 				constructAndDisplayData(displayData);
 			});
 		} else {
-			mediaElement.addEventListener("load", () => {
+			container.mediaElement.addEventListener("load", () => {
 				let displayData = {};
-				displayData.FileDimensions = [mediaElement.naturalWidth, mediaElement.naturalHeight];
+				displayData.FileDimensions = [container.mediaElement.naturalWidth, container.mediaElement.naturalHeight];
 				constructAndDisplayData(displayData);
 			});
 		}
@@ -210,22 +184,22 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 		// Good for all videos
 		if (bIsVideo) {
 
-			mediaElement.muted = true;
-			mediaElement.autoplay = true
-			mediaElement.loop = true
-			mediaElement.controls = true;
+			container.mediaElement.muted = true;
+			container.mediaElement.autoplay = true
+			container.mediaElement.loop = true
+			container.mediaElement.controls = true;
 
 			// Function to update the label text dynamically
 			container.updateCurrentInfo = function () {
 				// Update the text content of CurrentInfo based on updated currentTime and fps
-				if (mediaElement.currentTime) {
-					currentInfo.textContent = `Current Time: ${mediaElement.currentTime.toFixed(0)}`;
+				if (container.mediaElement.currentTime) {
+					currentInfo.textContent = `Current Time: ${container.mediaElement.currentTime.toFixed(0)}`;
 					// console.log(currentInfo.textContent);
 
 					let fps = displayData?.FramesPerSecond;
 
 					if (fps) {
-						const currentFrame = mediaElement.currentTime * fps;
+						const currentFrame = container.mediaElement.currentTime * fps;
 						currentInfo.textContent += ` Current Frame: ${currentFrame.toFixed(0)}`;
 					}
 				}
@@ -237,105 +211,15 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 			container.appendChild(currentInfo);
 
 			// Attach an event listener to the MediaElement to trigger updates on time change
-			mediaElement.addEventListener("timeupdate", container.updateCurrentInfo);
+			container.mediaElement.addEventListener("timeupdate", container.updateCurrentInfo);
+		}
+
+		container.getCurrentInfoHeight = function() {
+			return getLabelHeight(currentInfo);
 		}
 	}
 
-	function setFontSizesBasedOnCanvasScale() {
-
-		const currentScale = app?.canvas?.ds?.scale;
-
-		const newFontSize = `${11 * currentScale}px`;
-
-		if (infoTextArea) {
-			infoTextArea.style.fontSize = newFontSize;
-		}
-		if (currentInfo) {
-			currentInfo.style.fontSize = newFontSize;
-		}
-	};
-
-	const originalOnRedraw = app?.canvas?.ds?.onredraw;
-	app.canvas.ds.onredraw = (payload) => {
-
-		if (originalOnRedraw && typeof originalOnRedraw === 'function') {
-			originalOnRedraw(payload);
-		}
-
-		setFontSizesBasedOnCanvasScale();
-
-		// Clear leftover images from viewport
-		widget.inputEl.style.top = `${document.body.clientHeight}px`;
-		widget.inputEl.style.left = `${document.body.clientWidth}px`;
-	};
-
-	setFontSizesBasedOnCanvasScale(); // Call it to set font size immediately
-
-	widget.inputEl = container;
-	widget.parent = node;
-
-	document.body.appendChild(widget.inputEl);
-
-    // When entering/exiting subgraph
-    app.canvas.canvas.addEventListener('litegraph:set-graph', ()=>{
-        if (widget) {
-            widget.setIsVisible(false);
-        }
-    });
-
-    // On Changes to graph
-    const original_beforeChange = app.graph.beforeChange
-    app.graph.beforeChange = function () {
-        if (widget) {
-            widget.setIsVisible(false);
-        }
-        original_beforeChange?.apply(this, arguments)
-    }
-
-    const original_afterChange = app.graph.afterChange
-    app.graph.afterChange = function () {
-        original_afterChange?.apply(this, arguments)
-        if (widget) {
-            widget.setIsVisible(false);
-        }  // afterChange gets called without a beforeChange sometimes
-    }
-    
-    // When a subgraph is made containing this node
-    const original_subgraph = app.graph.convertToSubgraph
-    app.graph.convertToSubgraph = function (nodes) {
-        if (node && nodes.has(node)) {
-            if (widget) {
-                widget.cleanupNode();
-            }
-        }
-        const r = original_subgraph.apply(this, arguments);
-        return r;
-    };
-
-    // Canvas movement events
-    window.addEventListener("canvasMoved", (e) => {
-        if (widget) {
-            widget.setIsVisible(false);
-        }
-    });
-
-    window.addEventListener("pointerdown", (e) => {
-        if (widget) {
-            if (widget.inputEl.contains(e.target)) {
-                return; // ignore clicks inside the widget
-            }
-            widget.setIsVisible(false);
-        }
-    });
-
-	// Set src to JNodes href if available, otherwise use constructed src
-	if (jnodesPayload?.href) {
-		mediaElement.src = jnodesPayload.href;
-	} else {
-		mediaElement.src = widget.value;
-	}
-
-	return widget;
+	return container;
 }
 
 const mediaPreview = {
@@ -362,20 +246,48 @@ const mediaPreview = {
 						if (message?.images?.length > 0) {
 							message.images.forEach((params, i) => {
 								const previewUrl = api.apiURL(
-									'/view?' + new URLSearchParams(params).toString()
+									'/jnodes_view_image?' + new URLSearchParams(params).toString()
 								)
 								node.previewElement = CreatePreviewElement(`${prefix}_${0}`, previewUrl, params.format, node);
 
-								const w = node.addCustomWidget(node.previewElement);
-								node.setSizeForimage?.();
+								if (!node.mediaPreview) {
+
+									node.mediaPreview = utilitiesInstance.addComfyNodeWidget(
+										node, node.previewElement, name, "VideoPreview", {
+											serialize: false,
+											hideOnZoom: false,
+										});
+
+									node.mediaPreview.computeSize = function (width) {
+										if (!node.previewElement.aspectRatio || node.mediaPreview.parentEl.hidden) {
+											return [width, -4];
+										}
+
+										const previewWidth = node.size[0] - 20;
+										let mediaHeight = previewWidth / node.previewElement.aspectRatio;
+										if (!(mediaHeight > 0)) mediaHeight = 0;
+
+										const textareaHeight = node.previewElement.getTextareaHeight();
+										const currentInfoHeight = node.previewElement.getCurrentInfoHeight();
+
+										const totalHeight =
+											mediaHeight +
+											textareaHeight +
+											currentInfoHeight +
+											20; // padding / margins
+
+										node.previewElement.computedHeight = totalHeight;
+
+										return [width, totalHeight];
+									};
+
+								} else {
+									node.mediaPreview.parentEl.removeChild(node.mediaPreview.parentEl.firstChild);
+									node.mediaPreview.parentEl.appendChild(node.previewElement);
+								}
 							})
 						}
 					}
-					const onRemoved = node.onRemoved;
-					node.onRemoved = () => {
-						node.previewElement?.cleanupNode(node);
-						return onRemoved?.();
-					};
 
 					return r;
 				};
@@ -407,16 +319,6 @@ const mediaPreview = {
 					const prefix = 'jnodes_media_preview_';
 
 					if (ThisNode.widgets) {
-						const pos = ThisNode.widgets.findIndex((w) => w.name === `${prefix}_0`);
-						if (pos !== -1) {
-							for (let i = pos; i < ThisNode.widgets.length; i++) {
-								ThisNode.widgets[i].onRemoved?.();
-							}
-							ThisNode.widgets.length = pos;
-						}
-						const previewUrl = api.apiURL(
-							`/jnodes_view_image?filename=${encodeURIComponent(name)}&type=${type}&subfolder=${encodeURIComponent(subfolder)}`
-						);
 
 						const extSplit = name.split('.');
 						const extension = extSplit[extSplit.length - 1].toLowerCase();
@@ -428,17 +330,60 @@ const mediaPreview = {
 								break;
 							}
 						}
+
+						const bIsVideo = format.startsWith("video");
+
+						const previewUrl = api.apiURL(
+							`/jnodes_view_image?filename=${encodeURIComponent(name)}&type=${type}&subfolder=${encodeURIComponent(subfolder)}`
+						);
+
+						const pos = ThisNode.widgets.findIndex((w) => w.name === `${prefix}_0`);
+						if (pos !== -1) {
+							for (let i = pos; i < ThisNode.widgets.length; i++) {
+								ThisNode.widgets[i].onRemoved?.();
+							}
+							ThisNode.widgets.length = pos;
+						}
+
 						ThisNode.previewElement = CreatePreviewElement(`${prefix}_${0}`, previewUrl, format, ThisNode, JnodesPayload);
+					
+						if (!ThisNode.mediaPreview) {
 
-						const newWidget = ThisNode.addCustomWidget(ThisNode.previewElement);
-						ThisNode.setSizeForimage?.();
+							ThisNode.mediaPreview = utilitiesInstance.addComfyNodeWidget(
+								ThisNode, ThisNode.previewElement, name, "VideoPreview", {
+									serialize: false,
+									hideOnZoom: false,
+								});
+
+							ThisNode.mediaPreview.computeSize = function (width) {
+								if (!ThisNode.previewElement.aspectRatio || ThisNode.mediaPreview.parentEl.hidden) {
+									return [width, -4];
+								}
+
+								const previewWidth = ThisNode.size[0] - 20;
+								let mediaHeight = previewWidth / ThisNode.previewElement.aspectRatio;
+								if (!(mediaHeight > 0)) mediaHeight = 0;
+
+								const textareaHeight = ThisNode.previewElement.getTextareaHeight();
+								const currentInfoHeight = ThisNode.previewElement.getCurrentInfoHeight();
+
+								const totalHeight =
+									mediaHeight +
+									textareaHeight +
+									currentInfoHeight +
+									20; // padding / margins
+
+								ThisNode.previewElement.computedHeight = totalHeight;
+
+								return [width, totalHeight];
+							};
+
+						} else {
+							ThisNode.mediaPreview.parentEl.removeChild(ThisNode.mediaPreview.parentEl.firstChild);
+							ThisNode.mediaPreview.parentEl.appendChild(ThisNode.previewElement);
+						}
+					
 					}
-
-					const onRemoved = ThisNode.onRemoved;
-					ThisNode.onRemoved = () => {
-						ThisNode.previewElement?.cleanupNode(ThisNode);
-						return onRemoved?.();
-					};
 				}
 
 				const onAdded = nodeType.prototype.onAdded;
