@@ -115,6 +115,28 @@ class JNodesUtilities {
 		return container;
 	}
 
+	addComfyNodeWidget(node, customWidget, name, type, domArgs = {}) {
+
+		if (!node || !customWidget) { return; }
+
+		// Create an outer container element for custom DOM widget
+		var element = document.createElement("div");
+
+		// Create a LiteGraph DOM widget that wraps our root DOM element
+		var mainWidget = node.addDOMWidget(name, type, element, domArgs);
+
+		// Create parent container for our custom DOM element
+		mainWidget.parentEl = document.createElement("div");
+
+		// Manually attach the widget’s parent container inside our root element
+		element.appendChild(mainWidget.parentEl);
+
+		// Add list widget to custom DOM's container
+		mainWidget.parentEl.appendChild(customWidget);
+
+		return mainWidget;
+	}
+
 	getTimestamp(format = 'full') {
 		const now = new Date();
 
