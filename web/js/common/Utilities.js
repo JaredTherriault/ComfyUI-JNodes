@@ -15,7 +15,7 @@ class JNodesUtilities {
 	}
 
 	getSuiteName() {
-		return "JNodes"
+		return "JNodes";
 	}
 
 	getCurrentTimeAsString() {
@@ -361,6 +361,12 @@ class JNodesUtilities {
 		});
 
 		return unindentedLines.join("\n").trim();
+	}
+
+	unescapeString(str) {
+		return str.replace(/\\n/g, '\n')
+				.replace(/\\t/g, '\t')
+				.replace(/\\r/g, '\r');
 	}
 
 	sanitizeMetadataForJson(metadata) {
