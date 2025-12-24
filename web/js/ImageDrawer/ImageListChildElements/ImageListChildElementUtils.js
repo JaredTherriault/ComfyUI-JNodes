@@ -374,6 +374,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                             function (e) {
                                 if (positivePrompt.startsWith('"')) { positivePrompt = positivePrompt.slice(1); }
                                 if (positivePrompt.endsWith('"')) { positivePrompt = positivePrompt.slice(0, positivePrompt.length - 1); }
+                                positivePrompt = utilitiesInstance.unescapeString(positivePrompt);
                                 utilitiesInstance.copyToClipboard(positivePrompt);
                                 // removeOptionsMenu();
                                 e.preventDefault();
@@ -404,6 +405,7 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 if (!data) { return; }
                                 if (data.startsWith('"')) { data = data.slice(1); }
                                 if (data.endsWith('"')) { data = data.slice(0, data.length - 1); }
+                                data = utilitiesInstance.unescapeString(data);
                                 utilitiesInstance.copyToClipboard(data);
                                 // removeOptionsMenu();
                                 e.preventDefault();
