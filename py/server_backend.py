@@ -815,5 +815,17 @@ async def delete_item(request):
     if result["success"] == True:
         return delete_file(result["payload"]["file"])
 
+    # Alt path
+    try:
+        request_data = await read_web_request_content(request.content)
+        request_json = json.loads(request_data)
+        path = None
+
+        if "path" in request_json:
+            path = Path(resolve_file_path(request_json["path"]))
+            return delete_file(path)
+    except:
+        pass
+
     logger.warning("File could not be deleted: file not found")
     return web.Response(status=404)
