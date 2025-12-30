@@ -360,6 +360,7 @@ export class ContextModel extends ContextRefreshable {
 			let count = 0;
 			let maxCount = 0;
 			imageDrawerListInstance.notifyStartChangingImageList();
+			let promises = [];
 			for (const modelKey of modelKeys) {
 				if (this.shouldCancelAsyncOperation()) { break; }
 
@@ -368,9 +369,10 @@ export class ContextModel extends ContextRefreshable {
 				if (element == undefined) {
 					console.log("Attempting to add undefined element for model named: " + modelKey + " with dict: " + JSON.stringify(modelDicts[modelKey]));
 				}
-				await imageDrawerListInstance.addElementToImageList(element);
+				promises.push(imageDrawerListInstance.addElementToImageList(element));
 				count++;
 			}
+			await Promise.all(promises);
 			imageDrawerListInstance.notifyFinishChangingImageList();
 		}
 		else {
