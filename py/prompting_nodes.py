@@ -41,11 +41,13 @@ class TextManager:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "path_to_saved_prompts": ("STRING", {"default": 'JNodes/TextManager/default', "multiline": False}),
-                "new_prompt": ("STRING", {"default": "", "multiline": True})
+                "path_to_saved_texts": ("STRING", {"default": "JNodes/TextManager/default", "multiline": False, "tooltip": "From which directory to load texts"}),
+                "delimiter": ("STRING", {"default": "\\n\\n", "multiline": False, "tooltip": "What to place between enabled texts"}),
+                "output_text": ("STRING", {"default": "", "multiline": True, "tooltip": "A read-only preview of the newly constructed output text"}),
+                "config": ("STRING", {"default": "", "multiline": True, "tooltip": "A read-only JSON representation of the current config"})
             },
             "optional": {
-                "input_text": ("STRING", {"forceInput": True}),
+                "input_text": ("STRING", {"forceInput": True, "tooltip": "Optional text to prepend to the output text"}),
             }
         }
 
@@ -54,9 +56,16 @@ class TextManager:
 
     CATEGORY = "prompt"
     
-    def get_string(self, path_to_saved_prompts, new_prompt, input_text = ""):
-        # Return input text and two newline if input text is valid, otherwise just the new prompt
-        return (f"{f"{input_text}\n\n" if input_text else ""}{new_prompt}",)
+    def get_string(self, path_to_saved_texts, delimiter, output_text, config, input_text = ""):
+        # Return input text and two newline if input text is valid, otherwise just the new text
+        delimiter = delimiter.encode("utf-8").decode("unicode_escape")
+        if input_text and not output_text:
+            return (input_text,)
+        if output_text and not input_text:
+            return (output_text,)
+        if not output_text and not input_text:
+            return ("",)
+        return (f"{input_text}{delimiter}{output_text}",)
     
 class ParseDynamicPrompts:
     @classmethod
