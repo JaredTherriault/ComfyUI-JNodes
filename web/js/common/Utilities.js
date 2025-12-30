@@ -74,20 +74,27 @@ class JNodesUtilities {
 		const offColor = options.offColor || "#ccc";
 		const knobSize = options.knobSize || height - 6;
 
-		// Container
-		const container = document.createElement("div");
-		container.style.position = "relative";
-		container.style.width = width + "px";
-		container.style.height = height + "px";
-		container.style.borderRadius = height + "px";
-		container.style.backgroundColor = offColor;
-		container.style.cursor = "pointer";
-		container.style.transition = "background-color 0.4s";
+		const container = $el("div", {
+			style: {
+				display: "flex",
+				alignItems: "center",
+			}
+		});
 
-		container.bIsOn = false;
+		// Container
+		const backgroundElement = $el("div");
+		backgroundElement.style.position = "relative";
+		backgroundElement.style.width = width + "px";
+		backgroundElement.style.height = height + "px";
+		backgroundElement.style.borderRadius = height + "px";
+		backgroundElement.style.backgroundColor = offColor;
+		backgroundElement.style.cursor = "pointer";
+		backgroundElement.style.transition = "background-color 0.4s";
+
+		backgroundElement.bIsOn = false;
 
 		// Knob
-		const knob = document.createElement("div");
+		const knob = $el("div");
 		knob.style.position = "absolute";
 		knob.style.height = knobSize + "px";
 		knob.style.width = knobSize + "px";
@@ -98,21 +105,23 @@ class JNodesUtilities {
 		knob.style.transition = "transform 0.4s";
 
 		// Toggle handler
-		container.addEventListener("click", () => {
-			container.bIsOn = !container.bIsOn;
-			if (container.bIsOn) {
+		backgroundElement.addEventListener("click", () => {
+			backgroundElement.bIsOn = !backgroundElement.bIsOn;
+			if (backgroundElement.bIsOn) {
 				knob.style.transform = `translateX(${width - knobSize - 6}px)`;
-				container.style.backgroundColor = onColor;
+				backgroundElement.style.backgroundColor = onColor;
 				if (typeof onCallback === "function") onCallback();
 			} else {
 				knob.style.transform = "translateX(0)";
-				container.style.backgroundColor = offColor;
+				backgroundElement.style.backgroundColor = offColor;
 				if (typeof offCallback === "function") offCallback();
 			}
 		});
 
-		container.appendChild(knob);
-		return container;
+		backgroundElement.appendChild(knob);
+		container.appendChild(backgroundElement);
+		container.inputEl = backgroundElement;
+		return { container: container, switch: backgroundElement };
 	}
 
 	addComfyNodeWidget(node, customWidget, name, type, domArgs = {}) {
