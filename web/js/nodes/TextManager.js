@@ -1119,7 +1119,7 @@ function createTextListWidget(node) {
     const searchInstance = new TextManagerSearch(node);
     container.searchInstance = searchInstance;
 
-    // Add toolbars
+    // Add functions
     container.setAllTextContainersCollapsed = function (
         bNewState, withFilename = null, bOnlyVisible = false) {
         for (let i = 0; i < searchInstance.childWidgets.length; i++) {
@@ -1135,9 +1135,7 @@ function createTextListWidget(node) {
             if (withFilename) { break; } // If withFilename matches, break early
         }
     };
-    container.toggleAllTextContainersCollapsed = function(withFilename = null, bOnlyVisible = false) {
-
-        // First determine whether we need to expand or collapse all
+    container.hasAnyExpandedTextContainers = function() {
         let bShouldCollapse = false;
         for (let i = 0; i < searchInstance.childWidgets.length; i++) {
 
@@ -1148,6 +1146,13 @@ function createTextListWidget(node) {
                 break;
             }
         }
+
+        return bShouldCollapse;
+    };
+    container.toggleAllTextContainersCollapsed = function(withFilename = null, bOnlyVisible = false) {
+
+        // First determine whether we need to expand or collapse all
+        let bShouldCollapse = container.hasAnyExpandedTextContainers();
 
         // Then execute
         container.setAllTextContainersCollapsed(bShouldCollapse, withFilename, bOnlyVisible);
@@ -1167,19 +1172,25 @@ function createTextListWidget(node) {
             if (withFilename) { break; } // If withFilename matches, break early
         }
     };
-    container.toggleAllTextContainersEnabledState = function(withFilename = null, bOnlyVisible = false) {
-
+    container.hasAnyEnabledTextContainers = function() {
         // First determine whether we need to enable or disable all
-        let bShouldDisable = false;
+        let bHasAnyEnabled = false;
         for (let i = 0; i < searchInstance.childWidgets.length; i++) {
 
             const textContainer = searchInstance.childWidgets[i].data;
 
             if (textContainer.getEnabled()) { 
-                bShouldDisable = true; 
+                bHasAnyEnabled = true; 
                 break;
             }
         }
+
+        return bHasAnyEnabled;
+    };
+    container.toggleAllTextContainersEnabledState = function(withFilename = null, bOnlyVisible = false) {
+
+        // First determine whether we need to enable or disable all
+        let bShouldDisable = container.hasAnyEnabledTextContainers();
 
         // Then execute
         container.setAllTextContainersEnabledState(!bShouldDisable, withFilename, bOnlyVisible);
@@ -1226,6 +1237,9 @@ function createTextListWidget(node) {
             clearTint(container.saveAllButton);
         }
     };
+    container.isPropertyFilterOn = (propertyName) => {
+        return searchInstance.getSearchText().includes(`${propertyName}==`);
+    };
 
     function createToolbar() {
 
@@ -1248,7 +1262,7 @@ function createTextListWidget(node) {
             }
         });
 
-        const params = {
+        container.toolbarGridParams = {
             toggleCollapseAllButton: {
                 title: "Collapse or expand all text containers. " +
                 "If any are expanded, all will collapse. " +
@@ -1300,15 +1314,20 @@ function createTextListWidget(node) {
             },
             showWidget: {
                 toggleShowProperty: function(propertyName) {
-
-                    const additionalSearchText = `${propertyName}==true`;
+                    const regex = new RegExp(`${propertyName}==\\S*`);
                     let currentSearchText = searchInstance.getSearchText();
-                    if (currentSearchText.includes(additionalSearchText)) {
-                        currentSearchText = currentSearchText.replace(additionalSearchText, "").trim();
+
+                    if (regex.test(currentSearchText)) {
+                        // Remove property filter even if nothing comes after ==
+                        currentSearchText = currentSearchText
+                            .replace(regex, "")
+                            .replace(/\s{2,}/g, " ")
+                            .trim();
                     } else {
-                        // Add the property to search text with a space if needed
-                        if (currentSearchText.length > 0) { currentSearchText += " "; }
-                        currentSearchText += additionalSearchText;
+                        if (currentSearchText.length > 0) {
+                            currentSearchText += " ";
+                        }
+                        currentSearchText += `${propertyName}==true`;
                     }
 
                     searchInstance.setSearchTextAndExecute(currentSearchText);
@@ -1325,7 +1344,7 @@ function createTextListWidget(node) {
                 padding: "4px",
             }
         }, [
-            createToolButtonsGrid(container, params), addTextButton
+            createToolButtonsGrid(container, container.toolbarGridParams), addTextButton
         ]);
 
         return toolButtonsContainer;
@@ -1766,72 +1785,134 @@ app.registerExtension({
 					node.size = this.defaultSize;
 				};
 
-                const appendage = "on all matching text managers";
+                const appendage = "on all matching text managers. " + 
+                "If any managers are already filtering for this property, the filter will be removed. " +
+                "If no managers are filtering for this property, the filter will be applied to all.";
+
+                this.proxyButtonEvent = function(buttonName, eventName, nodeVerificationEventName = null, args = []) {
+                    const nodes = this.findTextManagerNodes();
+
+                    for (const node of nodes) {
+                        const button = node.textListWidget.toolbarGridParams[buttonName];
+                        if (button) {
+
+                            let bShouldExecute = true;
+                            if (nodeVerificationEventName && 
+                                node.textListWidget[nodeVerificationEventName] &&
+                                typeof node.textListWidget[nodeVerificationEventName] === "function" &&
+                                !node.textListWidget[nodeVerificationEventName]()
+                            ) {
+                                continue;
+                            }
+                        
+                            if (typeof button[eventName] === "function") {
+                                button[eventName](...args);
+                            }
+                        }
+                    }
+                };
 
                 const params = {
                     toggleCollapseAllButton: {
                         title: "Collapse or expand all text containers " + appendage + ". " +
                         "If any are expanded, all will collapse. " +
                         "If all are collapsed, all will expand." + " " + longPressCTA,
-                        onpointerdown: () => { },//container.toggleCollapseAllButton.pressStartTime = Date.now(); },
+                        onpointerdown: () => { this.toggleCollapseAllButton_pressStartTime = Date.now(); },
                         onpointerup: () => { 
-                            // let bOnlyVisible = false;
+                            let bOnlyVisible = false;
 
-                            // if (container.toggleCollapseAllButton.pressStartTime) {
-                            //     const duration = Date.now() - container.toggleCollapseAllButton.pressStartTime;
-                            //     if (duration > longPressDuration) { bOnlyVisible = true; }
-                            // }
-                            // container.toggleAllTextContainersCollapsed(null, bOnlyVisible);
-                        },
+                            if (this.toggleCollapseAllButton_pressStartTime) {
+                                const duration = Date.now() - this.toggleCollapseAllButton_pressStartTime;
+                                if (duration > longPressDuration) { bOnlyVisible = true; }
+                            }
+
+                            const nodes = this.findTextManagerNodes();
+
+                            let bShouldCollapse = false;
+                            for (const node of nodes) {
+
+                                if (node.textListWidget.hasAnyExpandedTextContainers()) {
+                                    bShouldCollapse = true;
+                                    break;
+                                }
+                            }
+                            
+                            for (const node of nodes) {
+                                node.textListWidget.setAllTextContainersCollapsed(
+                                    bShouldCollapse, null, bOnlyVisible);
+                            }
+                        }
                     },
                     toggleEnableAllButton: {
                         title: "Enable or disable all text containers " + appendage + ". " +
                         "If any are enabled, all will disabled. " +
                         "If all are disabled, all will enabled." + " " + longPressCTA,
-                        onpointerdown: () => { },//container.toggleEnableAllButton.pressStartTime = Date.now(); },
+                        onpointerdown: () => { this.toggleCollapseAllButton_pressStartTime = Date.now(); },
                         onpointerup: () => { 
-                            // let bOnlyVisible = false;
+                            let bOnlyVisible = false;
 
-                            // if (container.toggleEnableAllButton.pressStartTime) {
-                            //     const duration = Date.now() - container.toggleEnableAllButton.pressStartTime;
-                            //     if (duration > longPressDuration) { bOnlyVisible = true; }
-                            // }
-                            // container.toggleAllTextContainersEnabledState(null, bOnlyVisible);
-                        },
+                            if (this.toggleCollapseAllButton_pressStartTime) {
+                                const duration = Date.now() - this.toggleCollapseAllButton_pressStartTime;
+                                if (duration > longPressDuration) { bOnlyVisible = true; }
+                            }
+
+                            const nodes = this.findTextManagerNodes();
+
+                            let bShouldDisable = false;
+                            for (const node of nodes) {
+
+                                if (node.textListWidget.hasAnyEnabledTextContainers()) {
+                                    bShouldDisable = true;
+                                    break;
+                                }
+                            }
+                            
+                            for (const node of nodes) {
+                                node.textListWidget.setAllTextContainersEnabledState(
+                                    !bShouldDisable, null, bOnlyVisible);
+                            }
+                        }
                     },
                     saveAllButton: {
                         title: "Save all changed text containers " + appendage + ". " + longPressCTA,
-                        onpointerdown: () => { },//container.saveAllButton.pressStartTime = Date.now(); },
-                        onpointerup: () => { 
-                            // let bOnlyVisible = false;
+                        onpointerdown: () => {
+                            this.proxyButtonEvent("saveAllButton", "onpointerdown");
+                        },
 
-                            // if (container.saveAllButton.pressStartTime) {
-                            //     const duration = Date.now() - container.saveAllButton.pressStartTime;
-                            //     if (duration > longPressDuration) { bOnlyVisible = true; }
-                            // }
-                            // container.saveAllChangedTextContainers(bOnlyVisible);
+                        onpointerup: () => {
+                            this.proxyButtonEvent("saveAllButton", "onpointerup");
                         },
                     },
                     reloadButton: {
                         title: "Reload all text containers " + appendage + ". ",
                         onclick: () => { 
-                            // node.reloadTexts();
+                            this.proxyButtonEvent("reloadButton", "onclick");
                         },
                     },
                     showWidget: {
-                        toggleShowProperty: function(propertyName) {
+                        toggleShowProperty: (propertyName) => {
 
-                            // const additionalSearchText = `${propertyName}==true`;
-                            // let currentSearchText = searchInstance.getSearchText();
-                            // if (currentSearchText.includes(additionalSearchText)) {
-                            //     currentSearchText = currentSearchText.replace(additionalSearchText, "").trim();
-                            // } else {
-                            //     // Add the property to search text with a space if needed
-                            //     if (currentSearchText.length > 0) { currentSearchText += " "; }
-                            //     currentSearchText += additionalSearchText;
-                            // }
+                            const nodes = this.findTextManagerNodes();
 
-                            // searchInstance.setSearchTextAndExecute(currentSearchText);
+                            let bShouldShow = true;
+                            for (const node of nodes) {
+                                if (node.textListWidget.isPropertyFilterOn(propertyName)) {
+                                    bShouldShow = false;
+                                    break;
+                                }
+                            }
+                            
+                            for (const node of nodes) {
+                                if (bShouldShow === node.textListWidget.isPropertyFilterOn(propertyName)) {
+                                    continue;
+                                }
+
+                                node
+                                .textListWidget
+                                .toolbarGridParams
+                                .showWidget
+                                .toggleShowProperty(propertyName);
+                            }
                         },
                         titleAppendage: " " + appendage,
                     }
@@ -1843,29 +1924,6 @@ app.registerExtension({
                         hideOnZoom: false,
                     });
 
-				this.validateName = function(graph) {
-					let widgetValue = node.widgets[0].value;
-				
-					if (widgetValue !== '') {
-						let tries = 0;
-						const existingValues = new Set();
-				
-						graph._nodes.forEach(otherNode => {
-							if (otherNode !== this && otherNode.type === 'SetNode') {
-								existingValues.add(otherNode.widgets[0].value);
-							}
-						});
-				
-						while (existingValues.has(widgetValue)) {
-							widgetValue = node.widgets[0].value + "_" + tries;
-							tries++;
-						}
-				
-						node.widgets[0].value = widgetValue;
-						this.update();
-					}
-				}
-
 				this.clone = function () {
 					const cloned = TextManagerManager.prototype.clone.apply(this);
 					cloned.size = cloned.computeSize();
@@ -1873,10 +1931,23 @@ app.registerExtension({
 				};
 
 
-				this.findGetters = function(graph, checkForPreviousName) {
-					const name = checkForPreviousName ? this.properties.previousName : this.widgets[0].value;
-					return graph._nodes.filter(otherNode => otherNode.type === 'GetNode' && otherNode.widgets[0].value === name && name !== '');
-				}
+				this.findTextManagerNodes = function () {
+                    const titleFilters = this.titleFilterWidget.value
+                        .toLowerCase()
+                        .split(",")
+                        .map(f => f.trim())
+                        .filter(Boolean); // remove empty strings
+
+                    return node.graph._nodes.filter(otherNode =>
+                        otherNode.type === "JNodes_TextManager" &&
+                        (
+                            titleFilters.length === 0 ||
+                            titleFilters.some(filter =>
+                                otherNode.title.toLowerCase().includes(filter)
+                            )
+                        )
+                    );
+                };
 
 				
 				// This node is purely frontend and does not impact the resulting prompt so should not be serialized
