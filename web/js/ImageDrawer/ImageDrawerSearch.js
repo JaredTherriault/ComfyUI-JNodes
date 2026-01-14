@@ -1,5 +1,7 @@
 import { $el } from "/scripts/ui.js";
 
+import { SearchBar } from "../common/SearchBar.js"
+
 import { utilitiesInstance } from "../common/Utilities.js";
 
 import { ImageDrawerComponent, ClassInstanceFactory } from "./Core/ImageDrawerModule.js";
@@ -10,210 +12,29 @@ class ImageDrawerSearch extends ImageDrawerComponent {
 
 		super(args);
 
-		this.searchFieldElement;
-		this.bMatchAny = false; // Whether to return results with any of the given tokens or only results that match all tokens
-		this.matchButtonElement;
-	}
+		// Reimplemented SearchBar ctor
+		this._elementContainer = null;
+		this._searchFieldElement = null;
+		this._bMatchAny = false; // Whether to return results with any of the given tokens or only results that match all tokens
+		this._matchButtonElement = null;
 
-	createSearchBar() {
-		return $el("div", {
-			style: {
-				width: '100%',
-				display: 'flex',
-				flexDirection: 'row',
-			}
-		}, [
-			this.createSearchField(), this.createSearchBarClearButton(), this.createSearchBarMatchButton(), this.createSearchRandomizeButton()
-		]);
-	}
-
-	createSearchField() {
-
-		this.searchFieldElement = $el("input", {
-			type: "text",
-			id: "SearchInput",
-			placeholder: "Type here to search",
-			autocomplete: "off",
-			style: {
-				width: '100%',
-			}
-		});
-
-		// Attach the handleSearch function to the input's 'input' event
-		this.searchFieldElement?.addEventListener('input', () => { this.executeSearchWithEnteredSearchText(); });
-
-		return this.searchFieldElement;
-	}
-
-	createSearchBarClearButton() {
-
-		return $el("button.JNodes-search-bar-clear-btn", {
-			textContent: "❌",
-			title: "Clear Search",
-			onclick: () => { this.clearAndExecuteSearch(); }
-		});
-	}
-
-	createSearchBarMatchButton() {
-
-		this.matchButtonElement = $el("button.JNodes-search-bar-match-btn", {
-			title: "Toggle Match Any / Match All",
-			onclick: () => {
-				this.bMatchAny = !this.bMatchAny;
-				this.updateMatchButtonVisual();
-				this.executeSearchWithEnteredSearchText();
-			},
-			style: {
-				color: "red",
-				fontWeight: "bolder"
-			}
-		});
-
-		this.updateMatchButtonVisual();
-
-		return this.matchButtonElement;
-	}
-
-	async randomizeSearch() {
-
-		// Basically, we get a child element from the current list randomly
-		// Then if it has searchTerms, which all items should, we parse them out into an array
-		// Then we get a random term, clean it up a little, and if it's valid we execute search with it
-		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
-		const children = imageDrawerListInstance.getImageListChildren();
-
-		if (children.length > 1) {
-			let selectedChildElement = null;
-
-			do {
-				const randomIndex = Math.floor(Math.random() * children.length);
-				selectedChildElement = children[randomIndex];
-			} while (!selectedChildElement || !selectedChildElement.searchTerms);
-
-			if (selectedChildElement?.searchTerms) {
-
-				const splitTerms = selectedChildElement.searchTerms.split(" ");
-				let chosenTerm = "";
-				do {
-					// New random
-					const randomIndex = Math.floor(Math.random() * splitTerms.length);
-					chosenTerm = splitTerms[randomIndex];
-
-					// Clean up the string
-					while (chosenTerm.includes(",")) {
-						chosenTerm = chosenTerm.replace(",", " ");
-					}
-
-				} while (!chosenTerm.trim());
-
-				this.setSearchTextAndExecute(chosenTerm);
-			}
-		}
-	};
-
-	createSearchRandomizeButton() {
-
-		return $el("button.JNodes-search-randomize-btn", {
-			textContent: "🎲",
-			title: "Random Suggestion",
-			onclick: this.randomizeSearch
-		});
-	}
-
-	updateMatchButtonVisual() {
-
-		if (this.matchButtonElement) {
-			this.matchButtonElement.textContent = this.bMatchAny ? "ANY" : "ALL";
-		}
-	}
-
-	clearSearch() {
-		if (!this.searchFieldElement) { return; }
-		this.searchFieldElement.value = "";
-	}
-
-	getSearchText() {
-
-		if (this.searchFieldElement) {
-			return this.searchFieldElement.value;
-		} else {
-			return "";
-		}
-	}
-
-	setSearchText(newText) {
-		if (!this.searchFieldElement) { return; }
-		this.searchFieldElement.value = newText;
-	}
-
-	setSearchTextAndExecute(newText) {
-		if (!this.searchFieldElement) { return; }
-		this.searchFieldElement.value = newText;
-		this.executeSearchWithEnteredSearchText();
-	}
-
-	clearAndExecuteSearch() {
-		this.clearSearch();
-		this.executeSearchWithEnteredSearchText();
-	}
-
-	focusSearch() {
-		this.searchFieldElement.focus();
-	}
-
-	focusAndSelectSearchText() {
-		this.searchFieldElement.select(); // Select focuses already
+        this._searchTimeout = null;
+        this._searchTimeoutMs = 500;
 	}
 
 	// Function to execute seach with an explicit searchTerm
-	executeSearch(searchTerm) {
+	_executeSearch(searchTerm) {
 
-		// Provision search string
-		const sanitizedSearchTerm = searchTerm.toLowerCase().trim();
+		// Call SearchBar's function
+		SearchBar.prototype._executeSearch.call(this, searchTerm);
 
-		// Split into multiple terms on space
-		const splitSearchTerms = sanitizedSearchTerm.split(" ");
-		const bSearchTermsGiven = splitSearchTerms.length > 0;
-
-		// Loop through items and check for a match
-		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
-		const children = imageDrawerListInstance.getImageListChildren();
-		for (let i = 0; i < children.length; i++) {
-
-			const itemsSearchTerms = children[i]?.searchTerms?.toLowerCase().trim();
-
-			const bShouldEvaluateSearch = bSearchTermsGiven && itemsSearchTerms;
-
-			let bDoesItemTextIncludeSearchTerm = false;
-			if (bShouldEvaluateSearch) {
-				//console.log(itemText + " matched against " + searchTerm + ": " + itemText.includes(searchTerm));
-
-				if (this.bMatchAny) {
-
-					bDoesItemTextIncludeSearchTerm = splitSearchTerms.some(term => itemsSearchTerms.includes(term));
-
-				} else { // Match All terms
-
-					bDoesItemTextIncludeSearchTerm = splitSearchTerms.every(term => itemsSearchTerms.includes(term));
-
-				}
-			}
-
-			// If we don't want to evaluate search, just return true
-			utilitiesInstance.setElementVisible(children[i], bShouldEvaluateSearch ? bDoesItemTextIncludeSearchTerm : true);
-		}
-
+		// Update Widgets
 		const batchSelectionManagerInstance = this.imageDrawerInstance.getComponentByName("BatchSelectionManager");
 		batchSelectionManagerInstance.updateWidget();
 	}
-
-	// Function to execute search using the term entered in the SearchBar
-	executeSearchWithEnteredSearchText() {
-		// Get input value
-		let searchTerm = this.searchFieldElement?.value;
-
-		this.executeSearch(searchTerm);
-	}
 }
+
+// Apply all SearchBar methods and instance properties
+utilitiesInstance.applyMixin(ImageDrawerSearch, SearchBar);
 
 const factoryInstance = new ClassInstanceFactory(ImageDrawerSearch);
