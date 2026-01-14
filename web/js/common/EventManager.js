@@ -135,6 +135,8 @@ document.addEventListener("keydown", async (event) => {
 
 			VideoControl.setVideoPlaybackRate(elementUnderPointer, elementUnderPointer.playbackRate + 0.05);
 		}
+	} else if (event.key == 'U' && event.ctrlKey && event.shiftKey) { // Try Free Memory
+		utilitiesInstance.tryFreeMemory();
 	}
 });
 
