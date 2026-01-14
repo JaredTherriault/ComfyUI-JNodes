@@ -348,18 +348,23 @@ export class ContextModel extends ContextRefreshable {
 	async getModels(bForceRefresh = false) { }
 
 	async loadModels(bForceRefresh = false) {
+
+		// Add loading indicator
 		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
-		imageDrawerListInstance.clearImageListChildren();
-		await imageDrawerListInstance.addElementToImageList($el("label", { textContent: `Loading ${this.name}...` }));
+		await imageDrawerListInstance.replaceImageListChildren([$el("label", { textContent: `Loading ${this.name}...` })]);
+		
+		// Get models
 		let modelDicts = await this.getModels(bForceRefresh);
 		if (this.shouldCancelAsyncOperation()) { return; }
-		imageDrawerListInstance.clearImageListChildren(); // Remove loading indicator
 		//console.log("modelDicts: " + JSON.stringify(loraDicts));
+
+		const newModels = [];
+
+		// Prepare Models
 		const modelKeys = Object.keys(modelDicts);
 		if (modelKeys.length > 0) {
 			let count = 0;
 			let maxCount = 0;
-			imageDrawerListInstance.notifyStartChangingImageList();
 			let promises = [];
 			for (const modelKey of modelKeys) {
 				if (this.shouldCancelAsyncOperation()) { break; }
@@ -369,16 +374,15 @@ export class ContextModel extends ContextRefreshable {
 				if (element == undefined) {
 					console.log("Attempting to add undefined element for model named: " + modelKey + " with dict: " + JSON.stringify(modelDicts[modelKey]));
 				}
-				promises.push(imageDrawerListInstance.addElementToImageList(element));
+				promises.push(imageDrawerListInstance.prepareElementForAdd(element));
+				newModels.push(element);
 				count++;
 			}
 			await Promise.all(promises);
-			imageDrawerListInstance.notifyFinishChangingImageList();
+			await imageDrawerListInstance.replaceImageListChildren(newModels);
 		}
 		else {
-			imageDrawerListInstance.notifyStartChangingImageList();
-			await imageDrawerListInstance.addElementToImageList($el("label", { textContent: "No models were found." }));
-			imageDrawerListInstance.notifyFinishChangingImageList();
+			await imageDrawerListInstance.replaceImageListChildren([$el("label", { textContent: "No models were found." })]);
 		}
 
 	}
@@ -511,6 +515,8 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 				this.subdirectorySelector.data.setOptionSelected(newOptionNames[0]);
 			}
 		}
+
+		this.subdirectorySelector.data.setFilterTextAndExecuteSearch("");
 	}
 
 	// Get the image paths in the folder or directory specified at this.folderName 
@@ -521,7 +527,6 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 		imageDrawerListSortingInstance.stopAutomaticShuffle();
 
 		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
-		imageDrawerListInstance.clearImageListChildren();
 		const withOrWithout = this.bIncludeSubdirectories ? "with" : "without";
 
 		// todo: Python cancellation needs some work
@@ -538,14 +543,16 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 		// 	},
 		// });
 
-		imageDrawerListInstance.addElementToImageList(
-			$el('div', [
-				$el("label", {
-					textContent:
-						`Loading directory '${selectedSubdirectory || this.rootDirectoryName}' ${withOrWithout} subdirectories...`
-				}),
-				//cancelButton
-			])
+		imageDrawerListInstance.replaceImageListChildren(
+			[
+				$el('div', [
+					$el("label", {
+						textContent:
+							`Loading directory '${selectedSubdirectory || this.rootDirectoryName}' ${withOrWithout} subdirectories...`
+					}),
+					//cancelButton
+				])
+			]
 		);
 
 		const allItems = await api.fetchApi(
@@ -553,8 +560,6 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 			`?root_directory=${this.rootDirectoryName}` +
 			`&selected_subdirectory=${selectedSubdirectory}` +
 			`&recursive=${this.bIncludeSubdirectories}`, { cache: "no-store" });
-
-		imageDrawerListInstance.clearImageListChildren();
 
 		let decodedString;
 		try {
@@ -584,20 +589,24 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 
 		if (!this.fileList || this.fileList.length == 0) {
 
-			await imageDrawerListInstance.addElementToImageList(
-				$el('div', [
-					$el("label", {
-						textContent:
-							`No images or videos found in '${selectedSubdirectory == "" ? this.rootDirectoryDisplayName : selectedSubdirectory}'`
-					}),
-					//cancelButton
-				])
+			await imageDrawerListInstance.replaceImageListChildren(
+				[
+					$el('div', [
+						$el("label", {
+							textContent:
+								`No images or videos found in '${selectedSubdirectory == "" ? this.rootDirectoryDisplayName : selectedSubdirectory}'`
+						}),
+						//cancelButton
+					])
+				]
 			);
 			return;
 		}
 
-		if (this.shouldCancelAsyncOperation()) { return; }
+		if (this.shouldCancelAsyncOperation()) { imageDrawerListInstance.clearImageListChildren(); return; }
 
+		let elements = [];
+		let elementPreparationPromises = [];
 
 		const createElementFromFile = async (file) => {
 			let element = await ImageElements.createImageElementFromFileInfo({
@@ -609,37 +618,37 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 				bShouldSort: false,
 				bShouldApplySearch: false,
 			}, this.imageDrawerInstance);
+
 			if (element !== undefined) {
-				imageDrawerListInstance.addElementToImageList(element, false);
+				elementPreparationPromises.push(imageDrawerListInstance.prepareElementForAdd(element));
+				elements.push(element);
 			} else {
 				console.log(`Attempted to add undefined image element in ${this.name}`);
 			}
 		};
 
-		imageDrawerListInstance.notifyStartChangingImageList();
-
-		const promises = [];
+		let elementCreationPromises = [];
 		for (let fileIndex = 0; fileIndex < this.fileList.length; fileIndex++) {
 			if (this.shouldCancelAsyncOperation()) { break; }
 
 			const file = this.fileList[fileIndex];
 			// Push the promise to the array
-			promises.push(createElementFromFile(file));
+			elementCreationPromises.push(createElementFromFile(file));
 		}
 
 		// Wait for all promises to resolve
-		Promise.all(promises).then(() => {
+		if (this.shouldCancelAsyncOperation()) { imageDrawerListInstance.clearImageListChildren(); return; }
+		await Promise.all(elementCreationPromises);
+		if (this.shouldCancelAsyncOperation()) { imageDrawerListInstance.clearImageListChildren(); return; }
+		await Promise.all(elementPreparationPromises);
 
-			const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
-			imageDrawerListSortingInstance.sortWithCurrentType();
+		imageDrawerListInstance.replaceImageListChildren(elements);
 
-			const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
-			imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
+		const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
+		imageDrawerListSortingInstance.sortWithCurrentType();
 
-			imageDrawerListInstance.notifyFinishChangingImageList();
-		});
-
-
+		const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
+		imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
 	}
 
 	async makeToolbar() {
@@ -754,8 +763,6 @@ export class ContextFeed extends ContextClearable {
 				if (imageDrawerContextSelectorInstance.getCurrentContextName() == this.name) {
 					await this.addNewUncachedFeedImages();
 				}
-
-				// utilitiesInstance.tryFreeMemory(false, true, false);
 			}
 		});
 	}
@@ -764,7 +771,9 @@ export class ContextFeed extends ContextClearable {
 		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 		const imageListLength = imageDrawerListInstance.getImageListChildren().length;
 		if (imageListLength < this.feedImages.length) {
-			imageDrawerListInstance.notifyStartChangingImageList();
+
+			let fragment = document.createDocumentFragment();
+
 			for (let imageIndex = imageListLength; imageIndex < this.feedImages.length; imageIndex++) {
 				if (this.shouldCancelAsyncOperation()) { break; }
 
@@ -773,9 +782,11 @@ export class ContextFeed extends ContextClearable {
 				fileInfo.bShouldForceLoad = true; // Don't lazy load
 				const element = await ImageElements.createImageElementFromFileInfo(fileInfo, this.imageDrawerInstance);
 				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
-				const bHandleSearch = false;
-				await imageDrawerListInstance.addElementToImageList(element, bHandleSearch);
+				fragment.appendChild(element);
+				imageDrawerListInstance.prepareElementForAdd(element);
 			}
+
+			imageDrawerListInstance.getImageListElement().appendChild(fragment);
 
 			if (bShouldSort) {
 				const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
@@ -787,7 +798,6 @@ export class ContextFeed extends ContextClearable {
 				imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
 			}
 
-			imageDrawerListInstance.notifyFinishChangingImageList();
 		}
 	}
 
