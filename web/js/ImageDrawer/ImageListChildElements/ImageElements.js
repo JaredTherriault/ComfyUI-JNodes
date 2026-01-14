@@ -122,7 +122,7 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 	};
 
 	if (fileInfo.bShouldForceLoad) {
-		imageElement.forceLoad(); // Immediately load img if we don't want to lazy load (like in feed)
+		// imageElement.forceLoad(); // Immediately load img if we don't want to lazy load (like in feed)
 	}
 
 	// Placeholder dimensions
@@ -202,6 +202,10 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 			imageElement.searchTerms += fileInfo.file.metadata[key];
 		}
 	}
+
+	imageElement.searchTerms = imageElement.searchTerms.toLowerCase().trim();
+
+	imageElement.getSearchTerms = function() { return imageElement.searchTerms; }
 
 	// Mouse Events
 	imageElement.bHasEverMousedOver = false;

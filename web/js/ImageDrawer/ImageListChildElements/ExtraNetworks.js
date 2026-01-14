@@ -1163,6 +1163,10 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 	modelElement.searchTerms = 
 		`${familiars.full_name} ${modelElement.filename} ${modelElement.friendlyName} ${getTrainedWords()} ${getTags().join(" ")} ${modelElement.lora_meta}`;
 
+	modelElement.searchTerms = modelElement.searchTerms.toLowerCase().trim();
+
+	modelElement.getSearchTerms = function() { return modelElement.searchTerms; }
+
 	modelElement.draggable = true; // Made draggable to allow image drag and drop onto canvas / nodes / file explorer
 
 	modelElement.addEventListener('dragstart', function (event) {
