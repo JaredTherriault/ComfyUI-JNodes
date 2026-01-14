@@ -61,67 +61,106 @@ class JNodesUtilities {
 	}
 
 	/**
-	 * Creates a slider-style toggle
-	 * @param {Function} onCallback - function to call when toggled ON
-	 * @param {Function} offCallback - function to call when toggled OFF
-	 * @param {Object} [options] - optional settings (width, height, colors)
-	 * @returns {HTMLElement} - the toggle element
+	 * Creates a slider‑style toggle.
+	 *
+	 * @param {Function} onCallback   – called when the switch turns ON
+	 * @param {Function} offCallback  – called when the switch turns OFF
+	 * @param {Object}   [options]    – optional settings
+	 * @param {number}   [options.width]     – width of the track (horizontal) or height of the track (vertical)
+	 * @param {number}   [options.height]    – height of the track (horizontal) or width of the track (vertical)
+	 * @param {string}   [options.onColor]   – background color when ON
+	 * @param {string}   [options.offColor]  – background color when OFF
+	 * @param {string}   [options.knobColor] – color of the knob
+	 * @param {number}   [options.knobSize]  – diameter of the knob
+	 * @param {boolean}  [options.vertical]  – true = vertical, false (default) = horizontal
+	 * @param {number}   [options.offset]  	 – margin from the edge
+	 * @param {}  		 [options.padding]   – string or number; if number, applies uniform padding
+	 *
+	 * @returns {{container: HTMLElement, switch: HTMLElement}}  – the container and the switch element
 	 */
 	createSliderToggle(onCallback, offCallback, options = {}) {
-		const width = options.width || 50;
-		const height = options.height || 24;
-		const onColor = options.onColor || "#4caf50";
-		const offColor = options.offColor || "#ccc";
-		const knobSize = options.knobSize || height - 6;
+		/* ---------- default values ---------- */
+		const isVertical = options.vertical || false;
 
+		const width  = options.width || (isVertical ? 24 : 50);
+		const height = options.height || (isVertical ? 50 : 24);
+
+		const onColor   = options.onColor   || "#4caf50";
+		const offColor  = options.offColor  || "#ccc";
+		const knobSize  = options.knobSize  || Math.min(width, height) - 6; // keep a small border
+		const knobColor = options.knobColor || "#fff";
+		const offset    = options.offset 	|| 3; // margin from the edge
+		const padding   = options.padding 	|| 0; 
+
+		/* ---------- build the DOM ---------- */
 		const container = $el("div", {
 			style: {
 				display: "flex",
 				alignItems: "center",
-			}
+				flexDirection: "row",
+				padding: typeof padding === "string" ? padding : `${padding}px`
+			},
 		});
 
-		// Container
-		const backgroundElement = $el("div");
-		backgroundElement.style.position = "relative";
-		backgroundElement.style.width = width + "px";
-		backgroundElement.style.height = height + "px";
-		backgroundElement.style.borderRadius = height + "px";
-		backgroundElement.style.backgroundColor = offColor;
-		backgroundElement.style.cursor = "pointer";
-		backgroundElement.style.transition = "background-color 0.4s";
+		/* ---------- the track (background) ---------- */
+		const background = $el("div");
+		background.style.position   = "relative";
+		background.style.width      = width + "px";
+		background.style.height     = height + "px";
+		background.style.borderRadius = isVertical ? width + "px" : height + "px";
+		background.style.backgroundColor = offColor;
+		background.style.cursor = "pointer";
+		background.style.transition = "background-color 0.4s";
+		background.bIsOn = false;          // internal flag
 
-		backgroundElement.bIsOn = false;
-
-		// Knob
+		/* ---------- the knob ---------- */
 		const knob = $el("div");
 		knob.style.position = "absolute";
+		knob.style.width  = knobSize + "px";
 		knob.style.height = knobSize + "px";
-		knob.style.width = knobSize + "px";
-		knob.style.left = "3px";
-		knob.style.top = "3px";
 		knob.style.borderRadius = "50%";
-		knob.style.backgroundColor = "#fff";
+		knob.style.backgroundColor = knobColor;
 		knob.style.transition = "transform 0.4s";
 
-		// Toggle handler
-		backgroundElement.addEventListener("click", () => {
-			backgroundElement.bIsOn = !backgroundElement.bIsOn;
-			if (backgroundElement.bIsOn) {
-				knob.style.transform = `translateX(${width - knobSize - 6}px)`;
-				backgroundElement.style.backgroundColor = onColor;
+		/* Position the knob */
+		knob.style.left = isVertical
+		? ((width - knobSize) / 2) + "px"
+		: offset + "px";
+
+		const initialTop = isVertical
+		? height - knobSize - offset          // start at the bottom
+		: offset;                            // start at the top‑left for horizontal
+		knob.style.top = initialTop + "px";
+
+		/* ---------- toggle handler ---------- */
+		background.addEventListener("click", () => {
+			background.bIsOn = !background.bIsOn;
+
+			/* travel distance */
+			const travel = isVertical
+				? height - knobSize - 2 * offset
+				: width  - knobSize - 2 * offset;
+
+			if (background.bIsOn) {
+				knob.style.transform = isVertical
+				? `translateY(-${travel}px)`
+				: `translateX(${travel}px)`;
+				background.style.backgroundColor = onColor;
 				if (typeof onCallback === "function") onCallback();
 			} else {
-				knob.style.transform = "translateX(0)";
-				backgroundElement.style.backgroundColor = offColor;
+				knob.style.transform = "translate(0,0)";
+				background.style.backgroundColor = offColor;
 				if (typeof offCallback === "function") offCallback();
 			}
 		});
 
-		backgroundElement.appendChild(knob);
-		container.appendChild(backgroundElement);
-		container.inputEl = backgroundElement;
-		return { container: container, switch: backgroundElement };
+		/* ---------- assemble ---------- */
+		background.appendChild(knob);
+		container.appendChild(background);
+
+		// expose the background element as the “switch” for external code
+		container.inputEl = background;
+		return { container, switch: background };
 	}
 
 	addComfyNodeWidget(node, customWidget, name, type, domArgs = {}) {
@@ -144,6 +183,37 @@ class JNodesUtilities {
 		mainWidget.parentEl.appendChild(customWidget);
 
 		return mainWidget;
+	}
+
+	// Apply the variables and methods from mixinClass to the targetClass
+	// Not that the constructor for the mixiinClass will not apply to targetClass
+	// It's best to reimplement the same ctor in targetClass
+	applyMixin(targetClass, mixinClass) {
+		// Copy prototype methods
+		Object.getOwnPropertyNames(mixinClass.prototype).forEach(name => {
+			if (name === "constructor") return;
+			if (name in targetClass.prototype) return;
+			targetClass.prototype[name] = mixinClass.prototype[name];
+		});
+
+		// Wrap target constructor
+		const originalCtor = targetClass.prototype.constructor;
+		targetClass.prototype.constructor = function (...args) {
+			// 1️⃣ Run the original target constructor
+			originalCtor.apply(this, args);
+
+			// 2️⃣ Run the mixin constructor on the same instance
+			mixinClass.prototype.constructor.apply(this, args);
+		};
+	}
+
+
+	tokenizeText(text) {
+		return text
+			.toLowerCase()
+			.split(/\s+/)        						// split on any whitespace
+			.map(item => item.toLowerCase().trim()) 	// lowercase, remove whitespace
+			.filter(Boolean);    						// remove empty tokens
 	}
 
 	getTimestamp(format = 'full') {
@@ -264,15 +334,15 @@ class JNodesUtilities {
 		element.style.display = bNewVisible ? customVisibleType : "none";
 	}
 
-	getVideoElements(parentElement) {
+	getVideoElements(parentElement = document) {
 		return parentElement ? parentElement.querySelectorAll("video") : [];
 	}
 
-	getImgElements(parentElement) {
+	getImgElements(parentElement = document) {
 		return parentElement ? parentElement.querySelectorAll("img") : [];
 	}
 
-	getVisualElements(parentElement) {
+	getVisualElements(parentElement = document) {
 		return parentElement ? parentElement.querySelectorAll("video, img") : [];
 	}
 
@@ -382,6 +452,18 @@ class JNodesUtilities {
 		metadata = metadata.replace(/NaN/g, "0");
 
 		return metadata;
+	}
+
+	autoResizeTextArea(element, maxHeight = 300) {
+
+		if (!element) { return; }
+		
+		// reset so the browser recomputes the new height
+		element.style.height = "auto";
+
+		// scrollHeight is the height of the content (in px)
+		const newHeight = Math.min(element.scrollHeight, maxHeight); // clamp to maxHeight
+		element.style.height = `${newHeight}px`;
 	}
 
 	sanitizeHTML(input) {
@@ -543,6 +625,54 @@ class JNodesUtilities {
 		document.dispatchEvent(mouseupEvent);
 	}
 
+	makePannableWithMiddleMouse(element) {
+		element.addEventListener("pointerdown", (event) => {
+			if (event.pointerType !== "mouse") return;
+			if (event.button !== 1) return;
+
+			event.preventDefault();
+			element.setPointerCapture(event.pointerId);
+
+			const startScreenX = event.clientX;
+			const startScreenY = event.clientY;
+
+			const LiteGraphInstance = window?.LiteGraph;
+			const canvas = LiteGraphInstance?.LGraphCanvas?.active_canvas;
+			if (!canvas || !canvas.ds) return;
+
+			const ds = canvas.ds;
+
+			// world position under cursor at start
+			const startWorldX = (startScreenX - ds.offset[0]) / ds.scale;
+			const startWorldY = (startScreenY - ds.offset[1]) / ds.scale;
+
+			const onMove = (moveE) => {
+				moveE.preventDefault();
+
+				const mx = moveE.clientX;
+				const my = moveE.clientY;
+
+				// keep the same world point under the cursor
+				ds.offset[0] = mx - startWorldX * ds.scale;
+				ds.offset[1] = my - startWorldY * ds.scale;
+
+				canvas.dirty_canvas = true;
+				canvas.dirty_bgcanvas = true;
+			};
+
+			const onUp = (upE) => {
+				upE.preventDefault();
+				element.releasePointerCapture(event.pointerId);
+				element.removeEventListener("pointermove", onMove);
+				element.removeEventListener("pointerup", onUp);
+			};
+
+			element.addEventListener("pointermove", onMove);
+			element.addEventListener("pointerup", onUp);
+		});
+	}
+
+
 	jsonStringifyWithoutCircularErrors(object) {
 
 		function removeCircularReferences() {
@@ -660,7 +790,7 @@ class JNodesUtilities {
 		return SortedObject;
 	}
 
-	async tryFreeMemory(bShowError = false, bUnloadModels = true, bFreeMemory = true) {
+	async tryFreeMemory(bUnloadModels = true, bFreeMemory = true, bShowError = false) {
 		const response = await api.fetchApi(`/free`, {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
@@ -672,113 +802,133 @@ class JNodesUtilities {
 		}
 	}
 
+	generateUUID() {
+		if (crypto?.randomUUID) {
+			return crypto.randomUUID();
+		}
+		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+			const r = Math.random() * 16 | 0;
+			const v = c === 'x' ? r : (r & 0x3 | 0x8);
+			return v.toString(16);
+		});
+	}
+
+	_UUID_V4_REGEX =
+    	/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+	isValidUUID(value) {
+		return typeof value === "string" && this._UUID_V4_REGEX.test(value);
+	}
+
+	_keyList = [
+		"ArrowDown",
+		"ArrowLeft",
+		"ArrowRight",
+		"ArrowUp",
+		"Backquote",
+		"Backslash",
+		"Backspace",
+		"BracketLeft",
+		"BracketRight",
+		"Comma",
+		"Digit0",
+		"Digit1",
+		"Digit2",
+		"Digit3",
+		"Digit4",
+		"Digit5",
+		"Digit6",
+		"Digit7",
+		"Digit8",
+		"Digit9",
+		"Enter",
+		"Equal",
+		"Escape",
+		"F1",
+		"F10",
+		"F11",
+		"F12",
+		"F13",
+		"F13",
+		"F14",
+		"F15",
+		"F16",
+		"F17",
+		"F18",
+		"F19",
+		"F2",
+		"F20",
+		"F21",
+		"F22",
+		"F23",
+		"F24",
+		"F25",
+		"F26",
+		"F27",
+		"F28",
+		"F29",
+		"F3",
+		"F30",
+		"F31",
+		"F32",
+		"F4",
+		"F5",
+		"F6",
+		"F7",
+		"F8",
+		"F9",
+		"KeyA",
+		"KeyB",
+		"KeyC",
+		"KeyD",
+		"KeyE",
+		"KeyF",
+		"KeyG",
+		"KeyH",
+		"KeyI",
+		"KeyJ",
+		"KeyK",
+		"KeyL",
+		"KeyM",
+		"KeyN",
+		"KeyO",
+		"KeyP",
+		"KeyQ",
+		"KeyR",
+		"KeyS",
+		"KeyT",
+		"KeyU",
+		"KeyV",
+		"KeyW",
+		"KeyX",
+		"KeyY",
+		"KeyZ",
+		"Minus",
+		"Numpad0",
+		"Numpad1",
+		"Numpad2",
+		"Numpad3",
+		"Numpad4",
+		"Numpad5",
+		"Numpad6",
+		"Numpad7",
+		"Numpad8",
+		"Numpad9",
+		"NumpadAdd",
+		"NumpadComma",
+		"NumpadDecimal",
+		"NumpadDivide",
+		"NumpadMultiply",
+		"NumpadSubtract",
+		"Period",
+		"Quote",
+		"Semicolon",
+		"Slash",
+		"Space"
+	];
+
 	getKeyList() {
-		return [
-			"ArrowDown",
-			"ArrowLeft",
-			"ArrowRight",
-			"ArrowUp",
-			"Backquote",
-			"Backslash",
-			"Backspace",
-			"BracketLeft",
-			"BracketRight",
-			"Comma",
-			"Digit0",
-			"Digit1",
-			"Digit2",
-			"Digit3",
-			"Digit4",
-			"Digit5",
-			"Digit6",
-			"Digit7",
-			"Digit8",
-			"Digit9",
-			"Enter",
-			"Equal",
-			"Escape",
-			"F1",
-			"F10",
-			"F11",
-			"F12",
-			"F13",
-			"F13",
-			"F14",
-			"F15",
-			"F16",
-			"F17",
-			"F18",
-			"F19",
-			"F2",
-			"F20",
-			"F21",
-			"F22",
-			"F23",
-			"F24",
-			"F25",
-			"F26",
-			"F27",
-			"F28",
-			"F29",
-			"F3",
-			"F30",
-			"F31",
-			"F32",
-			"F4",
-			"F5",
-			"F6",
-			"F7",
-			"F8",
-			"F9",
-			"KeyA",
-			"KeyB",
-			"KeyC",
-			"KeyD",
-			"KeyE",
-			"KeyF",
-			"KeyG",
-			"KeyH",
-			"KeyI",
-			"KeyJ",
-			"KeyK",
-			"KeyL",
-			"KeyM",
-			"KeyN",
-			"KeyO",
-			"KeyP",
-			"KeyQ",
-			"KeyR",
-			"KeyS",
-			"KeyT",
-			"KeyU",
-			"KeyV",
-			"KeyW",
-			"KeyX",
-			"KeyY",
-			"KeyZ",
-			"Minus",
-			"Numpad0",
-			"Numpad1",
-			"Numpad2",
-			"Numpad3",
-			"Numpad4",
-			"Numpad5",
-			"Numpad6",
-			"Numpad7",
-			"Numpad8",
-			"Numpad9",
-			"NumpadAdd",
-			"NumpadComma",
-			"NumpadDecimal",
-			"NumpadDivide",
-			"NumpadMultiply",
-			"NumpadSubtract",
-			"Period",
-			"Quote",
-			"Semicolon",
-			"Slash",
-			"Space"
-		];
+		return this._keyList;
 	}
 }
 
