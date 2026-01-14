@@ -783,10 +783,8 @@ export function createVideoPlaybackOptionsMenuWidgets(menu, imageDrawerListInsta
     const infos = new info_VideoPlaybackOptions();
 
     async function callForEachCallbackOnEachElementInImageList(propertyName, propertyValue, info) {
-        for (let child of imageDrawerListInstance.getImageListChildren()) {
-            for (let element of utilitiesInstance.getVideoElements(child)) {
-                info.forEachElement(element, propertyName, propertyValue);
-            }
+        for (let element of utilitiesInstance.getVideoElements()) {
+            info.forEachElement(element, propertyName, propertyValue);
         }
     }
 
@@ -798,7 +796,8 @@ export function createVideoPlaybackOptionsMenuWidgets(menu, imageDrawerListInsta
         // If requested, set similarly named properties on image list
         const info = infos[propertyName];
         if (info.forEachElement) {
-            callForEachCallbackOnEachElementInImageList(propertyName, newValue, info, imageDrawerListInstance);
+
+            callForEachCallbackOnEachElementInImageList(propertyName, newValue, info);
         }
     }
 
