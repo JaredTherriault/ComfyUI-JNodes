@@ -21,7 +21,7 @@ class ImageDrawerList extends ImageDrawerComponent {
 			}
 		});
 
-		this.imageListContainer.append(this.imageList);
+		this.imageListContainer.appendChild(this.imageList);
 
 		this._scrollLevel = 0;
 		this.imageListContainer.addEventListener("scroll", (event) => {
@@ -96,28 +96,25 @@ class ImageDrawerList extends ImageDrawerComponent {
 	}
 
 	async replaceImageListChild(oldChild, newChild) {
+		if (!oldChild || !newChild) return;
 
-		if (!oldChild || !newChild) {
+		this.prepareElementForAdd(newChild);
 
-			return;
-		}
-
-		const insertionIndex = this.getChildIndex(oldChild);
-
-		if (insertionIndex > -1) {
-			await this.removeElementFromImageList(oldChild, false);
-			await this.addElementToImageList(newChild, false, insertionIndex);
+		const parent = oldChild.parentNode;
+		if (parent) {
+			parent.replaceChild(newChild, oldChild);
 		}
 	}
 
 	async replaceImageListChildren(newChildren) {
 
 		this.notifyStartChangingImageList();
-		this.clearImageListChildren();
-		for (let child of newChildren) {
-			this.addElementToImageList(child, false);
-		}
-		this.notifyFinishChangingImageList();
+
+	    const fragment = document.createDocumentFragment();
+	    for (const child of newChildren) fragment.appendChild(child);
+	    this.imageList.replaceChildren(fragment);
+	
+	    this.notifyFinishChangingImageList();
 
 		const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
 		imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
@@ -126,15 +123,21 @@ class ImageDrawerList extends ImageDrawerComponent {
 	clearImageListChildren() {
 
 		this.notifyStartChangingImageList();
+
+		// First simply prepare list items for removal
 		let currentChildren = this.getImageListChildren();
 		const childNodeCount = currentChildren.length;
 		for (let childIndex = childNodeCount - 1; childIndex >= 0; childIndex--) {
-			this.removeElementFromImageList(currentChildren[childIndex], false);
+			this.prepareElementForRemoval(currentChildren[childIndex]);
 		}
+
+		// Then remove them all at once
+		this.imageList.replaceChildren();
+
 		this.notifyFinishChangingImageList();
 	};
 
-	async removeElementFromImageList(element, bHandleSearch = true) {
+	async prepareElementForRemoval(element) {
 		if (element != undefined) {
 			//console.log("removing element: " + element);
 			if (element.onObserverIntersect) {
@@ -156,6 +159,14 @@ class ImageDrawerList extends ImageDrawerComponent {
 					}
 				}
 			}
+		}
+	}
+
+	async removeElementFromImageList(element, bHandleSearch = true) {
+		if (element != undefined) {
+
+			await this.prepareElementForRemoval(element);
+			
 			this.imageList.removeChild(element);
 			if (bHandleSearch) {
 				const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
@@ -166,15 +177,8 @@ class ImageDrawerList extends ImageDrawerComponent {
 		}
 	};
 
-	async addElementToImageList(element, bHandleSearch = true, insertAt = -1) {
-		//console.log("adding element: " + element);
+	async prepareElementForAdd(element) {
 		if (element != undefined) {
-			if (insertAt > -1 && insertAt < this.imageList.childNodes.length) {
-				const referenceNode = this.imageList.childNodes[insertAt];
-            	this.imageList.insertBefore(element, referenceNode);
-			} else {
-				this.imageList.appendChild(element);
-			}
 			if (element.onObserverIntersect) {
 				observeVisualElement(element);
 			} else {
@@ -182,6 +186,22 @@ class ImageDrawerList extends ImageDrawerComponent {
 					observeVisualElement(visualElement);
 				}
 			}
+		}
+	}
+
+	async addElementToImageList(element, bHandleSearch = true, insertAt = -1) {
+		//console.log("adding element: " + element);
+		if (element != undefined) {
+
+			await this.prepareElementForAdd(element);
+
+			if (insertAt > -1 && insertAt < this.imageList.childNodes.length) {
+				const referenceNode = this.imageList.childNodes[insertAt];
+            	this.imageList.insertBefore(element, referenceNode);
+			} else {
+				this.imageList.appendChild(element);
+			}
+
 			if (bHandleSearch) {
 				const imageDrawerSearchInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerSearch");
 				imageDrawerSearchInstance.executeSearchWithEnteredSearchText();
