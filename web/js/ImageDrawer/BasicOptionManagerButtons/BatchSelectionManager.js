@@ -56,13 +56,10 @@ class BatchSelectionManager extends BatchOptionManagerButton {
             this.lastCheckedItemCount = { selectedCount: 0, totalItems: 0 };
     
             this.notifyCheckedItemCountUpdatedMulticastDelegate();
-
-            const bUpdateCount = false;
-            this.updateWidget(bUpdateCount);
         });
         imageDrawerListInstance.registerFinishChangingImageListMulticastFunction(() => {
 
-            this.updateWidget();
+            requestAnimationFrame(() => this.updateWidget());
         });
 
         return superWidget;
@@ -167,8 +164,12 @@ class BatchSelectionManager extends BatchOptionManagerButton {
             this.selectionCheckbox.indeterminate = true;
         }
 
-        this.countText.textContent = `(${this.lastCheckedItemCount.selectedCount}/${this.lastCheckedItemCount.totalItems})`;
+        const newText =
+        `(${this.lastCheckedItemCount.selectedCount}/${this.lastCheckedItemCount.totalItems})`;
 
+        if (this.countText.textContent !== newText) {
+            this.countText.textContent = newText;
+        }
         // Hide selector for model contexts as it's not currently implemented
         const imageDrawerContextSelectorInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerContextSelector");
 		const currentContext = imageDrawerContextSelectorInstance.getCurrentContextObject();
