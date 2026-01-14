@@ -18,6 +18,7 @@ export class SearchableDropDown {
         this._selectedOption = "";
         this._bIsContentShown = false;
         this._lastScrollAmount = 0;
+        this._availableOptions = [];
 
         // Events
         this._ON_SELECT_EVENT_NAME = "selectoption";
@@ -84,7 +85,8 @@ export class SearchableDropDown {
     }
 
     /**
-     * Adds a new option to the dropdown.
+     * Adds a new option to the dropdown's available options. 
+     * Execute search separately to see it in the list.
      * @param {string} optionName - The display text of the option.
      * @param {string} [optionTooltip=""] - Optional tooltip for the option.
      * @param {string} [optionValue=""] - Optional value associated with the option.
@@ -102,18 +104,16 @@ export class SearchableDropDown {
             this._selectOption(optionName, bInvokeCallbacks);
             this.closeContent();
         });
-        this._labelPanel.appendChild(option);
+        this._availableOptions.push(option);
 
         if (this.getOptionElements().length == 1) {
             this.setOptionSelected(optionName);
         }
-
-        // Execute search
-        this.filterOptions(this.getFilterText());
     }
 
     /**
-     * Adds a unique option to the dropdown (avoids duplicate entries).
+     * Adds a unique option to the dropdown (avoids duplicate entries). 
+     * Execute search separately to see it in the list.
      * @param {string} optionName - The display text of the option.
      * @param {string} [optionTooltip=""] - Optional tooltip for the option.
      * @param {string} [optionValue=""] - Optional value associated with the option.
@@ -126,17 +126,16 @@ export class SearchableDropDown {
     }
 
     /**
-     * Removes an option from the dropdown by its display text.
+     * Removes an option from the dropdown by its display text. 
+     * Execute search separately to see it removed from the list.
      * @param {string} optionName - The display text of the option to remove.
      */
     removeOption(optionName) {
 
-        if (!this._labelPanel) { return; }
-
         const options = this.getOptionElements();
         for (let labelChildIndex = options.length - 1; labelChildIndex >= 0; labelChildIndex--) {
             if (options[labelChildIndex].textContent === optionName) {
-                this._labelPanel.removeChild(options[labelChildIndex]);
+                this._availableOptions.splice(options[labelChildIndex], 1);
 
                 if (this._selectedOption == optionName) {
                     this._selectOption("");
@@ -178,15 +177,13 @@ export class SearchableDropDown {
     }
 
     /**
-     * Clears all options from the dropdown.
+     * Clears all options from the dropdown. 
+     * Execute search separately to see it removed from the list.
      */
     clearOptions() {
 
-        const options = this.getOptionElements();
-        for (let labelChildIndex = options.length - 1; labelChildIndex >= 0; labelChildIndex--) {
-            this._labelPanel.removeChild(options[labelChildIndex]);
-            this._selectOption("");
-        }
+        this._availableOptions = [];
+        this._selectOption("");
     }
 
     getOptionNames() {
@@ -202,7 +199,7 @@ export class SearchableDropDown {
 
     getOptionElements() {
 
-        return this._labelPanel ? this._labelPanel.getElementsByTagName("label") : [];
+        return this._availableOptions;
     }
 
     getOptionValue(optionName) {
@@ -257,14 +254,17 @@ export class SearchableDropDown {
 
         const filterText = inFilterText.toUpperCase();
         const options = this.getOptionElements();
+
+        let fragment = document.createDocumentFragment();
+
         for (let i = 0; i < options.length; i++) {
-            const txtValue = options[i].textContent || options[i].innerText;
-            if (txtValue.toUpperCase().includes(filterText)) {
-                options[i].style.display = "";
-            } else {
-                options[i].style.display = "none";
+            const txtValue = options[i].textContent;
+            if (!filterText || txtValue.toUpperCase().includes(filterText)) {
+                fragment.appendChild(options[i]);
             }
         }
+
+        this._labelPanel.replaceChildren(fragment);
     }
 
     toggleContent() {
