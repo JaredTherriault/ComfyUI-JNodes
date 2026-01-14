@@ -4,6 +4,8 @@
 
 import { setting_VideoPlaybackOptions } from "./SettingsManager.js";
 
+import { utilitiesInstance } from "./Utilities.js";
+
 // Note: On some browsers the user may have to explicitly allow autoplay in order for playback to work correctly
 // Otherwise, you end up with a bunch of errors while scrolling informing us that the user didn't 'interact' with the page first (even if they are clearly scrolling)
 
@@ -15,16 +17,37 @@ let observerOptions = new ImageAndVideoObserverOptions();
 
 const observedElements = new Set();
 
-async function tryPlayVideo(element) {
-	if (element.paused) {
-		try {
-			await element.play();
-			element.currentTime = element.lastSeekTime;
-		} catch (error) {
-			console.error(error);
-		}
-	}
+const bIsUnloadEnabled = true;
+
+function tryPlayVideo(element) {
+
+    // Helper anon function
+    const start = () => {
+
+        // Pause all other videos if Solo mode
+	    if (setting_VideoPlaybackOptions.value.solo) {
+            for (const video of utilitiesInstance.getVideoElements()) {
+                tryStopVideo(video);
+            }
+        }
+
+        if (element.lastSeekTime != null) {
+            element.currentTime = element.lastSeekTime;
+        }
+
+        // Try to play the video but don't error if not possible
+        element.play().catch(() => {});
+    };
+
+    // Start if ready
+    if (element.readyState >= 1) {
+        start();
+    } else {
+        // Otherwise wait for metadata to load to avoid stuttering start
+        element.addEventListener('loadedmetadata', start, { once: true });
+    }
 }
+
 
 function tryStopVideo(element) {
 	if (element.readyState >= element.HAVE_ENOUGH_DATA && !element.paused) {
@@ -79,7 +102,9 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
             if (element.onObserverIntersect) {
                 element.onObserverIntersect();
             } else if (!element.src || element.src === '') {
-                if (element.forceLoad) element.forceLoad();
+                if (element.forceLoad) {
+                    element.forceLoad();
+                }
             }
 
             if (element.tagName === 'VIDEO' && setting_VideoPlaybackOptions.value.autoplay) {
@@ -87,6 +112,8 @@ const imageAndVideoObserver = new IntersectionObserver((entries) => {
             }
 
         } else {
+
+            if (!bIsUnloadEnabled) {return;}
             // Not visible — schedule unload
             if (element.onObserverUnintersect) {
                 element.onObserverUnintersect();
