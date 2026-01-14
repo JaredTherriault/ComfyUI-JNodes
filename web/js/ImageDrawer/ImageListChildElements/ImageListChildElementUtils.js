@@ -68,13 +68,7 @@ function updateTooltip(newTooltipWidget, imageElement) {
         createToolTip(imageElement);
     }
 
-    // Remove all children
-    while (toolTip.firstChild) {
-        toolTip.removeChild(toolTip.firstChild);
-    }
-
-    // And append the incoming one
-    toolTip.appendChild(newTooltipWidget);
+    toolTip.replaceChildren(newTooltipWidget);
 
     return true;
 }
@@ -419,27 +413,40 @@ export function getOrCreateToolButton(imageElementToUse) {
         createOptionsMenu();
     }
 
+    const handleClassSuffix = 'imageElement-flyout-handle';
+    const handleText = "⋮";
+
     if (!toolButtonContainer) {
         toolButtonContainer = utilitiesInstance.createDarkContainer("imageToolsButton", "0%");
-    }
+        toolButtonContainer.style.top = '2%';
+        toolButtonContainer.style.right = '2%';
 
-    const handleClassSuffix = 'imageElement-flyout-handle';
-    const menuClassSuffix = 'imageElement-flyout-menu';
-    const imageDrawerListInstance = imageElementToUse.imageDrawerInstance.getComponentByName("ImageDrawerList");
-    const parentElement = imageDrawerListInstance.getImageListElement();
-    const flyout = createFlyoutHandle("⋮", handleClassSuffix, menuClassSuffix, parentElement);
+        // Placeholder handle
+        let handle = $el(`section.flyout-handle.${handleClassSuffix}`, [
+            $el("label.flyout-handle-label", { textContent: handleText })
+        ]);
+        toolButtonContainer.appendChild(handle);
+    }    
 
-    toolButtonContainer.style.top = '2%';
-    toolButtonContainer.style.right = '2%';
+    const onPointerEnter = () => {
+        const menuClassSuffix = 'imageElement-flyout-menu';
+        const imageDrawerListInstance = imageElementToUse.imageDrawerInstance.getComponentByName("ImageDrawerList");
+        const parentElement = imageDrawerListInstance.getImageListElement();
+        const flyout = createFlyoutHandle(handleText, handleClassSuffix, menuClassSuffix, parentElement);
 
-    while (toolButtonContainer.firstChild) {
-        toolButtonContainer.removeChild(toolButtonContainer.firstChild);
-    }
-    toolButtonContainer.appendChild(flyout.handle);
+        toolButtonContainer.replaceChildren(flyout.handle);
 
-    createButtons(flyout);
+        createButtons(flyout);
 
-    toolButtonContainer.flyout = flyout;
+        toolButtonContainer.flyout = flyout;
+        toolButtonContainer.flyout.handle.determineTransformLayout();
+    };
+
+    // onPointerEnter();
+
+    // toolButtonContainer.addEventListener("pointerenter", () => {
+        requestAnimationFrame(onPointerEnter);
+    // }, {once: true});
 
     return toolButtonContainer;
 }
@@ -454,8 +461,6 @@ export function addToolButtonToImageElement(imageElementToUse) {
 
     imageElementToUse.appendChild(toolButton);
     toolButton.style.visibility = "visible";
-
-    toolButton.flyout.handle.determineTransformLayout(); // Call immediately after parenting to avoid first calling being from the center
 }
 
 export function removeAndHideToolButtonFromImageElement(imageElementToUse) {
@@ -642,13 +647,17 @@ export async function onLoadImageElement(imageElement) {
             imageElement.displayData.FileSize = blob.size;
         }
 
-        const metadata = await getMetaData(blob, imageElement.fileInfo.file.format);
+        getMetaData(blob, imageElement.fileInfo.file.format).then(
+            (metadata) => {
+                imageElement.metadata = metadata;
 
-        imageElement.metadata = metadata;
+                setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata);
 
-        setMetadataAndUpdateTooltipAndSearchTerms(imageElement, metadata);
+                imageElement.bComplete = true;
+            }
+        );
 
-        imageElement.bComplete = true;
+
     }
     else {
         console.log('Image is still loading.');
