@@ -251,39 +251,37 @@ const mediaPreview = {
 								node.previewElement = CreatePreviewElement(`${prefix}_${0}`, previewUrl, params.format, node);
 
 								if (!node.mediaPreview) {
-
-									node.mediaPreview = utilitiesInstance.addComfyNodeWidget(
-										node, node.previewElement, name, "VideoPreview", {
-											serialize: false,
-											hideOnZoom: false,
-										});
-
-									node.mediaPreview.computeSize = function (width) {
-										if (!node.previewElement.aspectRatio || node.mediaPreview.parentEl.hidden) {
-											return [width, -4];
-										}
-
-										const previewWidth = node.size[0] - 20;
-										let mediaHeight = previewWidth / node.previewElement.aspectRatio;
-										if (!(mediaHeight > 0)) mediaHeight = 0;
-
-										const textareaHeight = node.previewElement.getTextareaHeight();
-										const currentInfoHeight = node.previewElement.getCurrentInfoHeight();
-
-										const totalHeight =
-											mediaHeight +
-											textareaHeight +
-											currentInfoHeight +
-											20; // padding / margins
-
-										node.previewElement.computedHeight = totalHeight;
-
-										return [width, totalHeight];
-									};
-
+								    node.mediaPreview = utilitiesInstance.addComfyNodeWidget(
+								        node, node.previewElement, name, "VideoPreview", {
+								            serialize: false,
+								            hideOnZoom: false,
+								        }
+								    );
+								
+								    node.mediaPreview.computeSize = function (width) {
+								        if (!node.previewElement.aspectRatio || node.mediaPreview.parentEl.hidden) {
+								            return [width, -4];
+								        }
+								
+								        const previewWidth = node.size[0] - 20;
+								        let mediaHeight = previewWidth / node.previewElement.aspectRatio;
+								        if (!(mediaHeight > 0)) mediaHeight = 0;
+								
+								        const textareaHeight = node.previewElement.getTextareaHeight();
+								        const currentInfoHeight = node.previewElement.getCurrentInfoHeight();
+								
+								        const totalHeight =
+								            mediaHeight +
+								            textareaHeight +
+								            currentInfoHeight +
+								            20; // padding / margins
+								
+								        node.previewElement.computedHeight = totalHeight;
+								
+								        return [width, totalHeight];
+								    };
 								} else {
-									node.mediaPreview.parentEl.removeChild(node.mediaPreview.parentEl.firstChild);
-									node.mediaPreview.parentEl.appendChild(node.previewElement);
+								    node.mediaPreview.parentEl.firstChild.replaceWith(node.previewElement);
 								}
 							})
 						}
@@ -379,8 +377,7 @@ const mediaPreview = {
 							};
 
 						} else {
-							ThisNode.mediaPreview.parentEl.removeChild(ThisNode.mediaPreview.parentEl.firstChild);
-							ThisNode.mediaPreview.parentEl.appendChild(ThisNode.previewElement);
+							ThisNode.mediaPreview.parentEl.firstChild.replaceWith(ThisNode.previewElement);
 						}
 					
 					}
