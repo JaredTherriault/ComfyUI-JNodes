@@ -510,7 +510,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 			textContent: "🔄",
 			title: "Sync playback for all currently loaded videos",
 			onclick: () => {
-				for (const video of document.querySelectorAll("video")) {
+				for (const video of utilitiesInstance.getVideoElements()) {
 					if (video.readyState > 0) {
 						video.currentTime = 0;
 					}
@@ -617,7 +617,7 @@ class ImageDrawerMain extends ImageDrawerComponent {
 					flexDirection: 'row',
 				}
 			}, [
-				imageDrawerSearchInstance.createSearchBar()
+				imageDrawerSearchInstance.createSearchBar(imageDrawerListInstance.getImageListElement())
 			]);
 
 		const CollapsibleArea = $el("div.JNodes-image-drawer-menu-collapsible-area", {
