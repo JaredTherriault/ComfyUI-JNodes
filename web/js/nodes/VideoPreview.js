@@ -180,43 +180,43 @@ const CreatePreviewElement = (name, val, format, node, jnodesPayload = null) => 
 				constructAndDisplayData(displayData);
 			});
 		}
+	}
 
-		// Good for all videos
-		if (bIsVideo) {
+	// Good for all videos
+	if (bIsVideo) {
 
-			container.mediaElement.muted = true;
-			container.mediaElement.autoplay = true
-			container.mediaElement.loop = true
-			container.mediaElement.controls = true;
+		container.mediaElement.muted = true;
+		container.mediaElement.autoplay = true
+		container.mediaElement.loop = true
+		container.mediaElement.controls = true;
 
-			// Function to update the label text dynamically
-			container.updateCurrentInfo = function () {
-				// Update the text content of CurrentInfo based on updated currentTime and fps
-				if (container.mediaElement.currentTime) {
-					currentInfo.textContent = `Current Time: ${container.mediaElement.currentTime.toFixed(0)}`;
-					// console.log(currentInfo.textContent);
+		// Function to update the label text dynamically
+		container.updateCurrentInfo = function () {
+			// Update the text content of CurrentInfo based on updated currentTime and fps
+			if (container.mediaElement.currentTime) {
+				currentInfo.textContent = `Current Time: ${container.mediaElement.currentTime.toFixed(0)}`;
+				// console.log(currentInfo.textContent);
 
-					let fps = displayData?.FramesPerSecond;
+				let fps = displayData?.FramesPerSecond;
 
-					if (fps) {
-						const currentFrame = container.mediaElement.currentTime * fps;
-						currentInfo.textContent += ` Current Frame: ${currentFrame.toFixed(0)}`;
-					}
+				if (fps) {
+					const currentFrame = container.mediaElement.currentTime * fps;
+					currentInfo.textContent += ` Current Frame: ${currentFrame.toFixed(0)}`;
 				}
 			}
-
-			currentInfo = $el("label", {
-				textContent: "Current Time: 0",
-			});
-			container.appendChild(currentInfo);
-
-			// Attach an event listener to the MediaElement to trigger updates on time change
-			container.mediaElement.addEventListener("timeupdate", container.updateCurrentInfo);
 		}
 
-		container.getCurrentInfoHeight = function() {
-			return getLabelHeight(currentInfo);
-		}
+		currentInfo = $el("label", {
+			textContent: "Current Time: 0",
+		});
+		container.appendChild(currentInfo);
+
+		// Attach an event listener to the MediaElement to trigger updates on time change
+		container.mediaElement.addEventListener("timeupdate", container.updateCurrentInfo);
+	}
+
+	container.getCurrentInfoHeight = function() {
+		return getLabelHeight(currentInfo);
 	}
 
 	return container;
