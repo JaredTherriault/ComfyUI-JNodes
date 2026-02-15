@@ -648,7 +648,8 @@ class SaveImageWithOutput(SaveImage):
             self.output_dir = folder_paths.get_temp_directory()
             self.type = "temp"
             self.prefix_append = "_temp_" + ''.join(random.choice("abcdefghijklmnopqrstupvxyz") for x in range(5))
-            self.compress_level = 1
+        else:
+            self.__init__(); # Restore defaults
 
         return self.save_images(images, filename_prefix, prompt, extra_pnginfo)
         
