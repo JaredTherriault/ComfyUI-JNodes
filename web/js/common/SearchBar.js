@@ -118,10 +118,10 @@ export class SearchBar {
 				const randomIndex = Math.floor(Math.random() * children.length);
 				selectedChildElement = children[randomIndex];
 			} while (!selectedChildElement || 
-				!selectedChildElement.getsearchTerms || 
-				!selectedChildElement.getsearchTerms());
+				!selectedChildElement.getSearchTerms || 
+				!selectedChildElement.getSearchTerms());
 
-			const itemSearchTerms = selectedChildElement.getsearchTerms() || "";
+			const itemSearchTerms = selectedChildElement.getSearchTerms() || "";
 			if (itemSearchTerms) {
 
 				const splitTerms = utilitiesInstance.tokenizeText(itemSearchTerms);
@@ -148,7 +148,7 @@ export class SearchBar {
 		return $el("button.JNodes-search-randomize-btn", {
 			textContent: "🎲",
 			title: "Random Suggestion",
-			onclick: this.randomizeSearch
+			onclick: () => { this.randomizeSearch(); }
 		});
 	}
 
@@ -259,6 +259,7 @@ export class SearchBar {
 
 		// First remove the element container from its parent
 		const containerParent = this._elementContainer.parentNode;
+		if (!containerParent) return;
 		containerParent.removeChild(this._elementContainer);
 
 		try {
