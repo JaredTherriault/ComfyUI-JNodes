@@ -576,13 +576,18 @@ class JNodesUtilities {
 		});
 	}
 
-	copyToClipboard(text) {
+	copyToClipboard(text, bUnescapeNewlines = true) {
 		const textArea = document.createElement("textarea");
-		textArea.value = text.replace(/\\n/g, "\n") // Ensure newlines are proper
-		.split("\n") // Split into lines
-		.map(line => line.trim()) // Trim each line
-		.join("\n") // Join them back with newlines
-		.replace(/\n{3,}/g, "\n\n"); // Ensure no more than two newlines in a row
+
+		if (bUnescapeNewlines) {
+			textArea.value = text.replace(/\\n/g, "\n") // Ensure newlines are proper
+			.split("\n") // Split into lines
+			.map(line => line.trim()) // Trim each line
+			.join("\n") // Join them back with newlines
+			.replace(/\n{3,}/g, "\n\n"); // Ensure no more than two newlines in a row
+		} else {
+			textArea.value = text;
+		}
 
 		// Make the textarea hidden
 		textArea.style.position = "fixed";
