@@ -138,16 +138,18 @@ class SaveVideoWithOptions():
                 "save_metadata": ("BOOLEAN", {"default": True}),
                 "save_workflow": ("BOOLEAN", {"default": True}),
                 "batch_size": ("INT", {"default": 128, "min": 32, "step": 1}),
+                "save_prompt_server_prompt": ("BOOLEAN", {"default": True}),
             },
             "optional": {
                 "audio_options": ("AUDIO_INPUT_OPTIONS",),
             },
             "hidden": {
+                "prompt": "PROMPT",
                 "extra_pnginfo": "EXTRA_PNGINFO",
             },
         }
 
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = ()
     OUTPUT_NODE = True
     FUNCTION = "combine_video"
 
@@ -205,7 +207,9 @@ class SaveVideoWithOptions():
         save_metadata=True,
         save_workflow=True,
         batch_size=128,
+        save_prompt_server_prompt=True,
         audio_options=None,
+        prompt=None,
         extra_pnginfo=None
     ):
 
@@ -237,6 +241,12 @@ class SaveVideoWithOptions():
                 value = json.dumps(extra_pnginfo[key])    
                 metadata.add_text(key, value)
                 video_metadata[key] = value
+
+        
+        if save_prompt_server_prompt and prompt:
+            value = json.dumps(prompt)    
+            metadata.add_text("prompt", value)
+            video_metadata["prompt"] = value
             
         if format_type == "image":
             
@@ -333,7 +343,7 @@ class SaveVideoWithOptions():
                     metadata = metadata.replace(";","\\;")
                     metadata = metadata.replace("#","\\#")
                     metadata = metadata.replace("=","\\=")
-                    metadata = metadata.replace("\n","\\\n")
+                    # metadata = metadata.replace("\n","\\\\n")
                     metadata = metadata.replace(": NaN}", ": \"NaN\"}")
                     metadata = "comment=" + metadata
                     with open(metadata_path, "w") as f:
@@ -640,7 +650,7 @@ class SaveImageWithOutput(SaveImage):
                 "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
         
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = SaveImage.RETURN_TYPES
     FUNCTION = "save_images_with_output"
     
     def save_images_with_output(self, images, save_to_output, filename_prefix="ComfyUI", prompt=None, extra_pnginfo=None):
@@ -651,7 +661,8 @@ class SaveImageWithOutput(SaveImage):
         else:
             self.__init__(); # Restore defaults
 
-        return self.save_images(images, filename_prefix, prompt, extra_pnginfo)
+        result = self.save_images(images, filename_prefix, prompt, extra_pnginfo)
+        return result 
         
 
 NODE_CLASS_MAPPINGS = {
