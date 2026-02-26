@@ -354,7 +354,7 @@ export function getOrCreateToolButton(imageElementToUse) {
 
             if (imageElementToUse?.promptMetadata && Object.keys(imageElementToUse.promptMetadata).length > 0) {
 
-                const positivePrompt = getPositivePromptInMetadata(imageElementToUse.promptMetadata);
+                let positivePrompt = getPositivePromptInMetadata(imageElementToUse.promptMetadata);
                 if (positivePrompt) {
                     flyout.menu.appendChild(
                         createButton(
@@ -399,8 +399,13 @@ export function getOrCreateToolButton(imageElementToUse) {
                                 if (!data) { return; }
                                 if (data.startsWith('"')) { data = data.slice(1); }
                                 if (data.endsWith('"')) { data = data.slice(0, data.length - 1); }
-                                data = utilitiesInstance.unescapeString(data);
-                                utilitiesInstance.copyToClipboard(data);
+
+                                // Unescape characters in prompts unless key is workflow or prompt server prompt
+                                const bIsWorkflowOrServerPrompt = key == "workflow" || key == "prompt";
+                                if (!bIsWorkflowOrServerPrompt) {
+                                    data = utilitiesInstance.unescapeString(data);
+                                }
+                                utilitiesInstance.copyToClipboard(data, !bIsWorkflowOrServerPrompt);
                                 // removeOptionsMenu();
                                 e.preventDefault();
                             }
