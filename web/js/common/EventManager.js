@@ -157,6 +157,10 @@ document.addEventListener('wheel', (event) => {
 	}
 });
 
+document.addEventListener("dragover", (event) => {
+  event.preventDefault(); // REQUIRED in Firefox
+});
+
 document.addEventListener("drop", (event) => {
 
 	const afterGetDropData = (key, callback) => {
