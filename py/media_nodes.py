@@ -154,7 +154,6 @@ class LoadVisualMediaFromPath:
     A mutation from Kosinkadink's VideoHelperSuite, credits to his repository!
     """
 
-    FORCE_SIZE_DIMENSIONS = ["Disabled", "256", "512", "768", "1024"]
     TIME_UNITS = ["frames", "seconds"]
 
     @classmethod
@@ -235,16 +234,15 @@ class LoadVisualMediaFromPath:
         frames = list(ImageSequence.Iterator(loaded_media))
 
         # Short loop to get needed metadata
-        original_frame_time = None
+        original_frame_time = 0
         for image in frames:
-            if original_frame_time is None:
+            if original_frame_time == 0:
                 if "duration" not in image.info:
                     image.load()
-                original_frame_time = image.info.get("duration", None)
+                original_frame_time = image.info.get("duration", 0)
                 break
 
-        if original_frame_time is None:
-            raise Exception(f"Could not get original_frame_time from media: {media_path}")
+        original_frame_time = max(original_frame_time, 1)
 
         original_frame_count = len(frames)
 
@@ -286,8 +284,10 @@ class LoadVisualMediaFromPath:
             loaded_media.seek(i)
             if i % (frame_skip + 1) == 0:
                 # Ensure the image does not have an alpha channel
-                if discard_transparency and frame.mode == "RGBA":
-                    frame = frame.convert("RGB")
+                if discard_transparency:
+                    frame = frame.convert("RGBA")
+                    black_bg = Image.new("RGBA", frame.size, (0, 0, 0, 255))
+                    frame = Image.alpha_composite(black_bg, frame).convert("RGB")
                 frame = ImageOps.exif_transpose(frame)
                 frame = pil2tensor(frame)
                 out_images.append(frame)
@@ -339,8 +339,21 @@ class LoadVisualMediaFromPath:
                 discard_transparency,
             )
 
+        media_path = resolve_file_path(media_path)
+        ext = os.path.splitext(media_path)[1].lower()
+
+        if ext in [".webp", ".png", ".apng", ".gif"]:
+            return LoadVisualMediaFromPath.load_media_pil(
+                media_path,
+                start_at_n,
+                start_at_unit,
+                sample_next_n,
+                sample_next_unit,
+                frame_skip,
+                discard_transparency,
+            )
+
         try:
-            media_path = resolve_file_path(media_path)
             media_cap = cv2.VideoCapture(media_path)
             if not media_cap.isOpened():
                 return retry_with_pil(
@@ -443,7 +456,6 @@ class LoadVisualMediaFromPath_Batch:
     into a single tensor batch, meaning all images are of the same size.
     """
 
-    FORCE_SIZE_DIMENSIONS = ["Disabled", "256", "512", "768", "1024"]
     TIME_UNITS = ["frames", "seconds"]
 
     @classmethod
@@ -549,7 +561,7 @@ class LoadVisualMediaFromPath_Batch:
     def IS_CHANGED(cls, **kwargs):
         try:
             if kwargs.get("shuffle", False) == True:
-                return float("nan")
+                return f"{return_random_int()}.{return_random_int()}" # Run every time
             else:
                 return ""
         except Exception as e:
