@@ -94,12 +94,20 @@ NODE_DISPLAY_NAME_MAPPINGS = {}
 
 def load_nodes():
 
-    for filename in (Path(__file__).parent.resolve() / "py").iterdir():
+    for filename in (Path(__file__).parent.resolve() / "py").glob("*.py"):
+        if not filename.is_file():
+            continue
+        if filename.suffix != ".py":
+            continue
+        if filename.name.startswith("."):
+            continue
+        if filename.name == "__init__.py":
+            continue
+
+        print("Loading:", filename)
         
         module_name = filename.stem
-        module = importlib.import_module(
-            f".py.{module_name}", package=__package__
-        )
+        module = importlib.import_module(f"{__package__}.py.{module_name}")
 
         try:
             NODE_CLASS_MAPPINGS.update(getattr(module, "NODE_CLASS_MAPPINGS"))
