@@ -686,8 +686,9 @@ async def load_text(request):
         request_json = json.loads(request_data)
         if "path" in request_json:
             path = resolve_file_path(request_json["path"])
-            with open(path, 'r', encoding='utf-8') as file:
-                loaded_text = file.read()
+            if os.path.exists(path):
+                with open(path, 'r', encoding='utf-8') as file:
+                    loaded_text = file.read()
     
             return web.json_response({"success": True, "payload" : loaded_text})
     except Exception as e:
