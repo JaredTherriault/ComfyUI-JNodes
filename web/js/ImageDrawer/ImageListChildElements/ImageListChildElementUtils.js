@@ -397,13 +397,13 @@ export function getOrCreateToolButton(imageElementToUse) {
                             `Copy ${key}`,
                             function (e) {
                                 if (!data) { return; }
-                                if (data.startsWith('"')) { data = data.slice(1); }
-                                if (data.endsWith('"')) { data = data.slice(0, data.length - 1); }
 
                                 // Unescape characters in prompts unless key is workflow or prompt server prompt
                                 const bIsWorkflowOrServerPrompt = key == "workflow" || key == "prompt";
                                 if (!bIsWorkflowOrServerPrompt) {
                                     data = utilitiesInstance.unescapeString(data);
+                                } else {
+                                    data = JSON.stringify(data);
                                 }
                                 utilitiesInstance.copyToClipboard(data, !bIsWorkflowOrServerPrompt);
                                 // removeOptionsMenu();
