@@ -3,7 +3,7 @@ import os
 import folder_paths
 from .logger import logger
 
-from .utils import any, AnyType, return_random_int, make_exclusive_list, search_and_replace_from_dict
+from .utils import any, AnyType, return_random_int, make_exclusive_list, search_and_replace_from_dict, clamp
 
 import math
 import random
@@ -68,17 +68,24 @@ class TextManager:
         return (f"{input_text}{delimiter}{output_text}",)
     
 class ParseDynamicPrompts:
+
+    # Keep track of all options chosen in the previous run
+    # to reduce repeats from run to run
+    last_selected_options = {}
+
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
                 "text": ("STRING", {"multiline": True}),
-                "mode": (["seed", "index"],),
+                "mode": (["seed", "index"],{"tooltip": "Seed bases the output on a random seed. Index directly gets the choice at the given index."}),
                 "seed": ("INT", {"default": 0, "max": 0xffffffffffffffff}),
-                "use_same_seed_for_all_groups": ("BOOLEAN", {"default":False}),
-                "enforce_different_outputs": ("BOOLEAN", {"default":False}),
+                "use_same_seed_for_all_groups": ("BOOLEAN", {"default": False, "tooltip": "If false, enforce different deterministic seeds per group."}),
+                "enforce_different_outputs": ("BOOLEAN", {"default": False, "tooltip": "If true, ensures multiple groups with similar options won't output the same value."}),
+                "anti_repeat_strength": ("FLOAT", {"default": 0.75, "min": 0.0, "max": 1.0, "tooltip": "Controls how strongly the node avoids repeating options from the previous run. 0 = repeats not reduced, 1 = virtually no repeats. Intermediate values reduce the chance of repeats proportionally."}),
+            },
+            "hidden": {"unique_id": "UNIQUE_ID"},
         }
-    }
 
     RETURN_TYPES = ("STRING",)
     FUNCTION = "parse_dynamic_prompts"
@@ -86,91 +93,83 @@ class ParseDynamicPrompts:
     CATEGORY = "dynamic prompts"
     
     def find_match(self, input_text):
-        #return re.search(r'{([^}]+)}', input_text)
         return re.search(r'{([^{}]+)}', input_text)
     
     def replace_first_occurrence(self, input_string, old_substring, new_substring):
-        # Find the index of the first occurrence of old_substring
         index = input_string.find(old_substring)
-    
-        # If old_substring is found, replace the first occurrence and return the modified string
         if index != -1:
             return input_string[:index] + new_substring + input_string[index + len(old_substring):]
-    
-        # If old_substring is not found, return the original string
         return input_string
-    
-    def parse_dynamic_prompts(self, text: str, mode, seed, use_same_seed_for_all_groups, enforce_different_outputs):
-        """
-        Takes in a string with dynamic prompt notation, e.g. "I like { apple :: 0.7 | orange | banana :: 1.3 }"
-        where each choice is separated by a "|" with an optional weight denoted with a double colon "::".
-        Spacing is ignored. If the "mode" is "seed", then a choice with a higher weight is more likely to be chosen. 
-        A choice without a specified weight has a weight of 1.0.
 
-        In this example, banana is more likely to be chosen than orange, which is more likely to be chosen than apple.
-        
-        If mode is "seed", always get random index using seed
-        If mode is "index", return the option at the given index
-        If the index is outside of the bounds of the list, revert to "seed" behaviour.
-        
-        use_same_seed_for_all_groups: if False, will generate a new random seed for each 
-        subsequent dynamic prompts group regardless of group contents. Otherwise, the same index will be chosen for 
-        all groups unless the index is out of the bounds of the group's list. Note that deterministic results
-        are not possible when this option is set to False and there are multiple dynamic prompt groups in the input text.
-        
-        enforce_different_outputs: if True, will try to ensure all groups output a different value, if possible. 
-        Has no effect if only one group is evaluated or if the mode is not seed.
-        All values are tracked per function call to try to ensure that there are no repeated values.
-        It will keep getting a new seed until a new value is found or all items have been exhausted. If all items have been 
-        exhausted, the last evaluated repeat will be used. Note that deterministic results
-        are not possible when this option is set to True and there are multiple dynamic prompt groups in the input text.
-        
-        Returns the original string with dynamic prompts replaced. 
+    def parse_dynamic_prompts(
+        self, text: str, mode, seed, use_same_seed_for_all_groups, 
+        enforce_different_outputs, anti_repeat_strength, unique_id
+    ):
         """
-        
-        selected_options = set()
-        
-        # Extract options and weights using regular expression     
-        match_count = 0   
+        Parses a dynamic prompt string with groups like:
+        "I like { apple :: 0.7 | orange | banana :: 1.3 }"
+        Applies weighted random selection with optional anti-streak penalty.
+        """
+
+        selected_options_current_run = set()
+        match_count = 0
         re_match = self.find_match(text)
         while re_match is not None:
-            # Process each option to get a weighted list
             group = re_match.group(0)
-            inner_group = group[1:len(group) - 1]
-            options = inner_group.split('|')
-            
-            should_get_index = mode == "index" and seed > -1 and seed < len(options)
-            
-            weighted_options = []
-            for option in options:
-                option_components = option.split('::')
-                choice = option_components[0].strip()
-                weight = float(option_components[1].strip()) if len(option_components) > 1 else 0.1 if should_get_index else 1.0
-                weighted_options.extend([choice] * int(weight * 10))  # Multiply weight by 10 for better granularity
+            inner_group = group[1:-1]
+            options = [opt.strip() for opt in inner_group.split('|')]
 
-            if len(weighted_options) == 0:
-                text = self.replace_first_occurrence(text, group, "")
-                re_match = self.find_match(text)
-                match_count += 1
-                continue
+            should_get_index = mode == "index" and 0 <= seed < len(options)
 
-            seed_to_use = seed if should_get_index or use_same_seed_for_all_groups else seed + (match_count * return_random_int(0))
-            selected_option = weighted_options[seed_to_use if should_get_index else seed_to_use % len(weighted_options)]
-            
-            if enforce_different_outputs and selected_option in selected_options:
-                exclusive_options = make_exclusive_list(weighted_options, selected_options)
-                
-                if len(exclusive_options) > 0:
-                    seed_to_use = return_random_int(0)
-                    selected_option = exclusive_options[seed_to_use % len(exclusive_options)]
-                    selected_options.add(selected_option)
+            # Seed per group
+            seed_to_use = seed if use_same_seed_for_all_groups else seed + match_count
+            rng = random.Random(seed_to_use)
+
+            if should_get_index:
+                # Index mode: pick option directly, no weights needed
+                selected_option = options[seed % len(options)]
             else:
-                selected_options.add(selected_option)
-                
+                last_selected_options = self.last_selected_options.get(unique_id, [])
+                # Seed mode: build weighted options, apply anti-streak penalty
+                REPEAT_PENALTY = 1.0 - clamp(anti_repeat_strength, 0.0, 1.0)
+                choices = []
+                weights = []
+                for opt in options:
+                    parts = opt.split("::")
+                    choice = parts[0].strip()
+                    weight = float(parts[1].strip()) if len(parts) > 1 else 1.0
+
+                    if choice in last_selected_options:
+                        weight *= REPEAT_PENALTY
+
+                    if weight == 0.0 and len(options) == 1:
+                        weight = 1.0
+
+                    if weight > 0.0:
+                        choices.append(choice)
+                        weights.append(weight)
+
+                # Select weighted option deterministically
+                selected_option = rng.choices(choices, weights=weights, k=1)[0]
+
+                # Enforce different outputs per run if requested
+                if enforce_different_outputs and selected_option in selected_options_current_run:
+                    exclusive_choices = [c for c in choices if c not in selected_options_current_run]
+                    if exclusive_choices:
+                        selected_option = rng.choices(
+                            exclusive_choices,
+                            weights=[weights[choices.index(c)] for c in exclusive_choices],
+                            k=1
+                        )[0]
+
+            selected_options_current_run.add(selected_option)
             text = self.replace_first_occurrence(text, group, selected_option)
-            re_match = self.find_match(text)
             match_count += 1
-            
+            re_match = self.find_match(text)
+
+        # Save all selected options for the next run (anti-streak)
+        self.last_selected_options[unique_id] = list(selected_options_current_run)
+
         return (text,)
     
 class RemoveCommentedText:
@@ -524,7 +523,7 @@ class SearchAndReplaceFromFile:
         """
         
         if not os.path.exists(replacements_file_path):
-            logging_prompt_control.logger_prompt_control.warning(f"Prompt will not be edited. File not found at '{file_path}'.")
+            logger.warning(f"Text will not be edited. File not found at '{replacements_file_path}'.")
             return text
         
         with open(replacements_file_path, "r", encoding="utf8") as file:
@@ -579,7 +578,7 @@ class AddOrSetMetaDataKey:
     
     def add_param_to_png_info(self, extra_pnginfo, parameter_name, param):
         if extra_pnginfo:
-            extra_pnginfo[parameter_name] = str(param).strip()
+            extra_pnginfo[parameter_name] = param
 
     def add_or_set_metadata_key(self, key, value, extra_pnginfo=None):
         return_true = False
