@@ -1,3 +1,5 @@
+// Batch deletion manager button that permanently deletes selected images from the filesystem.
+// Sends requests to /jnodes_delete_files API with a two-click confirmation safeguard.
 
 import { $el } from "/scripts/ui.js";
 

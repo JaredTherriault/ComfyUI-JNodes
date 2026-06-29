@@ -1,3 +1,6 @@
+// Extracts embedded metadata (JSON) from video files by parsing WEBM and MP4 binary structures.
+// Also reads EXIF data from images using the bundled ExifReader library.
+
 import { app } from '/scripts/app.js'
 import ExifReader from '../common/ExifReader-main/src/exif-reader.js';
 

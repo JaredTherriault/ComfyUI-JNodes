@@ -1,3 +1,6 @@
+// Manages fullscreen modal display for images and videos with zoom, pan, slideshow, and navigation controls.
+// Handles mouse/touch/keyboard interaction for modal lifecycle and neighboring image switching.
+
 import { utilitiesInstance } from "./Utilities.js";
 import { $el } from "/scripts/ui.js";
 

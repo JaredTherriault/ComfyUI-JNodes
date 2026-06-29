@@ -1,3 +1,6 @@
+// Video and image preview widget for ComfyUI nodes, supporting video, animated, and still image formats.
+// Handles auto-fit height, playback controls, and rendering via the ComfyUI $el API.
+
 import { $el } from "/scripts/ui.js";
 
 import { app } from '/scripts/app.js'

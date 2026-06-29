@@ -1,3 +1,6 @@
+// Media upload widget for ComfyUI nodes, supporting drag-and-drop and file picker uploads.
+// Uploads files to the /jnodes_upload_image endpoint and manages the media widget value state.
+
 import { app } from "/scripts/app.js";
 import { api } from '/scripts/api.js';
 import { ComfyWidgets } from "/scripts/widgets.js";

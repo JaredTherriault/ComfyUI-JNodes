@@ -1,3 +1,6 @@
+// Defines and injects all CSS styles for the Image Drawer sidebar and its sub-components.
+// Styles cover layout, positioning, animations, theming, and responsive sizing.
+
 import { $el } from "/scripts/ui.js";
 
 $el("style", {

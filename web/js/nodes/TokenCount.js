@@ -1,3 +1,4 @@
+// TokenCounter node (currently disabled). Displays token count of input text on a ComfyUI node widget.
 // import { app } from "/scripts/app.js";
 // import { ComfyWidgets } from "/scripts/widgets.js";
 

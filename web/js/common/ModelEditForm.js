@@ -1,3 +1,6 @@
+// Dynamic form generator for editing model (LoRA/embedding) metadata in the Image Drawer.
+// Renders form fields from FormObject definitions and submits changes via the /jnodes_edit_model_info API.
+
 import { $el } from "/scripts/ui.js";
 
 import { utilitiesInstance } from "../common/Utilities.js";

@@ -1,3 +1,6 @@
+// ImageDrawerList manages the scrollable image list container within the Image Drawer sidebar.
+// It handles scroll position persistence and provides multicast hooks for when the image list changes.
+
 import { $el } from "/scripts/ui.js";
 
 import { observeVisualElement, unobserveVisualElement } from "../common/ImageAndVideoObserver.js";

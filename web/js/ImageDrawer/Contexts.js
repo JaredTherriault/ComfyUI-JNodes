@@ -1,3 +1,6 @@
+// Defines the various contexts (tabs) for the Image Drawer sidebar, such as feed, favourites, lora, embeddings, etc.
+// Each context filters and presents image/model data differently. Uses the ComfyUI app and api for data retrieval.
+
 import { $el } from "/scripts/ui.js";
 import { app } from "/scripts/app.js";
 import { api } from "/scripts/api.js";

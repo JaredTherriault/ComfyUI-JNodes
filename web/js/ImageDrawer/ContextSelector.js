@@ -1,3 +1,6 @@
+// Manages the context (tab) selector toolbar for the Image Drawer sidebar.
+// Handles switching between contexts like feed, favourites, lora, and restores the last-used context on load.
+
 import { $el } from "/scripts/ui.js";
 
 import * as Contexts from "./Contexts.js";

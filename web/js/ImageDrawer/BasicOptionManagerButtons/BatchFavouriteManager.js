@@ -1,3 +1,5 @@
+// Batch favourite manager button that toggles favourite status for all selected images in the Image Drawer.
+// Sends requests to /jnodes_favourite_files API to add or remove favourites.
 
 import { $el } from "/scripts/ui.js";
 

@@ -1,3 +1,6 @@
+// Utility functions for controlling video playback: play/pause, mute, volume, fullscreen, seek, and playback rate.
+// Used by both the Image Drawer and node-level video preview widgets.
+
 import { utilitiesInstance } from "./Utilities.js";
 
 export function isElementVideo(element) {

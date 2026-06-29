@@ -1,3 +1,6 @@
+// Interactive subdirectory selector node that dynamically builds subdirectory dropdown widgets.
+// Fetches subdirectory listings from /jnodes_list_immediate_subdirectories API and constructs a navigable path.
+
 import { api } from "/scripts/api.js"
 import { app } from "/scripts/app.js";
 import { utilitiesInstance } from "../common/Utilities.js";

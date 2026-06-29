@@ -1,3 +1,5 @@
+// Creates a lightweight CSS loading spinner element (lds-ring) for use throughout the UI.
+
 import { utilitiesInstance } from "./Utilities.js";
 
 utilitiesInstance.addStylesheet(import.meta.url);

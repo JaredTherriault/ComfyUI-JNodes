@@ -1,3 +1,6 @@
+// Manages LoRA and embedding model items for the Image Drawer, including fetching from /jnodes_model_items API.
+// Provides model card creation, metadata tooltips, copy-to-prompt functionality, and editing via ModelEditForm.
+
 import { api } from "/scripts/api.js";
 import { $el } from "/scripts/ui.js";
 import { utilitiesInstance } from "../../common/Utilities.js"

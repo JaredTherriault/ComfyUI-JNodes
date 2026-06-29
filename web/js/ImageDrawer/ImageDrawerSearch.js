@@ -1,3 +1,6 @@
+// Specialized search component for the Image Drawer that extends SearchBar with custom search execution behavior.
+// Filters image list elements by matching search terms against each element's search data.
+
 import { $el } from "/scripts/ui.js";
 
 import { SearchBar } from "../common/SearchBar.js"

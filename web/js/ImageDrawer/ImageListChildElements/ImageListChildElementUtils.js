@@ -1,3 +1,6 @@
+// Utility functions for Image Drawer child elements, including tooltip creation and metadata extraction.
+// Reads EXIF/metadata using ExifReader and supports both image and video file types.
+
 import { $el } from "/scripts/ui.js";
 
 import * as pngInfo from "/scripts/pnginfo.js";

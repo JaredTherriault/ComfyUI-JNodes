@@ -1,3 +1,6 @@
+// Adds configurable font size and family controls for multiline textareas across the ComfyUI interface.
+// Applies font settings globally via DOM traversal and a MutationObserver for dynamically added elements.
+
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
 import { ConfigSetting, addJNodesSetting } from "./common/SettingsManager.js"

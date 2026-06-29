@@ -1,3 +1,6 @@
+// Shared utility class for JNodes providing DOM helpers, date formatting, viewport checks, and UI helpers.
+// Exports a singleton `utilitiesInstance` used across the entire extension.
+
 import { $el } from "/scripts/ui.js";
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";

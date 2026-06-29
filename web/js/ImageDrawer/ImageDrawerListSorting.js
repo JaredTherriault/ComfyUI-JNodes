@@ -1,3 +1,6 @@
+// Provides the sorting UI and logic for the Image Drawer list, including sort-type selection and shuffle.
+// Supports multiple sort strategies (filename, path, date, favourites, etc.) with auto-shuffle mode.
+
 import { $el } from "/scripts/ui.js";
 
 import * as SortTypes from "../common/SortTypes.js"

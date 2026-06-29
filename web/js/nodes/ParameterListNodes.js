@@ -1,3 +1,6 @@
+// Client-side helpers for JNodes parameter list nodes that auto-update node titles based on the selected parameter.
+// Works with both table and list parameter node types.
+
 import { app } from '/scripts/app.js'
 
 const get_param_node_helpers = {

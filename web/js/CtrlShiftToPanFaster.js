@@ -1,3 +1,6 @@
+// Enables fast canvas panning by holding Ctrl+Shift and dragging the mouse in the ComfyUI graph editor.
+// Multiplies mouse delta by a configurable speed factor for rapid navigation.
+
 import { app } from "../../../scripts/app.js";
 
 app.registerExtension({

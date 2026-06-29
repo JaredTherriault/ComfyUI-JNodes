@@ -1,3 +1,5 @@
+// Batch removal manager button that moves selected images to a removal/trash directory.
+// Sends requests to /jnodes_remove_files API with a two-click confirmation safeguard.
 
 import { $el } from "/scripts/ui.js";
 

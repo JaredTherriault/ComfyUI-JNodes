@@ -1,3 +1,6 @@
+// Creates and manages image and video DOM elements for the Image Drawer list.
+// Handles file URL construction via the /jnodes_view_image API, video playback, and modal display.
+
 import { api } from "/scripts/api.js";
 import { $el } from "/scripts/ui.js";
 

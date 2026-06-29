@@ -1,3 +1,5 @@
+// Defines sort type classes for the Image Drawer list, including filename, path, date, and favourites.
+// Each sort type provides a lambda for comparing elements, supporting ascending/descending order.
 
 export class SortType {
 	constructor(name, bIsAscending, imageDrawerInstance) {

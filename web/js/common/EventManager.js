@@ -1,3 +1,6 @@
+// Centralized event system tracking canvas movement, mouse position, and pointer state for the ComfyUI UI.
+// Dispatches custom events and provides helpers like getElementUnderPointer and simulateMouseClick.
+
 import { app } from "../../../../scripts/app.js";
 import { utilitiesInstance } from "./Utilities.js";
 

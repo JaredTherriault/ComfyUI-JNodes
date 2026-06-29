@@ -1,3 +1,5 @@
+// Base class for batch operation buttons in the Image Drawer (favourite, delete, remove, select).
+// Provides shared button widget creation and tooltip display logic.
 
 import { $el } from "/scripts/ui.js";
 

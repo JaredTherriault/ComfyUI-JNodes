@@ -1,3 +1,6 @@
+// Client-side helpers for JNodes metadata key nodes (AddOrSet and Remove).
+// Sets up auto-title updates based on the selected key widget value.
+
 import { app } from '/scripts/app.js'
 
 const get_metadata_node_helpers = {

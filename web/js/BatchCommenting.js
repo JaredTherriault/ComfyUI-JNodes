@@ -1,3 +1,6 @@
+// Adds batch comment/uncomment functionality to multiline text areas via a configurable keyboard shortcut.
+// Inserts or removes a comment token at the beginning of each selected line, with modifier key combos.
+
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
 import { ConfigSetting, addJNodesSetting } from "./common/SettingsManager.js"

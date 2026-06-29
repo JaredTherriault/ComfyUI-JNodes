@@ -1,3 +1,6 @@
+// Provides select-all / deselect-all functionality for batch operations in the Image Drawer.
+// Tracks checked item count and notifies listeners via multicast callbacks.
+
 import { $el } from "/scripts/ui.js";
 
 import { ContextModel } from "../Contexts.js";
