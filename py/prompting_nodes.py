@@ -41,10 +41,11 @@ class TextManager:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "path_to_saved_texts": ("STRING", {"default": "JNodes/TextManager/default", "multiline": False, "tooltip": "From which directory to load texts"}),
+                "uuid": ("STRING", {"default": "", "multiline": False, "tooltip": "A unique ID the current node. Do not override or remove widget unless you know what you're doing."}),
+                "path_to_node_configs": ("STRING", {"default": "JNodes/TextManager/node_configs", "multiline": False, "tooltip": "Which directory to use to save and load node configs"}),
+                "path_to_saved_texts": ("STRING", {"default": "JNodes/TextManager/default", "multiline": False, "tooltip": "Which directory to use to save and load texts"}),
                 "delimiter": ("STRING", {"default": "\\n\\n", "multiline": False, "tooltip": "What to place between enabled texts"}),
-                "output_text": ("STRING", {"default": "", "multiline": True, "tooltip": "A read-only preview of the newly constructed output text"}),
-                "config": ("STRING", {"default": "", "multiline": True, "tooltip": "A read-only JSON representation of the current config"})
+                "output_text": ("STRING", {"default": "", "multiline": True, "tooltip": "A read-only preview of the newly constructed output text. Do not override or remove widget unless you know what you're doing."}),
             },
             "optional": {
                 "input_text": ("STRING", {"forceInput": True, "tooltip": "Optional text to prepend to the output text"}),
@@ -56,7 +57,7 @@ class TextManager:
 
     CATEGORY = "prompt"
     
-    def get_string(self, path_to_saved_texts, delimiter, output_text, config, input_text = ""):
+    def get_string(self, uuid, path_to_node_configs, path_to_saved_texts, delimiter, output_text, input_text = ""):
         # Return input text and two newline if input text is valid, otherwise just the new text
         delimiter = delimiter.encode("utf-8").decode("unicode_escape")
         if input_text and not output_text:
@@ -591,7 +592,7 @@ class AddOrSetMetaDataKey:
     
     @classmethod
     def IS_CHANGED(s, key, value, extra_pnginfo=None):
-        return float("nan") # Run every time
+        return f"{return_random_int()}.{return_random_int()}" # Run every time
     
 class SetPositivePromptInMetaData:
 
@@ -665,7 +666,7 @@ class RemoveMetaDataKey:
     
     @classmethod
     def IS_CHANGED(s, key, value, extra_pnginfo=None):
-        return float("nan") # Run every time
+        return f"{return_random_int()}.{return_random_int()}" # Run every time
 
 class SetMetadataA1111:
 
@@ -742,7 +743,7 @@ class SetMetadataA1111:
     
     @classmethod
     def IS_CHANGED(s, **kwargs):
-        return float("nan") # Run every time
+        return f"{return_random_int()}.{return_random_int()}" # Run every time
   
 
 class TokenCounter:
