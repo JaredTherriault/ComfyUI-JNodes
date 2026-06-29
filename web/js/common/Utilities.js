@@ -163,6 +163,33 @@ class JNodesUtilities {
 		return { container, switch: background };
 	}
 
+	createNumericalSpinner(labelText, title, onchange, min, max, step, value, width = 6) {
+		const input = $el("input", {
+			type: "number",
+			value: value,
+			onchange: onchange,
+			min: min,
+			max: max,
+			step: step,
+			style: {
+				width: `${width}ch`,
+			}
+		});
+		const inputContainer = $el("div", {
+			title: title,
+			style: {
+				display: "flex",
+				justifyContent: "flex-end",
+				alignItems: "center"
+			}
+		}, [
+			$el("label", { textContent: labelText }),
+			input
+		]);
+
+		return { container: inputContainer, input: input };
+	}
+
 	addComfyNodeWidget(node, customWidget, name, type, domArgs = {}) {
 
 		if (!node || !customWidget) { return; }
