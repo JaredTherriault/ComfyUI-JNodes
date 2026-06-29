@@ -853,8 +853,8 @@ export class ContextFeed extends ContextClearable {
 
 		super.onRequestSingleRemoval(item);
 
-		if (item.img?.src) {
-			this.feedImages = this.feedImages.filter(src => src !== item.img.src); // Remove matching feed sources
+		if (item?.fileInfo) {
+			this.feedImages = this.feedImages.filter(src => src !== item.fileInfo); // Remove matching feed sources
 		}
 	}
 }
