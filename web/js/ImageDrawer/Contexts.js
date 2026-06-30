@@ -361,7 +361,7 @@ export class ContextModel extends ContextRefreshable {
 		this.subdirectorySelector = null;
 	}
 
-	async getModels(bForceRefresh = false) { }
+	async getModels(bForceRefresh = false, signal = undefined) { }
 
 	async updateSubdirectorySelectorOptions() {
 
@@ -406,12 +406,43 @@ export class ContextModel extends ContextRefreshable {
 
 	async loadModels(bForceRefresh = false) {
 
+		const abortController = new AbortController();
+
+		const cancelButton = $el("button.JNodes-image-drawer-btn", {
+			textContent: 'Cancel',
+			onclick: async () => {
+				abortController.abort();
+				await api.fetchApi(
+					'/jnodes_request_task_cancellation', { method: "POST" });
+				cancelButton.textContent = 'Canceling...';
+			},
+			style: {
+				width: "fit-content",
+				padding: '3px',
+			},
+		});
+
 		// Add loading indicator
 		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
-		await imageDrawerListInstance.replaceImageListChildren([$el("label", { textContent: `Loading ${this.name}...` })]);
+		await imageDrawerListInstance.replaceImageListChildren([
+			$el('div', [
+				$el("label", { textContent: `Loading ${this.name}...` }),
+				cancelButton
+			])
+		]);
 		
 		// Get models
-		let modelDicts = await this.getModels(bForceRefresh);
+		let modelDicts;
+		try {
+			modelDicts = await this.getModels(bForceRefresh, abortController.signal);
+		} catch (e) {
+			if (e.name === 'AbortError') {
+				return;
+			}
+			console.error(`Could not load models for "${this.name}": ${e}`);
+			await imageDrawerListInstance.replaceImageListChildren([$el("label", { textContent: "Error loading models." })]);
+			return;
+		}
 		if (this.shouldCancelAsyncOperation()) { return; }
 
 		const newModels = [];
@@ -640,19 +671,21 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 		const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
 		const withOrWithout = this.bIncludeSubdirectories ? "with" : "without";
 
-		// todo: Python cancellation needs some work
-		// const cancelButton = $el("button.JNodes-image-drawer-btn", {
-		// 	textContent: 'Cancel',
-		// 	onclick: async () => {
-		// 		await api.fetchApi(
-		// 			'/jnodes_request_task_cancellation', { method: "POST" }); // Cancel any outstanding python task
-		// 		cancelButton.textContent = 'Canceling...';
-		// 	},
-		// 	style: {
-		// 		width: "fit-content",
-		// 		padding: '3px',
-		// 	},
-		// });
+		const abortController = new AbortController();
+
+		const cancelButton = $el("button.JNodes-image-drawer-btn", {
+			textContent: 'Cancel',
+			onclick: async () => {
+				abortController.abort();
+				await api.fetchApi(
+					'/jnodes_request_task_cancellation', { method: "POST" });
+				cancelButton.textContent = 'Canceling...';
+			},
+			style: {
+				width: "fit-content",
+				padding: '3px',
+			},
+		});
 
 		imageDrawerListInstance.replaceImageListChildren(
 			[
@@ -661,16 +694,27 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 						textContent:
 							`Loading directory '${selectedSubdirectory || this.rootDirectoryName}' ${withOrWithout} subdirectories...`
 					}),
-					//cancelButton
+					cancelButton
 				])
 			]
 		);
 
-		const allItems = await api.fetchApi(
-			'/jnodes_get_comfyui_subdirectory_images' +
-			`?root_directory=${this.rootDirectoryName}` +
-			`&selected_subdirectory=${selectedSubdirectory}` +
-			`&recursive=${this.bIncludeSubdirectories}`, { cache: "no-store" });
+		let allItems;
+		try {
+			allItems = await api.fetchApi(
+				'/jnodes_get_comfyui_subdirectory_images' +
+				`?root_directory=${this.rootDirectoryName}` +
+				`&selected_subdirectory=${selectedSubdirectory}` +
+				`&recursive=${this.bIncludeSubdirectories}`, { cache: "no-store", signal: abortController.signal });
+		} catch (e) {
+			if (e.name === 'AbortError') {
+				return;
+			}
+			console.error(`Could not get list of images when loading "${this.rootDirectoryName}": ${e}`);
+			this.fileList = [];
+			await this.loadImagesInFolder(selectedSubdirectory);
+			return;
+		}
 
 		let decodedString;
 		try {
@@ -1038,8 +1082,8 @@ export class ContextLora extends ContextModel {
 		super("Lora / Lycoris", "Lora and Lycoris models found in your Lora directory", imageDrawerInstance, "loras");
 	}
 
-	async getModels(bForceRefresh = false) {
-		return await ExtraNetworks.getLoras(bForceRefresh, this.selectedSubdirectory);
+	async getModels(bForceRefresh = false, signal = undefined) {
+		return await ExtraNetworks.getLoras(bForceRefresh, this.selectedSubdirectory, signal);
 	}
 }
 
@@ -1048,8 +1092,8 @@ export class ContextEmbeddings extends ContextModel {
 		super("Embeddings / Textual Inversions", "Embedding/textual inversion models found in your embeddings directory", imageDrawerInstance, "embeddings");
 	}
 
-	async getModels(bForceRefresh = false) {
-		return await ExtraNetworks.getEmbeddings(bForceRefresh, this.selectedSubdirectory);
+	async getModels(bForceRefresh = false, signal = undefined) {
+		return await ExtraNetworks.getEmbeddings(bForceRefresh, this.selectedSubdirectory, signal);
 	}
 }
 

@@ -17,8 +17,9 @@ DEBUG = False
 
 class GetSubdirectoryImages:
 
-    def __init__(self, in_directory, recursive):
+    def __init__(self, in_directory, recursive, external_cancel_check=None):
         self.CANCELLATION_REQUESTED = False
+        self.external_cancel_check = external_cancel_check
 
         self.in_directory = in_directory
         self.recursive = recursive
@@ -26,7 +27,7 @@ class GetSubdirectoryImages:
         self.results = []
 
     def should_cancel_task(self):
-        return self.CANCELLATION_REQUESTED
+        return self.CANCELLATION_REQUESTED or (self.external_cancel_check and self.external_cancel_check())
 
     def get_subdirectory_images(self):
         

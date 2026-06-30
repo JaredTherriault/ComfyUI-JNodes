@@ -26,14 +26,19 @@ def should_cancel_task():
     return CANCELLATION_REQUESTED
 
 def request_task_cancellation():
+    global CANCELLATION_REQUESTED
     CANCELLATION_REQUESTED = True
+
+def reset_cancellation():
+    global CANCELLATION_REQUESTED
+    CANCELLATION_REQUESTED = False
 
 async def read_web_request_content(reader):
     data = await reader.read()
     return data.decode('utf-8')
 
 def get_model_items(request):
-    CANCELLATION_REQUESTED = False
+    reset_cancellation()
     type = "loras"
     if "type" in request.rel_url.query:
         type = request.rel_url.query["type"]
@@ -237,8 +242,8 @@ def list_immediate_subdirectories(root_directory):
     return results
 
 def list_comfyui_subdirectories_request(request):
-    CANCELLATION_REQUESTED = False
-    try:        
+    reset_cancellation()
+    try:
 
         root_directory = convert_relative_comfyui_path_to_full_path(request.rel_url.query["root_directory"])
 
@@ -275,13 +280,14 @@ def list_model_subdirectories_request(request):
         return web.json_response({"success": False, "error": str(e)})
 
 def get_comfyui_subdirectory_images_request(request):
-    CANCELLATION_REQUESTED = False
+    reset_cancellation()
     try:
         root_directory = request.rel_url.query["root_directory"] or ""
         selected_subdirectory = request.rel_url.query["selected_subdirectory"] or ""
         recursive = request.rel_url.query["recursive"] == "true"
         results = GetSubdirectoryImages(
-            os.path.join(convert_relative_comfyui_path_to_full_path(root_directory), selected_subdirectory), recursive).get_subdirectory_images()
+            os.path.join(convert_relative_comfyui_path_to_full_path(root_directory), selected_subdirectory), recursive,
+            external_cancel_check=should_cancel_task).get_subdirectory_images()
         return web.json_response({"success": True, "payload": results })
     except Exception as e:
         log_exception("Error listing subdirectory images:", e)

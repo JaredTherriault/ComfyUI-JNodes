@@ -4,28 +4,34 @@ from .py.server_backend import *
 from aiohttp import web
 from pathlib import Path
 
+import asyncio
 import importlib
 import server
 
 @server.PromptServer.instance.routes.get('/jnodes_list_comfyui_subdirectories')
 async def list_comfyui_subdirectories_wrapper(request):
-    return list_comfyui_subdirectories_request(request)
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: list_comfyui_subdirectories_request(request))
 
 @server.PromptServer.instance.routes.get('/jnodes_list_immediate_subdirectories')
 async def list_immediate_subdirectories_wrapper(request):
-    return list_immediate_subdirectories_request(request)
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: list_immediate_subdirectories_request(request))
 
 @server.PromptServer.instance.routes.get('/jnodes_get_comfyui_subdirectory_images')
 async def get_comfyui_subdirectory_images_wrapper(request):
-    return get_comfyui_subdirectory_images_request(request)
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: get_comfyui_subdirectory_images_request(request))
 
 @server.PromptServer.instance.routes.get('/jnodes_list_model_subdirectories')
 async def list_model_subdirectories_wrapper(request):
-    return list_model_subdirectories_request(request)
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: list_model_subdirectories_request(request))
 
 @server.PromptServer.instance.routes.get('/jnodes_model_items')
 async def get_model_items_wrapper(request):
-    return get_model_items(request)
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: get_model_items(request))
 
 @server.PromptServer.instance.routes.post('/jnodes_save_model_user_info')
 async def save_model_user_info_wrapper(request):
@@ -53,7 +59,8 @@ async def request_open_file_manager_wrapper(request):
 
 @server.PromptServer.instance.routes.post('/jnodes_request_task_cancellation')
 async def request_task_cancellation_wrapper(request):
-    return request_task_cancellation(request)
+    request_task_cancellation()
+    return web.json_response({"success": True})
 
 @server.PromptServer.instance.routes.post('/jnodes_find_files')
 async def find_files_wrapper(request):

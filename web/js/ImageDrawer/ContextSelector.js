@@ -2,6 +2,7 @@
 // Handles switching between contexts like feed, favourites, lora, and restores the last-used context on load.
 
 import { $el } from "/scripts/ui.js";
+import { api } from "/scripts/api.js";
 
 import * as Contexts from "./Contexts.js";
 
@@ -133,8 +134,8 @@ class ImageDrawerContextSelector extends ImageDrawerComponent {
 			this.ContextSelector.addEventListener("change", async () => {
 				const selectedValue = this.ContextSelector.value;
 				await this._onOptionSelected(selectedValue); // don't call setOptionSelected to avoid infinite recursion
-				// await api.fetchApi(
-				// 	'/jnodes_request_task_cancellation', { method: "POST"}); // Cancel any outstanding python task
+				await api.fetchApi(
+					'/jnodes_request_task_cancellation', { method: "POST"});
 			});
 		}
 
