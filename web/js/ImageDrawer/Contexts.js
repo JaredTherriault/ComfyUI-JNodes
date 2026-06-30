@@ -17,7 +17,8 @@ import {
 	createLabeledCheckboxToggle, createLabeledSliderRange, createVideoPlaybackOptionsFlyout,
 	options_LabeledCheckboxToggle, options_LabeledSliderRange, setting_ModelCardAspectRatio,
 	setting_FavouritesDirectory,
-	ImageDrawerConfigSetting
+	ImageDrawerConfigSetting,
+	setting_FeedExcludedNodeTypes, setting_bFeedExcludedNodeTypesDenyToggle
 } from "../common/SettingsManager.js";
 
 import { SearchableDropDown } from "../common/SearchableDropDown.js";
@@ -871,7 +872,15 @@ export class ContextFeed extends ContextClearable {
 			if (outImages) {
 
 				const node = app.graph.getNodeById(detail.node);
-				if (node.type == "PreviewImage") { return; } // todo: Make this configurable
+				const excludedTypes = setting_FeedExcludedNodeTypes.value.split(",").map(s => s.trim()).filter(s => s.length > 0);
+				const nodeType = node.type;
+				if (setting_bFeedExcludedNodeTypesDenyToggle.value) {
+					// Allow list: only include nodes whose type is in the list
+					if (!excludedTypes.includes(nodeType)) { return; }
+				} else {
+					// Deny list: exclude nodes whose type is in the list
+					if (excludedTypes.includes(nodeType)) { return; }
+				}
 
 				for (const src of outImages) {
 					// Always add feed images to the record, but only add thumbs to the imageList if

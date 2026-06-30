@@ -136,6 +136,9 @@ export let setting_bQueueTimerEnabled = new ImageDrawerConfigSetting("bQueueTime
 
 export let setting_LoraLoaderNodeType = new ImageDrawerConfigSetting("LoraLoaderNodeType", "LoraLoaderModelOnly");
 
+export let setting_FeedExcludedNodeTypes = new ImageDrawerConfigSetting("Feed.ExcludedNodeTypes", "PreviewImage");
+export let setting_bFeedExcludedNodeTypesDenyToggle = new ImageDrawerConfigSetting("Feed.bExcludedNodeTypesDenyToggle", false);
+
 // Button setup
 
 export const setupUiSettings = async (onImageDrawerInstanceCountChanged) => {
@@ -447,6 +450,50 @@ export const setupUiSettings = async (onImageDrawerInstanceCountChanged) => {
 
         const tooltip = "Choose which node type is created when dragging a LoRA from the image drawer onto the canvas.";
         addJNodesSetting(labelWidget, widget, tooltip);
+    }
+
+    // Feed excluded node types
+    {
+        const labelWidget = $el("label", {
+            textContent: "Feed Excluded Node Types:",
+        });
+
+        const settingWidget = $el(
+            "input",
+            {
+                defaultValue: setting_FeedExcludedNodeTypes.value,
+                oninput: (e) => {
+                    setting_FeedExcludedNodeTypes.value = e.target.value;
+                },
+            },
+        );
+
+        const tooltip = "A set of comma-separated node type names to include or exclude " +
+            "from being added to the Feed context when nodes produce images.";
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+
+    // Feed excluded node types allow/deny toggle
+    {
+        const labelWidget = $el("label", {
+            textContent: "Feed Excluded Node Types Allow/Deny Toggle:",
+        });
+
+        const settingWidget = $el(
+            "input",
+            {
+                type: "checkbox",
+                checked: setting_bFeedExcludedNodeTypesDenyToggle.value,
+                oninput: (e) => {
+                    setting_bFeedExcludedNodeTypesDenyToggle.value = e.target.checked;
+                },
+            },
+        );
+
+        const tooltip = `Whether the node types listed in the Feed Excluded Node Types should be 
+		allowed or denied, excluding everything else.
+		True = Allow list (only these nodes feed), False = Deny list (these nodes are excluded from feed).`;
+        addJNodesSetting(labelWidget, settingWidget, tooltip);
     }
 
     // Video Playback Settings
