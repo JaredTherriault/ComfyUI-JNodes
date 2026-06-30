@@ -437,6 +437,7 @@ export class ContextModel extends ContextRefreshable {
 			modelDicts = await this.getModels(bForceRefresh, abortController.signal);
 		} catch (e) {
 			if (e.name === 'AbortError') {
+				await imageDrawerListInstance.replaceImageListChildren([$el("label", { textContent: "Cancelled." })]);
 				return;
 			}
 			console.error(`Could not load models for "${this.name}": ${e}`);
@@ -708,6 +709,7 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 				`&recursive=${this.bIncludeSubdirectories}`, { cache: "no-store", signal: abortController.signal });
 		} catch (e) {
 			if (e.name === 'AbortError') {
+				await imageDrawerListInstance.replaceImageListChildren([$el("label", { textContent: "Cancelled." })]);
 				return;
 			}
 			console.error(`Could not get list of images when loading "${this.rootDirectoryName}": ${e}`);
