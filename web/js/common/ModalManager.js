@@ -92,7 +92,7 @@ export class ModalManager {
 			},
 		});
 		video.controls = setting_VideoPlaybackOptions.value.controls;
-		video.autoplay = false;
+		video.autoplay = setting_VideoPlaybackOptions.value.autoplay;
 		video.loop = setting_VideoPlaybackOptions.value.loop;
 		video.muted = setting_VideoPlaybackOptions.value.muted;
 		video.volume = setting_VideoPlaybackOptions.value.defaultVolume / 100;
