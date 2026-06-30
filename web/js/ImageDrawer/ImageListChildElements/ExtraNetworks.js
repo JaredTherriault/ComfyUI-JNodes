@@ -465,13 +465,13 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 			return;
 		}
 
-		function updateBackgroundImageContainer() {
+		async function updateBackgroundImageContainer() {
 
 			backgroundImageContainer.backgroundImage.style.display = "none";
 			backgroundImageContainer.backgroundVideo.style.display = "none";
 
 			let newHref = modelElement.fileInfo.imageHref = getHrefForFamiliarImage(backgroundImageContainer.lastViewedImageIndex);
-			let bIsVideoPreview = utilitiesInstance.isHrefVideo(newHref);
+			let bIsVideoPreview = await utilitiesInstance.isHrefVideo(newHref);
 
 			if (bIsVideoPreview) {
 
@@ -1073,9 +1073,9 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 	}
 	backgroundImageContainer.initVideo();
 
-	modelElement.forceLoad = function () {
+	modelElement.forceLoad = async function () {
 
-		if (utilitiesInstance.isHrefVideo(backgroundImageContainer.dataSrc)) {
+		if (await utilitiesInstance.isHrefVideo(backgroundImageContainer.dataSrc)) {
 			backgroundImageContainer.backgroundVideo.forceLoad();
 		} else {
 			backgroundImageContainer.backgroundImage.forceLoad();

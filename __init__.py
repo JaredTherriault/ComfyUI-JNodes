@@ -97,6 +97,11 @@ async def upload_image_wrapper(request):
 @server.PromptServer.instance.routes.delete("/jnodes_delete_item")
 async def delete_item_wrapper(request):
     return await delete_item(request)
+
+@server.PromptServer.instance.routes.get('/jnodes_get_browser_video_extensions')
+def get_browser_video_extensions_wrapper(request):
+    from .py.utils import ACCEPTED_BROWSER_VIDEO_EXTENSIONS
+    return web.json_response({"success": True, "extensions": ACCEPTED_BROWSER_VIDEO_EXTENSIONS})
     
 WEB_DIRECTORY = "./web"
 

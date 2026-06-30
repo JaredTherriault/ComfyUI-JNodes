@@ -4,7 +4,7 @@
 import { api } from "/scripts/api.js";
 import { $el } from "/scripts/ui.js";
 
-import { utilitiesInstance } from "../../common/Utilities.js";
+import { utilitiesInstance, getBrowserVideoExtensions } from "../../common/Utilities.js";
 
 import { ModalManager, ModalOptions } from "../../common/ModalManager.js";
 
@@ -29,7 +29,11 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 	href += `t=${+new Date()}`; // Add Timestamp
 
 	fileInfo.imageHref = href;
-	const bIsVideoFormat = fileInfo.file?.is_video || fileInfo.filename.endsWith(".mp4") || fileInfo.filename.endsWith(".webm"); // todo: fetch acceptable video types from python
+	
+	// Fetch acceptable video types from python
+	const browserVideoExtensions = await getBrowserVideoExtensions();
+	const fileExtension = fileInfo.filename.split('.').pop().toLowerCase();
+	const bIsVideoFormat = fileInfo.file?.is_video || browserVideoExtensions.includes(fileExtension);
 
 	const imageElement =
 		$el("div.imageElement", {
@@ -176,7 +180,7 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 	// Sorting meta information
 	imageElement.filename = imageElement.friendlyName = fileInfo.filename;
 	imageElement.fileType = imageElement.filename.split(".")[1];
-	imageElement.file_age = fileInfo.file?.file_age || utilitiesInstance.getCurrentSecondsFromEpoch(); // todo: fix for feed images
+	imageElement.file_age = fileInfo.file?.file_age || utilitiesInstance.getCurrentSecondsFromEpoch();
 	imageElement.subdirectory = fileInfo.subdirectory || null;
 	imageElement.path = fileInfo.subdirectory ? `${fileInfo.subdirectory}/${fileInfo.filename}` : fileInfo.filename;
 	imageElement.displayData.FileSize = fileInfo.file?.file_size || -1;

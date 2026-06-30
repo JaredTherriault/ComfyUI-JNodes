@@ -5,6 +5,26 @@ import { $el } from "/scripts/ui.js";
 import { api } from "/scripts/api.js";
 import { app } from "/scripts/app.js";
 
+let cachedBrowserVideoExtensions = null;
+
+async function getBrowserVideoExtensions() {
+    if (cachedBrowserVideoExtensions) {
+        return cachedBrowserVideoExtensions;
+    }
+    
+    const response = await api.fetchApi('/jnodes_get_browser_video_extensions', { method: 'GET', cache: 'no-store' });
+    const data = await response.json();
+    
+    if (data.success && data.extensions) {
+        cachedBrowserVideoExtensions = data.extensions;
+    } else {
+        // Fallback to hardcoded values if API fails
+        cachedBrowserVideoExtensions = ["webm", "mp4", "ogg"];
+    }
+    
+    return cachedBrowserVideoExtensions;
+}
+
 class JNodesUtilities {
 
 	isElementInViewport(element) {
@@ -36,11 +56,13 @@ class JNodesUtilities {
 		return timeAsString;
 	}
 
-	isHrefVideo(href) {
+	async isHrefVideo(href) {
 		if (typeof(href) !== "string") {
 			return false;
 		}
-		return href.includes(".mp4") || href.includes(".webm");
+		const browserVideoExtensions = await getBrowserVideoExtensions();
+		const fileExtension = href.split('.').pop().toLowerCase();
+		return browserVideoExtensions.includes(fileExtension);
 	}
 
 	getDarkColor() {
@@ -976,3 +998,4 @@ class JNodesUtilities {
 }
 
 export const utilitiesInstance = new JNodesUtilities();
+export { getBrowserVideoExtensions };
