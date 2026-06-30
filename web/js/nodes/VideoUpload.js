@@ -173,7 +173,8 @@ function mediaUpload(node, inputName, inputData, app) {
 										try {
 											const jnodesPayload = JSON.parse(value);
 											let path = jnodesPayload.filename;
-											if (jnodesPayload.subdirectory) { path = jnodesPayload.subdirectory + "/" + path; }
+											const subfolder = jnodesPayload.subdirectory || jnodesPayload.subfolder;
+											if (subfolder) { path = subfolder + "/" + path; }
 											if (jnodesPayload.type) { path = jnodesPayload.type + "/" + path; }
 
 											const bUpdateMediaWidget = true;
