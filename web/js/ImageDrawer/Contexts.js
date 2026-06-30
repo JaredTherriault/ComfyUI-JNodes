@@ -350,13 +350,58 @@ export class ContextRefreshable extends ImageDrawerContext {
 	}
 }
 
+const SUBDIRECTORY_PLACEHOLDER = "Please select a subdirectory";
+
 export class ContextModel extends ContextRefreshable {
 	constructor(name, description, imageDrawerInstance, type) {
 		super(name, description, imageDrawerInstance);
 		this.type = type;
+		this.selectedSubdirectory = SUBDIRECTORY_PLACEHOLDER;
+		this.subdirectorySelector = null;
 	}
 
 	async getModels(bForceRefresh = false) { }
+
+	async updateSubdirectorySelectorOptions() {
+
+		const lastSelectedValue = this.subdirectorySelector.data.getSelectedOptionName();
+		this.subdirectorySelector.data.clearOptions();
+
+		const loadingIndicatorText = "Loading...";
+		this.subdirectorySelector.data.addOptionUnique(loadingIndicatorText, loadingIndicatorText);
+		this.subdirectorySelector.data.setOptionSelected(loadingIndicatorText);
+
+		const subdirectoriesResponse = await api.fetchApi(
+			`/jnodes_list_model_subdirectories?type=${this.type}`, { method: "GET", cache: "no-store" });
+
+		let subdirectories;
+		try {
+			let decodedString = await utilitiesInstance.decodeReadableStream(subdirectoriesResponse.body);
+			decodedString = utilitiesInstance.sanitizeMetadataForJson(decodedString);
+			const asJson = JSON.parse(decodedString);
+
+			if (asJson.success && asJson.payload) {
+				subdirectories = asJson.payload;
+			}
+		} catch (e) {
+			console.error(`Could not get list of subdirectories for "${this.type}": ${e}`)
+		}
+
+		this.subdirectorySelector.data.clearOptions();
+
+		this.subdirectorySelector.data.addOptionUnique(SUBDIRECTORY_PLACEHOLDER, SUBDIRECTORY_PLACEHOLDER);
+		this.subdirectorySelector.data.addOptionUnique('/root', '');
+
+		for (let directoryIndex = 0; directoryIndex < subdirectories.length; directoryIndex++) {
+			const result = subdirectories[directoryIndex];
+			if (result === "") { continue; } // skip root (already added above)
+			this.subdirectorySelector.data.addOptionUnique(result, result);
+		}
+
+		this.subdirectorySelector.data.setOptionSelected(SUBDIRECTORY_PLACEHOLDER);
+
+		this.subdirectorySelector.data.setFilterTextAndExecuteSearch("");
+	}
 
 	async loadModels(bForceRefresh = false) {
 
@@ -367,7 +412,6 @@ export class ContextModel extends ContextRefreshable {
 		// Get models
 		let modelDicts = await this.getModels(bForceRefresh);
 		if (this.shouldCancelAsyncOperation()) { return; }
-		//console.log("modelDicts: " + JSON.stringify(loraDicts));
 
 		const newModels = [];
 
@@ -400,7 +444,35 @@ export class ContextModel extends ContextRefreshable {
 
 	async switchToContext() {
 		if (!await super.switchToContext()) {
-			await this.loadModels();
+			await this.updateSubdirectorySelectorOptions();
+			if (this.cache?.customContextCacheData?.selectedSubdirectory !== undefined) {
+				this.subdirectorySelector.data.setOptionSelected(this.cache.customContextCacheData.selectedSubdirectory);
+				this.selectedSubdirectory = this.cache.customContextCacheData.selectedSubdirectory;
+			}
+			if (this.cache?.customContextCacheData?.subdirectorySearchToken) {
+				this.subdirectorySelector.data.setFilterTextAndExecuteSearch(this.cache.customContextCacheData.subdirectorySearchToken);
+			}
+			if (this.cache?.customContextCacheData?.subdirectorySelectorScrollAmount) {
+				this.subdirectorySelector.data.setScrollAmount(this.cache.customContextCacheData.subdirectorySelectorScrollAmount);
+			}
+			if (this.selectedSubdirectory && this.selectedSubdirectory !== SUBDIRECTORY_PLACEHOLDER) {
+				await this.loadModels();
+			} else {
+				const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
+				await imageDrawerListInstance.replaceImageListChildren([$el("label", { textContent: "Please select a subdirectory to load models." })]);
+			}
+			return;
+		}
+		await this.updateSubdirectorySelectorOptions();
+		if (this.cache?.customContextCacheData?.selectedSubdirectory !== undefined) {
+			this.subdirectorySelector.data.setOptionSelected(this.cache.customContextCacheData.selectedSubdirectory);
+			this.selectedSubdirectory = this.cache.customContextCacheData.selectedSubdirectory;
+		}
+		if (this.cache?.customContextCacheData?.subdirectorySearchToken) {
+			this.subdirectorySelector.data.setFilterTextAndExecuteSearch(this.cache.customContextCacheData.subdirectorySearchToken);
+		}
+		if (this.cache?.customContextCacheData?.subdirectorySelectorScrollAmount) {
+			this.subdirectorySelector.data.setScrollAmount(this.cache.customContextCacheData.subdirectorySelectorScrollAmount);
 		}
 	}
 
@@ -427,9 +499,45 @@ export class ContextModel extends ContextRefreshable {
 			}
 		};
 
-		container.insertBefore(createLabeledSliderRange(options), container.firstChild);
+		const slider = $el('div',
+			{ 
+				style: { 
+					width: '50%' 
+				}
+			}, [
+				createLabeledSliderRange(options), 
+			]
+		);
+
+		container.insertBefore(slider, container.firstChild);
+
+		const searchableDropDown = new SearchableDropDown();
+		this.subdirectorySelector = searchableDropDown.createSearchableDropDown();
+		this.subdirectorySelector.style.width = "50%";
+
+		this.subdirectorySelector.addEventListener("selectoption", async () => {
+			const selectedOption = this.subdirectorySelector.data.getSelectedOptionElement();
+			this.selectedSubdirectory = selectedOption.value;
+			if (this.selectedSubdirectory === SUBDIRECTORY_PLACEHOLDER) {
+				const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
+				await imageDrawerListInstance.replaceImageListChildren([$el("label", { textContent: "Please select a subdirectory to load models." })]);
+				return;
+			}
+			await this.loadModels(true);
+		});
+
+		container.insertBefore(this.subdirectorySelector, container.firstChild);
 
 		return container;
+	}
+
+	makeCache() {
+		super.makeCache();
+		this.cache.customContextCacheData = {
+			selectedSubdirectory: this.subdirectorySelector?.data?.getSelectedOptionName(),
+			subdirectorySearchToken: this.subdirectorySelector?.data?.getFilterText(),
+			subdirectorySelectorScrollAmount: this.subdirectorySelector?.data?.getLastScrollAmount()
+		};
 	}
 
 	async onRefreshClicked() {
@@ -505,27 +613,16 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 
 		this.subdirectorySelector.data.clearOptions();
 
+		this.subdirectorySelector.data.addOptionUnique(SUBDIRECTORY_PLACEHOLDER, SUBDIRECTORY_PLACEHOLDER);
+		this.subdirectorySelector.data.addOptionUnique(this.rootDirectoryDisplayName, '');
+
 		for (let directoryIndex = 0; directoryIndex < subdirectories.length; directoryIndex++) {
-			const bIsRoot = directoryIndex == 0;
 			const result = subdirectories[directoryIndex];
-
-			const path = bIsRoot ? this.rootDirectoryDisplayName : result;
-
-			this.subdirectorySelector.data.addOptionUnique(path, bIsRoot ? '' : path);
+			if (result === "") { continue; }
+			this.subdirectorySelector.data.addOptionUnique(result, result);
 		}
 
-		// Restore last selected value if it exists in the new combo options
-		if (this.subdirectorySelector.data.hasOption(lastSelectedValue)) {
-
-			this.subdirectorySelector.data.setOptionSelected(lastSelectedValue);
-		} else {
-
-			// Otherwise just set it to the first option
-			const newOptionNames = this.subdirectorySelector.data.getOptionNames();
-			if (newOptionNames.length > 0) {
-				this.subdirectorySelector.data.setOptionSelected(newOptionNames[0]);
-			}
-		}
+		this.subdirectorySelector.data.setOptionSelected(SUBDIRECTORY_PLACEHOLDER);
 
 		this.subdirectorySelector.data.setFilterTextAndExecuteSearch("");
 	}
@@ -681,6 +778,9 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 			const selectedOption = this.subdirectorySelector.data.getSelectedOptionElement();
 			const selectedValue = selectedOption.value;
 
+			if (selectedValue === SUBDIRECTORY_PLACEHOLDER) {
+				return;
+			}
 			await this.fetchFolderItems(selectedValue);
 		}
 
@@ -700,8 +800,13 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 
 			const selectedOption = this.subdirectorySelector.data.getSelectedOptionElement();
 			const selectedValue = selectedOption.value;
-			// await api.fetchApi(
-			// '/jnodes_request_task_cancellation', { method: "POST" }); // Cancel any outstanding python task
+
+			if (selectedValue === SUBDIRECTORY_PLACEHOLDER) {
+				const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
+				await imageDrawerListInstance.replaceImageListChildren([$el("label", { textContent: "Please select a subdirectory to load images." })]);
+				return;
+			}
+
 			await this.fetchFolderItems(selectedValue);
 		});
 
@@ -720,7 +825,9 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 
 	async switchToContext() {
 		if (!await super.switchToContext()) {
-			await this.fetchFolderItems(); // updateSubdirectorySelector is called in fetchFolderItems
+			await this.updateSubdirectorySelectorOptions();
+			const imageDrawerListInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerList");
+			await imageDrawerListInstance.replaceImageListChildren([$el("label", { textContent: "Please select a subdirectory to load images." })]);
 			return;
 		}
 		await this.updateSubdirectorySelectorOptions(); //  If we're not calling fetchFolderItems because we're restoring a cache, call updateSubdirectorySelector
@@ -736,7 +843,10 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 	}
 
 	async onRefreshClicked() {
-		await this.fetchFolderItems(this.subdirectorySelector.data.getSelectedOptionElement().value);
+		const selectedValue = this.subdirectorySelector.data.getSelectedOptionElement().value;
+		if (selectedValue !== SUBDIRECTORY_PLACEHOLDER) {
+			await this.fetchFolderItems(selectedValue);
+		}
 		await super.onRefreshClicked();
 	}
 
@@ -911,7 +1021,7 @@ export class ContextLora extends ContextModel {
 	}
 
 	async getModels(bForceRefresh = false) {
-		return await ExtraNetworks.getLoras(bForceRefresh);
+		return await ExtraNetworks.getLoras(bForceRefresh, this.selectedSubdirectory);
 	}
 }
 
@@ -921,7 +1031,7 @@ export class ContextEmbeddings extends ContextModel {
 	}
 
 	async getModels(bForceRefresh = false) {
-		return await ExtraNetworks.getEmbeddings(bForceRefresh);
+		return await ExtraNetworks.getEmbeddings(bForceRefresh, this.selectedSubdirectory);
 	}
 }
 

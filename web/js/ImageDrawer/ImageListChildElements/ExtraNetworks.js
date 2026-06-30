@@ -22,15 +22,21 @@ let cachedEmbeddingsObject = undefined;
 
 /**
  * Gets a list of lora names
+ * @param {boolean} bForceRefresh
+ * @param {string} subdirectory - Optional subdirectory filter (e.g. "style")
  * @returns An array of script urls to import
  */
-export async function getLoras(bForceRefresh = false) {
-	if (bForceRefresh || !cachedLorasObject) {
+export async function getLoras(bForceRefresh = false, subdirectory = "") {
+	if (!subdirectory && (bForceRefresh || !cachedLorasObject)) {
 		const resp = await api.fetchApi("/jnodes_model_items?type=loras", { cache: "no-store" });
 		const asJson = await resp.json();
-		//console.log("Size of loras info: " + JSON.stringify(asJson).length)
 		cachedLorasObject = asJson;
 		return asJson;
+	}
+
+	if (subdirectory) {
+		const resp = await api.fetchApi(`/jnodes_model_items?type=loras&subdirectory=${encodeURIComponent(subdirectory)}`, { cache: "no-store" });
+		return await resp.json();
 	}
 
 	return cachedLorasObject;
@@ -38,15 +44,21 @@ export async function getLoras(bForceRefresh = false) {
 
 /**
  * Gets a list of embedding names
+ * @param {boolean} bForceRefresh
+ * @param {string} subdirectory - Optional subdirectory filter (e.g. "style")
  * @returns An array of script urls to import
  */
-export async function getEmbeddings(bForceRefresh = false) {
-	if (bForceRefresh || !cachedEmbeddingsObject) {
+export async function getEmbeddings(bForceRefresh = false, subdirectory = "") {
+	if (!subdirectory && (bForceRefresh || !cachedEmbeddingsObject)) {
 		const resp = await api.fetchApi("/jnodes_model_items?type=embeddings", { cache: "no-store" });
 		const asJson = await resp.json();
-		//console.log("Size of embeddings info: " + JSON.stringify(asJson).length)
 		cachedEmbeddingsObject = asJson;
 		return asJson;
+	}
+
+	if (subdirectory) {
+		const resp = await api.fetchApi(`/jnodes_model_items?type=embeddings&subdirectory=${encodeURIComponent(subdirectory)}`, { cache: "no-store" });
+		return await resp.json();
 	}
 
 	return cachedEmbeddingsObject;

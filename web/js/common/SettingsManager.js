@@ -425,8 +425,8 @@ export const setupUiSettings = async (onImageDrawerInstanceCountChanged) => {
 
         const options = ["LoraLoaderModelOnly", "LoraLoader"];
         const displayNames = {
-            "LoraLoaderModelOnly": "Load LoRA (Model Only)"
-            "LoraLoader": "Load LoRA (Model and CLIP)",
+            "LoraLoaderModelOnly": "Load LoRA (Model Only)",
+            "LoraLoader": "Load LoRA (Model and CLIP)"
         };
 
         const widget = $el("select", {

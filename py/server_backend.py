@@ -38,6 +38,10 @@ def get_model_items(request):
     if "type" in request.rel_url.query:
         type = request.rel_url.query["type"]
     file_list = folder_paths.get_filename_list(type)
+
+    subdirectory = request.rel_url.query.get("subdirectory", "")
+    if subdirectory:
+        file_list = [f for f in file_list if f.startswith(subdirectory + "/") or f == subdirectory]
     
     image_extension_filter = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.webm'}
     info_extension_filter = {'.info', '.txt', '.json'}
@@ -258,6 +262,16 @@ def list_immediate_subdirectories_request(request):
 
     except Exception as e:
         log_exception("Error listing subdirectories:", e)
+        return web.json_response({"success": False, "error": str(e)})
+
+def list_model_subdirectories_request(request):
+    try:
+        type = request.rel_url.query.get("type", "loras")
+        root_directory = convert_relative_comfyui_path_to_full_path(type)
+        results = list_subdirectories_recursively(root_directory)
+        return web.json_response({"success": len(results) > 0, "payload": results})
+    except Exception as e:
+        log_exception("Error listing model subdirectories:", e)
         return web.json_response({"success": False, "error": str(e)})
 
 def get_comfyui_subdirectory_images_request(request):

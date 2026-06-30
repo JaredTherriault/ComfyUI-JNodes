@@ -19,6 +19,10 @@ async def list_immediate_subdirectories_wrapper(request):
 async def get_comfyui_subdirectory_images_wrapper(request):
     return get_comfyui_subdirectory_images_request(request)
 
+@server.PromptServer.instance.routes.get('/jnodes_list_model_subdirectories')
+async def list_model_subdirectories_wrapper(request):
+    return list_model_subdirectories_request(request)
+
 @server.PromptServer.instance.routes.get('/jnodes_model_items')
 async def get_model_items_wrapper(request):
     return get_model_items(request)
