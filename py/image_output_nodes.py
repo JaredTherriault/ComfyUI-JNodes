@@ -112,6 +112,11 @@ class SaveVideo():
         )
 
 class SaveVideoWithOptions():
+    
+    # A store for subclasses to read (for example, to upload the resulting file)
+    # Does nothing on its own, this was just an extension point I needed for a project
+    LAST_FILE_PATH = ""
+
     '''
     Based on work done by Kosinkadink as a part of the Video Helper Suite.
     '''
@@ -142,6 +147,7 @@ class SaveVideoWithOptions():
             },
             "optional": {
                 "audio_options": ("AUDIO_INPUT_OPTIONS",),
+                "additional_metadata_json": ("STRING", {"tooltip": "Optionally add a secondary set of metadata key-value pairs from a stringified json. Will overwrite keys in extra_pnginfo if a key has the same name."}),
             },
             "hidden": {
                 "prompt": "PROMPT",
@@ -209,6 +215,7 @@ class SaveVideoWithOptions():
         batch_size=128,
         save_prompt_server_prompt=True,
         audio_options=None,
+        additional_metadata_json=None,
         prompt=None,
         extra_pnginfo=None
     ):
@@ -231,6 +238,8 @@ class SaveVideoWithOptions():
             filename, full_output_folder, output_format
         )
 
+        self.LAST_FILE_PATH = file_path
+
         metadata = PngInfo()
         video_metadata = {}
         if extra_pnginfo is not None:
@@ -238,15 +247,29 @@ class SaveVideoWithOptions():
                 if not save_workflow and key == "workflow":
                     continue
                 
-                value = json.dumps(extra_pnginfo[key])    
-                metadata.add_text(key, value)
+                value = extra_pnginfo[key]    
+                metadata.add_text(key, json.dumps(value))
                 video_metadata[key] = value
 
+        if additional_metadata_json is not None:
+            try:
+                as_json_object = json.loads(additional_metadata_json)
+                for key in as_json_object:                    
+                    value = as_json_object[key]    
+                    metadata.add_text(key, json.dumps(value))
+                    video_metadata[key] = value
+            except:
+                pass
         
         if save_prompt_server_prompt and prompt:
-            value = json.dumps(prompt)    
-            metadata.add_text("prompt", value)
-            video_metadata["prompt"] = value
+            if isinstance(prompt, str):
+                try:
+                    prompt = json.loads(prompt)
+                except Exception:
+                    pass  # leave as plain string if not JSON
+
+            metadata.add_text("prompt", json.dumps(prompt))
+            video_metadata["prompt"] = prompt
             
         if format_type == "image":
             
@@ -332,41 +355,51 @@ class SaveVideoWithOptions():
                 interim_file_path = f"{full_output_folder_temp}/{get_clean_filename(file_path)}_{len(interim_file_paths)}.{format_ext}"
                 interim_file_paths.append(interim_file_path)
 
-                res = None
-                # images = images.tobytes()
-                if save_metadata:
-                    os.makedirs(folder_paths.get_temp_directory(), exist_ok=True)
-                    metadata = json.dumps(video_metadata)
-                    metadata_path = os.path.join(folder_paths.get_temp_directory(), "metadata.txt")
-                    #metadata from file should  escape = ; # \ and newline
-                    metadata = metadata.replace("\\","\\\\")
-                    metadata = metadata.replace(";","\\;")
-                    metadata = metadata.replace("#","\\#")
-                    metadata = metadata.replace("=","\\=")
-                    # metadata = metadata.replace("\n","\\\\n")
-                    metadata = metadata.replace(": NaN}", ": \"NaN\"}")
-                    metadata = "comment=" + metadata
-                    with open(metadata_path, "w") as f:
-                        f.write(";FFMETADATA1\n")
-                        f.write(metadata)
-                    m_args = args[:1] + ["-i", metadata_path] + args[1:]
-                    try:
-                        res = subprocess.run(m_args + [interim_file_path], input=image_batch.tobytes(),
-                                            capture_output=True, check=True, env=env)
-                    except subprocess.CalledProcessError as e:
-                        #Res was not set
-                        print(e.stderr.decode("utf-8"), end="", file=sys.stderr)
-                        logger.warn("An error occurred when saving with metadata")
+                os.makedirs(folder_paths.get_temp_directory(), exist_ok=True)
 
-                if not res:
-                    try:
-                        res = subprocess.run(args + [interim_file_path], input=image_batch.tobytes(),
-                                            capture_output=True, check=True, env=env)
-                    except subprocess.CalledProcessError as e:
-                        raise Exception("An error occured in the ffmpeg subprocess:\n" \
-                                + e.stderr.decode("utf-8"))
-                if res.stderr:
-                    print(res.stderr.decode("utf-8"), end="", file=sys.stderr)
+                # 1️⃣ Produce clean JSON (compact)
+                metadata_json = json.dumps(
+                    video_metadata if save_metadata else "",
+                    separators=(",", ":")
+                    # allow_nan=False  
+                )
+
+                # 2️⃣ Escape ONLY for ffmetadata syntax
+                def escape_ffmetadata_value(value: str) -> str:
+                    return (
+                        value
+                        .replace("\\", "\\\\")   # must be first
+                        .replace("\n", r"\n")
+                        .replace(";", r"\;")
+                        .replace("#", r"\#")
+                        .replace("=", r"\=")
+                        .replace("NaN", "0")
+                    )
+
+                escaped = escape_ffmetadata_value(metadata_json)
+
+                metadata_path = os.path.join(
+                    folder_paths.get_temp_directory(),
+                    "metadata.txt"
+                )
+
+                with open(metadata_path, "w", encoding="utf-8") as f:
+                    f.write(";FFMETADATA1\n")
+                    f.write("comment=" + escaped)
+
+                m_args = args[:1] + ["-i", metadata_path] + args[1:]
+
+                try:
+                    res = subprocess.run(
+                        m_args + [interim_file_path],
+                        input=image_batch.tobytes(),
+                        capture_output=True,
+                        check=True,
+                        env=env
+                    )
+                except subprocess.CalledProcessError as e:
+                    print(e.stderr.decode("utf-8"), end="", file=sys.stderr)
+                    logger.warn("An error occurred when saving with metadata")
 
             join_videos_instance.join_videos_in_directory(full_output_folder_temp, file_path, audio_options, True)
 
@@ -639,21 +672,97 @@ class JoinVideosInDirectory:
             return False
 
 class SaveImageWithOutput(SaveImage):
+    
+    # A store for subclasses to read (for example, to upload the resulting file)
+    # Does nothing on its own, this was just an extension point I needed for a project
+    LAST_FILE_PATH = ""
+
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": 
-                    {
-                        "images": ("IMAGE", ),
-                        "save_to_output": ("BOOLEAN", {"default": False}),
-                        "filename_prefix": ("STRING", {"default": "ComfyUI"})
-                     },
-                "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
+        return {
+            "required": {
+                "images": ("IMAGE", ),
+                "save_to_output": ("BOOLEAN", {"default": False}),
+                "filename_prefix": ("STRING", {"default": "ComfyUI"}),
+                "save_prompt_to_meta": ("BOOLEAN", {"default": False}),
+                "metadata_mode": (["add", "replace", "discard"], {"default": False, "tooltip": "add: add additional_metadata_json to the existing extra_pnginfo; replace: replace the existing extra_pnginfo with additional_metadata_json; discard: do not add extra_pnginfo or additional_metadata_json to metadata"}),
+                "image_type": (["png", "webp", "jpg", "bmp"], {"default": "png"}),
+            },
+            "optional": {
+                "additional_metadata_json": ("STRING", {"tooltip": "Optionally add a secondary set of metadata key-value pairs from a stringified json. Will overwrite keys in extra_pnginfo if a key has the same name."}),
+            },
+            "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
         
     RETURN_TYPES = SaveImage.RETURN_TYPES
     FUNCTION = "save_images_with_output"
+
+    def save_images(self, images, filename_prefix="ComfyUI", prompt=None, extra_pnginfo=None, image_type="png"):
+        filename_prefix += self.prefix_append
+        full_output_folder, filename, counter, subfolder, filename_prefix = folder_paths.get_save_image_path(filename_prefix, self.output_dir, images[0].shape[1], images[0].shape[0])
+        results = list()
+        for (batch_number, image) in enumerate(images):
+            i = 255. * image.cpu().numpy()
+            img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
+            metadata_dict = {}
+            if prompt is not None:
+                metadata_dict["prompt"] = json.dumps(prompt)
+            if extra_pnginfo is not None:
+                for x in extra_pnginfo:
+                    metadata_dict[x] = json.dumps(extra_pnginfo[x])
+
+            filename_with_batch_num = filename.replace("%batch_num%", str(batch_number))
+            file = f"{filename_with_batch_num}_{counter:05}_.{image_type}"
+
+            path = os.path.join(full_output_folder, file)
+            self.LAST_FILE_PATH = path
+
+            if image_type == "png":
+                pnginfo = PngInfo()
+                for k, v in metadata_dict.items():
+                    pnginfo.add_text(k, str(v))
+                img.save(path, pnginfo=pnginfo, compress_level=self.compress_level)
+
+            elif image_type == "jpg":
+                exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
+                
+                # store your metadata as JSON string inside UserComment
+                exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(metadata_dict).encode()
+                exif_bytes = piexif.dump(exif_dict)
+
+                img.save(path, exif=exif_bytes, quality=95)
+
+            elif image_type == "webp":
+                exif_bytes = piexif.dump({
+                        "Exif":{
+                            piexif.ExifIFD.UserComment:piexif.helper.UserComment.dump(
+                                json.dumps(metadata_dict, indent=2, sort_keys=True), encoding="unicode"
+                            )
+                        }
+                    })
+                
+                img.save(path, format="WEBP", lossless=True, exif=exif_bytes)
+            else:
+                # no metadata support → just save
+                img.save(path)
+
+            results.append({
+                "filename": file,
+                "subfolder": subfolder,
+                "type": self.type
+            })
+            counter += 1
+
+        return { "ui": { "images": results } }
     
-    def save_images_with_output(self, images, save_to_output, filename_prefix="ComfyUI", prompt=None, extra_pnginfo=None):
+    def save_images_with_output(
+        self, images, save_to_output, 
+        filename_prefix="ComfyUI", 
+        save_prompt_to_meta=False, metadata_mode="add", 
+        additional_metadata_json=None,
+        prompt=None, extra_pnginfo=None,
+        image_type="png"):
+
         if not save_to_output:
             self.output_dir = folder_paths.get_temp_directory()
             self.type = "temp"
@@ -661,7 +770,31 @@ class SaveImageWithOutput(SaveImage):
         else:
             self.__init__(); # Restore defaults
 
-        result = self.save_images(images, filename_prefix, prompt, extra_pnginfo)
+        out_prompt = prompt
+        out_extra_pnginfo = extra_pnginfo
+        if not save_prompt_to_meta:
+            out_prompt = None 
+
+        def add_additional_png_info():
+            if additional_metadata_json is not None:
+                try:
+                    as_json_object = json.loads(additional_metadata_json)
+                    for key in as_json_object:                    
+                        value = as_json_object[key]    
+                        out_extra_pnginfo[key] = value
+                except:
+                    pass
+
+        if metadata_mode == "discard":
+            out_extra_pnginfo = None
+        elif metadata_mode == "replace":
+            out_extra_pnginfo = {}
+            add_additional_png_info()
+        else:
+            add_additional_png_info()      
+
+
+        result = self.save_images(images, filename_prefix, out_prompt, out_extra_pnginfo, image_type)
         return result 
         
 
