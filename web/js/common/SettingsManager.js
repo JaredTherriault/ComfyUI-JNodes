@@ -134,6 +134,8 @@ export let setting_VideoPlaybackOptions = new ImageDrawerConfigSetting("Video.Vi
 
 export let setting_bQueueTimerEnabled = new ImageDrawerConfigSetting("bQueueTimerEnabled", false);
 
+export let setting_LoraLoaderNodeType = new ImageDrawerConfigSetting("LoraLoaderNodeType", "LoraLoaderModelOnly");
+
 // Button setup
 
 export const setupUiSettings = async (onImageDrawerInstanceCountChanged) => {
@@ -414,6 +416,37 @@ export const setupUiSettings = async (onImageDrawerInstanceCountChanged) => {
         const tooltip = "Whether to show the Queue Timer widget which can be long-clicked to automatically " +
             "send prompt queues at a set interval (requires page reload, requires old UI)";
         addJNodesSetting(labelWidget, settingWidget, tooltip);
+    }
+    // Lora Loader Node Type
+    {
+        const labelWidget = $el("label", {
+            textContent: "Lora Loader Node Type:",
+        });
+
+        const options = ["LoraLoaderModelOnly", "LoraLoader"];
+        const displayNames = {
+            "LoraLoaderModelOnly": "Load LoRA (Model Only)"
+            "LoraLoader": "Load LoRA (Model and CLIP)",
+        };
+
+        const widget = $el("select", {
+            oninput: (e) => {
+                setting_LoraLoaderNodeType.value = e.target.value;
+            },
+        },
+            options.map((m) =>
+                $el("option", {
+                    value: m,
+                    textContent: displayNames[m] || m,
+                    selected: setting_LoraLoaderNodeType.value === m,
+                })
+            )
+        );
+
+        widget.value = options.includes(setting_LoraLoaderNodeType.value) ? setting_LoraLoaderNodeType.value : widget.value;
+
+        const tooltip = "Choose which node type is created when dragging a LoRA from the image drawer onto the canvas.";
+        addJNodesSetting(labelWidget, widget, tooltip);
     }
 
     // Video Playback Settings
