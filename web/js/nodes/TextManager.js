@@ -377,6 +377,10 @@ class TextContainer {
             }
         }
 
+        if (this.textInput) {
+            utilitiesInstance.autoResizeTextArea(this.textInput, maxContainerTextAreaHeight);
+        }
+
         this.updateReferenceText();
         this.updateFavoriteButtonColor();
 
