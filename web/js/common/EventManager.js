@@ -209,27 +209,29 @@ document.addEventListener("drop", (event) => {
 
 	if (event.target.data == app.canvas) {
 
-		// Check for image drawer payload with workflow
-		for (const item of event.dataTransfer.items) {
-			if (item.type == 'text/jnodes_image_drawer_payload') {
-				item.getAsString((value) => {
-					try {
-						const payload = JSON.parse(value);
-						if (payload.metadata?.workflow) {
-							let workflow = payload.metadata.workflow;
-							if (typeof workflow === "string") {
-								workflow = JSON.parse(workflow);
+		function openWorrkflowIfAvailabled() {
+			// Check for image drawer payload with workflow
+			for (const item of event.dataTransfer.items) {
+				if (item.type == 'text/jnodes_image_drawer_payload') {
+					item.getAsString((value) => {
+						try {
+							const payload = JSON.parse(value);
+							if (payload.metadata?.workflow) {
+								let workflow = payload.metadata.workflow;
+								if (typeof workflow === "string") {
+									workflow = JSON.parse(workflow);
+								}
+								event.preventDefault();
+								event.stopPropagation();
+								app.loadGraphData(workflow);
+								return;
 							}
-							event.preventDefault();
-							event.stopPropagation();
-							app.loadGraphData(workflow);
-							return;
+						} catch (e) {
+							console.error("JNodes: Error loading workflow from dropped item:", e);
 						}
-					} catch (e) {
-						console.error("JNodes: Error loading workflow from dropped item:", e);
-					}
-				});
-				break;
+					});
+					break;
+				}
 			}
 		}
 
@@ -244,15 +246,19 @@ document.addEventListener("drop", (event) => {
 				pos[1]
 			);
 			
-			if (hoveredNode && (hoveredNode.type == "LoraLoader" || hoveredNode.type == "LoraLoaderModelOnly")) {
-				afterGetDropData("modelInfo", (asJson) => {
+			if (hoveredNode) {
+				if ((hoveredNode.type == "LoraLoader" || hoveredNode.type == "LoraLoaderModelOnly")) {
+					afterGetDropData("modelInfo", (asJson) => {
 
-					event.preventDefault();
-					event.stopPropagation();
+						event.preventDefault();
+						event.stopPropagation();
 
-					updateLoraNode(hoveredNode, asJson.modelName, asJson.strengthModel, asJson.strengthClip);
-				});
-				return;
+						updateLoraNode(hoveredNode, asJson.modelName, asJson.strengthModel, asJson.strengthClip);
+					});
+					return;
+				}
+			} else {
+				openWorrkflowIfAvailabled();
 			}
 		}
  
