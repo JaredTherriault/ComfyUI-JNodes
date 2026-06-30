@@ -789,7 +789,7 @@ export class ContextFeed extends ContextClearable {
 				if (this.shouldCancelAsyncOperation()) { break; }
 
 				let fileInfo = this.feedImages[imageIndex];
-				fileInfo.file = fileInfo;
+				fileInfo.file = { ...fileInfo };
 				fileInfo.bShouldForceLoad = true; // Don't lazy load
 				const element = await ImageElements.createImageElementFromFileInfo(fileInfo, this.imageDrawerInstance);
 				if (element == undefined) { console.log(`Attempting to add undefined image element in ${this.name}`); }
