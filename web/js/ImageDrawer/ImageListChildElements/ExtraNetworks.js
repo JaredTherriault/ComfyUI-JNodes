@@ -715,7 +715,7 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 								cursor: "pointer",
 							}
 						}),
-						`Copy lora as a1111-style text + trained words (${getCopyAllText()})`,
+						`Copy lora as a1111-style text + trained words (${getCopyAllText()})\nDrag into a textarea to insert at cursor`,
 						function (e) {
 
 							utilitiesInstance.copyToClipboard(getCopyAllText());
@@ -734,7 +734,7 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 								cursor: "pointer",
 							}
 						}),
-						`Copy trained words (${trainedWords})`,
+						`Copy trained words (${trainedWords})\nDrag into a textarea to insert at cursor`,
 						function (e) {
 							utilitiesInstance.copyToClipboard(trainedWords)
 							e.preventDefault();
@@ -753,7 +753,7 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 							cursor: "pointer",
 						}
 					}),
-					bIsLora ? `Copy lora as a1111-style text (${getModelText()})` : `Copy embedding as comfy-style text (${getModelText()})`,
+					bIsLora ? `Copy lora as a1111-style text (${getModelText()})\nDrag into a textarea to insert at cursor` : `Copy embedding as comfy-style text (${getModelText()})\nDrag into a textarea to insert at cursor`,
 					function (e) {
 						utilitiesInstance.copyToClipboard(getModelText())
 						e.preventDefault();

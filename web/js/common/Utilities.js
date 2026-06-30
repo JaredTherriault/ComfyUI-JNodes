@@ -376,10 +376,18 @@ class JNodesUtilities {
 		return parentElement ? parentElement.querySelectorAll("video, img") : [];
 	}
 
-	pasteToTextArea(newText, textarea) {
+	pasteToTextArea(newText, textarea, position = null) {
+
+		// Ensure literal \n are converted to actual newlines
+		newText = newText.replace(/\\n/g, "\n");
 
 		// Focus the textarea to make sure execCommand is working with the right selection
 		textarea.focus();
+
+		if (position !== null) {
+			textarea.selectionStart = position;
+			textarea.selectionEnd = position;
+		}
 
 		let pasted = true;
 		try {

@@ -291,7 +291,16 @@ document.addEventListener("drop", (event) => {
 			event.preventDefault();
 			event.stopPropagation();
 
-			utilitiesInstance.pasteToTextArea(payload, event.target, event.target.selectionStart, event.target.selectionEnd);
+			let position = null;
+			if (document.caretPositionFromPoint) {
+				const caretPos = document.caretPositionFromPoint(event.clientX, event.clientY);
+				if (caretPos) position = caretPos.offset;
+			} else if (document.caretRangeFromPoint) {
+				const range = document.caretRangeFromPoint(event.clientX, event.clientY);
+				if (range) position = range.startOffset;
+			}
+
+			utilitiesInstance.pasteToTextArea(payload, event.target, position);
 		});
 	}
 });
