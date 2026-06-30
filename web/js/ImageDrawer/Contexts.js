@@ -249,14 +249,22 @@ export class ImageDrawerContext {
 
 		const supportedTypes = this.getSupportedSortTypes();
 
-		const desiredTypeObject = imageDrawerListSortingInstance.getSortTypeObjectFromName(desiredType) || desiredType;
-	
-		if (supportedTypes.includes(desiredTypeObject.constructor)) {
+		let desiredTypeObject;
+		if (desiredType && typeof desiredType === 'object' && typeof desiredType.name === 'string' && desiredType.sortImageList) {
+			desiredTypeObject = desiredType;
+		} else if (desiredType && typeof desiredType === 'object' && desiredType.type) {
+			desiredTypeObject = imageDrawerListSortingInstance.getSortTypeObjectFromClassType(desiredType.type, desiredType.bIsAscending);
+		} else {
+			desiredTypeObject = imageDrawerListSortingInstance.getSortTypeObjectFromName(desiredType);
+		}
+
+		if (desiredTypeObject && supportedTypes.includes(desiredTypeObject.constructor)) {
 
 			return desiredTypeObject;
 		}
 
-		return this.getDefaultSortType();
+		const defaultType = this.getDefaultSortType();
+		return imageDrawerListSortingInstance.getSortTypeObjectFromClassType(defaultType.type, defaultType.bIsAscending);
 	}
 
 	getDefaultSortType() {
