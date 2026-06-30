@@ -19,6 +19,7 @@ export class SearchableDropDown {
         this._bIsContentShown = false;
         this._lastScrollAmount = 0;
         this._availableOptions = [];
+        this._keyboardIndex = -1;
 
         // Events
         this._ON_SELECT_EVENT_NAME = "selectoption";
@@ -254,6 +255,7 @@ export class SearchableDropDown {
 
         const filterText = inFilterText.toUpperCase();
         const options = this.getOptionElements();
+        this._keyboardIndex = -1;
 
         let fragment = document.createDocumentFragment();
 
@@ -279,6 +281,7 @@ export class SearchableDropDown {
     openContent() {
 
         this._bIsContentShown = true;
+        this._keyboardIndex = -1;
 
         // Get button and dropdown content positions
         const buttonRect = this._mainButton.getBoundingClientRect();
@@ -313,6 +316,13 @@ export class SearchableDropDown {
 
         this._bIsContentShown = false;
 
+        // Remove keyboard highlight from any option
+        const visibleOptions = this._getVisibleOptions();
+        for (const option of visibleOptions) {
+            option.classList.remove("option-keyboard-highlight");
+        }
+        this._keyboardIndex = -1;
+
         this._dropDownContent.classList.remove("dropdown-show");
     }
 
@@ -330,6 +340,82 @@ export class SearchableDropDown {
 
         this._labelPanel.scrollTop = scrollAmount;
         this._lastScrollAmount = scrollAmount;
+    }
+
+    /**
+     * Returns the currently visible option elements in the label panel.
+     * @returns {HTMLElement[]} Array of visible option elements.
+     */
+    _getVisibleOptions() {
+        return Array.from(this._labelPanel.children);
+    }
+
+    /**
+     * Updates the keyboard highlight to the specified index.
+     * @param {number} newIndex - The index to highlight (-1 for none).
+     */
+    _updateKeyboardHighlight(newIndex) {
+        const visibleOptions = this._getVisibleOptions();
+
+        // Remove previous highlight
+        if (this._keyboardIndex >= 0 && this._keyboardIndex < visibleOptions.length) {
+            visibleOptions[this._keyboardIndex].classList.remove("option-keyboard-highlight");
+        }
+
+        this._keyboardIndex = newIndex;
+
+        // Add new highlight and scroll into view
+        if (this._keyboardIndex >= 0 && this._keyboardIndex < visibleOptions.length) {
+            const highlighted = visibleOptions[this._keyboardIndex];
+            highlighted.classList.add("option-keyboard-highlight");
+            highlighted.scrollIntoView({ block: "nearest" });
+        }
+    }
+
+    /**
+     * Handles keyboard navigation within the dropdown.
+     * @param {KeyboardEvent} event - The keyboard event.
+     */
+    _handleKeyboardNavigation(event) {
+        if (!this._bIsContentShown) { return; }
+
+        const visibleOptions = this._getVisibleOptions();
+        if (visibleOptions.length === 0) { return; }
+
+        switch (event.key) {
+            case "ArrowDown":
+                event.preventDefault();
+                if (this._keyboardIndex < visibleOptions.length - 1) {
+                    this._updateKeyboardHighlight(this._keyboardIndex + 1);
+                } else {
+                    this._updateKeyboardHighlight(0);
+                }
+                break;
+
+            case "ArrowUp":
+                event.preventDefault();
+                if (this._keyboardIndex > 0) {
+                    this._updateKeyboardHighlight(this._keyboardIndex - 1);
+                } else {
+                    this._updateKeyboardHighlight(visibleOptions.length - 1);
+                }
+                break;
+
+            case "Enter":
+                event.preventDefault();
+                if (this._keyboardIndex >= 0 && this._keyboardIndex < visibleOptions.length) {
+                    const option = visibleOptions[this._keyboardIndex];
+                    const bInvokeCallbacks = true;
+                    this._selectOption(option.textContent, bInvokeCallbacks);
+                    this.closeContent();
+                }
+                break;
+
+            case "Escape":
+                event.preventDefault();
+                this.closeContent();
+                break;
+        }
     }
 
     _selectOption(optionName, bInvokeCallbacks) {
@@ -369,7 +455,14 @@ export class SearchableDropDown {
 
         this._searchInput = $el("input", {
             placeholder: "Search...",
-            onkeyup: () => { this.filterOptions(this.getFilterText()); },
+            onkeyup: (e) => {
+                if (["ArrowDown", "ArrowUp", "Enter", "Escape"].includes(e.key)) {
+                    this._handleKeyboardNavigation(e);
+                } else {
+                    this._keyboardIndex = -1;
+                    this.filterOptions(this.getFilterText());
+                }
+            },
             style: {
                 padding: "4px 16px",
                 width: "100%"
@@ -456,11 +549,15 @@ export class SearchableDropDown {
                 }
                 
                 .option-panel label:hover {
-                    background-color: aquamarine;
+                    background-color: lightgreen;
                 }
 
                 .option-selected {
                     background-color: lightsteelblue;
+                }
+
+                .option-keyboard-highlight {
+                    background-color: moccasin;
                 }
                 
                 .dropdown-show {
