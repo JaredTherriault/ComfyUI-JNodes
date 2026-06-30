@@ -406,7 +406,14 @@ export class ContextModel extends ContextRefreshable {
 
 	async loadModels(bForceRefresh = false) {
 
+		// Abort any previous in-flight request
+		if (this._fetchAbortController) {
+			this._fetchAbortController.abort();
+			await api.fetchApi('/jnodes_request_task_cancellation', { method: "POST" });
+		}
+
 		const abortController = new AbortController();
+		this._fetchAbortController = abortController;
 
 		const cancelButton = $el("button.JNodes-image-drawer-btn", {
 			textContent: 'Cancel',
@@ -666,6 +673,12 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 	// as well as all subdirectories then load the images in a given subdirectory
 	async fetchFolderItems(selectedSubdirectory = "", bRefreshOptions = false) {
 
+		// Abort any previous in-flight request
+		if (this._fetchAbortController) {
+			this._fetchAbortController.abort();
+			await api.fetchApi('/jnodes_request_task_cancellation', { method: "POST" });
+		}
+
 		const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 		imageDrawerListSortingInstance.stopAutomaticShuffle();
 
@@ -673,6 +686,7 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 		const withOrWithout = this.bIncludeSubdirectories ? "with" : "without";
 
 		const abortController = new AbortController();
+		this._fetchAbortController = abortController;
 
 		const cancelButton = $el("button.JNodes-image-drawer-btn", {
 			textContent: 'Cancel',
