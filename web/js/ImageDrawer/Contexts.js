@@ -448,7 +448,8 @@ export class ContextModel extends ContextRefreshable {
 			await this.updateSubdirectorySelectorOptions();
 			if (this.cache?.customContextCacheData?.selectedSubdirectory !== undefined) {
 				this.subdirectorySelector.data.setOptionSelected(this.cache.customContextCacheData.selectedSubdirectory);
-				this.selectedSubdirectory = this.cache.customContextCacheData.selectedSubdirectory;
+				const restoredOption = this.subdirectorySelector.data.getSelectedOptionElement();
+				this.selectedSubdirectory = restoredOption ? restoredOption.value : "";
 			}
 			if (this.cache?.customContextCacheData?.subdirectorySearchToken) {
 				this.subdirectorySelector.data.setFilterTextAndExecuteSearch(this.cache.customContextCacheData.subdirectorySearchToken);
@@ -467,7 +468,8 @@ export class ContextModel extends ContextRefreshable {
 		await this.updateSubdirectorySelectorOptions();
 		if (this.cache?.customContextCacheData?.selectedSubdirectory !== undefined) {
 			this.subdirectorySelector.data.setOptionSelected(this.cache.customContextCacheData.selectedSubdirectory);
-			this.selectedSubdirectory = this.cache.customContextCacheData.selectedSubdirectory;
+			const restoredOption = this.subdirectorySelector.data.getSelectedOptionElement();
+			this.selectedSubdirectory = restoredOption ? restoredOption.value : "";
 		}
 		if (this.cache?.customContextCacheData?.subdirectorySearchToken) {
 			this.subdirectorySelector.data.setFilterTextAndExecuteSearch(this.cache.customContextCacheData.subdirectorySearchToken);
@@ -630,7 +632,7 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 
 	// Get the image paths in the folder or directory specified at this.folderName 
 	// as well as all subdirectories then load the images in a given subdirectory
-	async fetchFolderItems(selectedSubdirectory = "") {
+	async fetchFolderItems(selectedSubdirectory = "", bRefreshOptions = false) {
 
 		const imageDrawerListSortingInstance = this.imageDrawerInstance.getComponentByName("ImageDrawerListSorting");
 		imageDrawerListSortingInstance.stopAutomaticShuffle();
@@ -688,7 +690,13 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 		// Load root folder if no path is specified (even if there are no images within)
 		await this.loadImagesInFolder(selectedSubdirectory);
 
-		this.updateSubdirectorySelectorOptions();
+		if (bRefreshOptions) {
+			const lastSelectedName = this.subdirectorySelector.data.getSelectedOptionName();
+			await this.updateSubdirectorySelectorOptions();
+			if (lastSelectedName && this.subdirectorySelector.data.hasOption(lastSelectedName)) {
+				this.subdirectorySelector.data.setOptionSelected(lastSelectedName);
+			}
+		}
 
 	}
 
@@ -846,7 +854,8 @@ export class ContextSubdirectoryExplorer extends ContextRefreshable {
 	async onRefreshClicked() {
 		const selectedValue = this.subdirectorySelector.data.getSelectedOptionElement().value;
 		if (selectedValue !== SUBDIRECTORY_PLACEHOLDER) {
-			await this.fetchFolderItems(selectedValue);
+			const bRefreshOptions = true;
+			await this.fetchFolderItems(selectedValue, bRefreshOptions);
 		}
 		await super.onRefreshClicked();
 	}
