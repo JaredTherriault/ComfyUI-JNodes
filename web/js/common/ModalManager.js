@@ -58,7 +58,7 @@ export class ModalManager {
 		this.handleKeyDownFunction = (event) => { this._handleKeyDown(event); };
 
 		// Add key event listeners
-		document.addEventListener("keydown", this.handleKeyDownFunction);
+		document.addEventListener("keydown", this.handleKeyDownFunction, { capture: true });
 
 		return this._getOrCreateModalContainer();
 	}
@@ -116,6 +116,7 @@ export class ModalManager {
 			
 			if (this._modalOptions.bIsImageContainer) {
 				event.preventDefault(); 
+				event.stopPropagation();
 				this._zoom(event); 
 			}
 		});
@@ -123,6 +124,7 @@ export class ModalManager {
 			
 			if (this._modalOptions.bIsImageContainer) {
 				event.preventDefault(); 
+				event.stopPropagation();
 				this._startPan(event);
 			} 
 		});
@@ -130,6 +132,7 @@ export class ModalManager {
 			
 			if (this._modalOptions.bIsImageContainer) {
 				event.preventDefault(); 
+				event.stopPropagation();
 				this._pan(event); 
 			}
 		});
@@ -137,6 +140,7 @@ export class ModalManager {
 			
 			if (this._modalOptions.bIsImageContainer) {
 				event.preventDefault(); 
+				event.stopPropagation();
 			}
 			this._onMouseUp(event); 
 		});
@@ -144,6 +148,7 @@ export class ModalManager {
 			
 			if (this._modalOptions.bIsImageContainer) {
 				event.preventDefault(); 
+				event.stopPropagation();
 				this._endPan(); 
 			}
 		});
@@ -153,6 +158,7 @@ export class ModalManager {
 			
 			if (this._modalOptions.bIsImageContainer) {
 				event.preventDefault();
+				event.stopPropagation();
 			} 
 		});
 		this._modalContainer.draggable = false;
@@ -235,7 +241,7 @@ export class ModalManager {
 		if (this._modalContainer && this._modalContainer.parentNode) {
 			this._modalContainer.parentNode.removeChild(this._modalContainer);
 		}
-		document.removeEventListener("keydown", this.handleKeyDownFunction);
+		document.removeEventListener("keydown", this.handleKeyDownFunction, { capture: true });
 
 		delete this;
 	}
@@ -243,15 +249,18 @@ export class ModalManager {
 	_handleKeyDown(event) {
 		if (event.key === "Escape") {
 			event.preventDefault();
+			event.stopPropagation();
 			this.closeModal();
 		} else if (event.key === "ArrowLeft") {
 			if (this._modalOptions.bIsImageContainer){
 				event.preventDefault();
+				event.stopPropagation();
 				this._displayNeighbouringImage(-1);
 			}
 		} else if (event.key === "ArrowRight") {
 			if (this._modalOptions.bIsImageContainer){
 				event.preventDefault();
+				event.stopPropagation();
 				this._displayNeighbouringImage(1);
 			}
 		}
@@ -261,6 +270,7 @@ export class ModalManager {
 		if (!this._modalOptions.bIsImageContainer) { return; }
 
 		event.preventDefault(); // Prevent the default scroll behavior
+		event.stopPropagation();
 
 		const zoomSpeed = 0.1;
 		const delta = event.deltaY;
