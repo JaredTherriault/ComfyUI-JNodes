@@ -223,6 +223,7 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 			imageElement.draggable = true;
 			imageElement.addEventListener('dragstart', function (event) {
 				fileInfo.displayData = imageElement.displayData;
+				fileInfo.metadata = imageElement.metadata;
 				event.dataTransfer.setData('text/jnodes_image_drawer_payload', `${JSON.stringify(fileInfo)}`);
 				ImageElementUtils.removeAndHideToolButtonFromImageElement(imageElement);
 				ImageElementUtils.hideImageElementCheckboxSelector(imageElement);
