@@ -9,7 +9,7 @@ import { utilitiesInstance } from "../../common/Utilities.js";
 import { ModalManager, ModalOptions } from "../../common/ModalManager.js";
 
 import { setting_VideoPlaybackOptions } from "../../common/SettingsManager.js";
-import { setVideoPlaybackRate, setVideoVolume, toggleVideoFullscreen, toggleVideoPlayback } from "../../common/VideoControl.js";
+import { setVideoPlaybackRate, setVideoVolume, toggleVideoPlayback } from "../../common/VideoControl.js";
 
 import * as ImageElementUtils from "./ImageListChildElementUtils.js";
 
@@ -236,44 +236,70 @@ export async function createImageElementFromFileInfo(fileInfo, imageDrawerInstan
 				api.fetchApi(call, { method: "POST" });
 			}
 
+			let clickTimeout = null;
+
 			img.addEventListener("click", async (e) => {
 				e.preventDefault();
 
 				if (bIsVideoFormat) {
 
-					if (img && toggleVideoPlayback) {
-						toggleVideoPlayback(img);
-					}
+					if (clickTimeout) { clearTimeout(clickTimeout); clickTimeout = null; }
+
+					clickTimeout = setTimeout(() => {
+						clickTimeout = null;
+						if (img && toggleVideoPlayback) {
+							toggleVideoPlayback(img);
+						}
+					}, 250);
 
 				} else {
 
-					// Make a modal for the image, passing in its current index to allow for slideshows and image switching
-					const imageDrawerListInstance = imageDrawerInstance.getComponentByName("ImageDrawerList");
-					// Find this imageElement in the list
-					const currentIndex = Array.from(imageDrawerListInstance.getVisibleImageListChildren()).findIndex((op => op === imageElement));
+					if (clickTimeout) { clearTimeout(clickTimeout); clickTimeout = null; }
 
-					const modalManager = new ModalManager(
-						imageDrawerInstance, new ModalOptions(
-							true, 
-							(currentIndex !== undefined && currentIndex > -1) ? currentIndex : undefined),
-							true
-						);
+					clickTimeout = setTimeout(() => {
+						clickTimeout = null;
 
-					modalManager.createModal(modalManager.createModalReadyImage(href));
+						// Make a modal for the image, passing in its current index to allow for slideshows and image switching
+						const imageDrawerListInstance = imageDrawerInstance.getComponentByName("ImageDrawerList");
+						// Find this imageElement in the list
+						const currentIndex = Array.from(imageDrawerListInstance.getVisibleImageListChildren()).findIndex((op => op === imageElement));
 
-					// Remove focus from the currently focused element
-					document.activeElement.blur();
+						const modalManager = new ModalManager(
+							imageDrawerInstance, new ModalOptions(
+								true, 
+								(currentIndex !== undefined && currentIndex > -1) ? currentIndex : undefined),
+								true
+							);
+
+						modalManager.createModal(modalManager.createModalReadyImage(href));
+
+						// Remove focus from the currently focused element
+						document.activeElement.blur();
+					}, 250);
 				}
 			});
 
 			img.addEventListener("dblclick", async (e) => {
 				e.preventDefault();
 
-				if (bIsVideoFormat) {
-					if (img) {
-						toggleVideoFullscreen(img);
-					}
-				}
+				if (clickTimeout) { clearTimeout(clickTimeout); clickTimeout = null; }
+
+				const imageDrawerListInstance = imageDrawerInstance.getComponentByName("ImageDrawerList");
+				const currentIndex = Array.from(imageDrawerListInstance.getVisibleImageListChildren()).findIndex((op => op === imageElement));
+
+				const modalManager = new ModalManager(
+					imageDrawerInstance, new ModalOptions(
+						true, 
+						(currentIndex !== undefined && currentIndex > -1) ? currentIndex : undefined),
+						true
+					);
+
+				const modalContent = bIsVideoFormat
+					? modalManager.createModalReadyVideo(href)
+					: modalManager.createModalReadyImage(href);
+				modalManager.createModal(modalContent);
+
+				document.activeElement.blur();
 			});
 
 			imageElement.bHasEverMousedOver = true;

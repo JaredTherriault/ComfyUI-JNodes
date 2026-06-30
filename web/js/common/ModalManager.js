@@ -3,6 +3,8 @@
 
 import { utilitiesInstance } from "./Utilities.js";
 import { $el } from "/scripts/ui.js";
+import { toggleVideoPlayback } from "./VideoControl.js";
+import { setting_VideoPlaybackOptions } from "./SettingsManager.js";
 
 export class ModalOptions {
 
@@ -77,6 +79,34 @@ export class ModalManager {
 		});
 	}
 
+	createModalReadyVideo(href) {
+		const video = $el("video", {
+			src: href,
+			style: {
+				position: 'relative',
+				width: '99vw',
+				height: '99vh',
+				objectFit: 'contain',
+				display: 'block',
+				margin: 'auto',
+			},
+		});
+		video.controls = setting_VideoPlaybackOptions.value.controls;
+		video.autoplay = false;
+		video.loop = setting_VideoPlaybackOptions.value.loop;
+		video.muted = setting_VideoPlaybackOptions.value.muted;
+		video.volume = setting_VideoPlaybackOptions.value.defaultVolume / 100;
+		video.playbackRate = setting_VideoPlaybackOptions.value.defaultPlaybackRate;
+
+		video.addEventListener("click", (event) => {
+			if (this._bHasPanned) { return; }
+			event.stopPropagation();
+			toggleVideoPlayback(video);
+		});
+
+		return video;
+	}
+
 	_setModalContentStyle() {
 
 		this._modalContent.style.position = 'absolute';
@@ -115,6 +145,13 @@ export class ModalManager {
 		this._modalContainer.addEventListener("wheel", (event) => { 
 			
 			if (this._modalOptions.bIsImageContainer) {
+				const bIsOverVideo = event.target.tagName === "VIDEO";
+				const bVideoWheelSeek = bIsOverVideo && setting_VideoPlaybackOptions.value.useWheelSeek;
+
+				if (bVideoWheelSeek) {
+					return; // Let the global EventManager handle seeking
+				}
+
 				event.preventDefault(); 
 				event.stopPropagation();
 				this._zoom(event); 
@@ -206,12 +243,12 @@ export class ModalManager {
 		// Count
 		if (this._modalOptions.imageIndex != undefined) {
 
-			const previousImageButton = createButton("<", "See previous image", () => { this._displayNeighbouringImage(-1); });
+			const previousImageButton = createButton("<", "See previous item", () => { this._displayNeighbouringImage(-1); });
 			previousImageButton.style.left = "2.5%";
 			previousImageButton.style.top = "50%";
 			this._getOrCreateModalContainer().appendChild(previousImageButton);
 
-			const nextImageButton = createButton(">", "See next image", () => { this._displayNeighbouringImage(1); });
+			const nextImageButton = createButton(">", "See next item", () => { this._displayNeighbouringImage(1); });
 			nextImageButton.style.right = "2.5%";
 			nextImageButton.style.top = "50%";
 			this._getOrCreateModalContainer().appendChild(nextImageButton);
@@ -262,6 +299,12 @@ export class ModalManager {
 				event.preventDefault();
 				event.stopPropagation();
 				this._displayNeighbouringImage(1);
+			}
+		} else if (event.key === " ") {
+			if (this._modalContent && this._modalContent.tagName === "VIDEO") {
+				event.preventDefault();
+				event.stopPropagation();
+				toggleVideoPlayback(this._modalContent);
 			}
 		}
 	}
@@ -340,6 +383,10 @@ export class ModalManager {
 
 		} else if (event.button == 0) { // Left mouse button only can close
 
+			if (event.target.tagName === "VIDEO") {
+				return; // Video's own click handler manages play/pause
+			}
+
 			if (!this._modalOptions.bIsImageContainer && 
 				(event.target == this._modalContent ||
 				utilitiesInstance.hasAncestor(event.target, this._modalContent))
@@ -359,23 +406,13 @@ export class ModalManager {
 			const currentListChildren = imageDrawerListInstance.getVisibleImageListChildren();
 
 			let newImageIndex = this._modalOptions.imageIndex;
-			let newImage;
 
-			// Loop until we find an image format child
-			do {
-				newImageIndex += offset;
+			newImageIndex += offset;
 
-				// Wrap index to first or last index at the extremes
-				newImageIndex = ((newImageIndex % currentListChildren.length) + currentListChildren.length) % currentListChildren.length;
+			// Wrap index to first or last index at the extremes
+			newImageIndex = ((newImageIndex % currentListChildren.length) + currentListChildren.length) % currentListChildren.length;
 
-				newImage = currentListChildren[newImageIndex];
-
-				// Break if we round back to the original image index
-				if (newImageIndex == this._modalOptions.imageIndex) {
-					break;
-				}
-
-			} while (newImage?.bIsVideoFormat);
+			const newImage = currentListChildren[newImageIndex];
 
 			const modalManager = new ModalManager(
 				this.imageDrawerInstance, 
@@ -384,7 +421,11 @@ export class ModalManager {
 					newImageIndex
 				)
 			);
-			modalManager.createModal(modalManager.createModalReadyImage(newImage.fileInfo.imageHref));
+
+			const modalContent = newImage.bIsVideoFormat
+				? modalManager.createModalReadyVideo(newImage.fileInfo.imageHref)
+				: modalManager.createModalReadyImage(newImage.fileInfo.imageHref);
+			modalManager.createModal(modalContent);
 
 			this.closeModal();
 		}
