@@ -4,7 +4,7 @@
 import { app } from "../../../../scripts/app.js";
 import { utilitiesInstance } from "./Utilities.js";
 
-import { setting_VideoPlaybackOptions } from "../common/SettingsManager.js";
+import { setting_VideoPlaybackOptions, setting_LoraLoaderNodeType } from "../common/SettingsManager.js";
 import * as VideoControl from './VideoControl.js';
 
 // Canvas movement event
@@ -176,6 +176,8 @@ document.addEventListener("drop", (event) => {
 
 			item.getAsString((itemString) => {
 
+				if (!itemString || !itemString.startsWith('{')) { return; }
+
 				try {
 					const asJson = JSON.parse(itemString);
 
@@ -207,6 +209,30 @@ document.addEventListener("drop", (event) => {
 
 	if (event.target.data == app.canvas) {
 
+		// Check for image drawer payload with workflow
+		for (const item of event.dataTransfer.items) {
+			if (item.type == 'text/jnodes_image_drawer_payload') {
+				item.getAsString((value) => {
+					try {
+						const payload = JSON.parse(value);
+						if (payload.metadata?.workflow) {
+							let workflow = payload.metadata.workflow;
+							if (typeof workflow === "string") {
+								workflow = JSON.parse(workflow);
+							}
+							event.preventDefault();
+							event.stopPropagation();
+							app.loadGraphData(workflow);
+							return;
+						}
+					} catch (e) {
+						console.error("JNodes: Error loading workflow from dropped item:", e);
+					}
+				});
+				break;
+			}
+		}
+
 		// Drop lora node data onto existing node to replace
 		const graph = event.target.data.graph;
 
@@ -218,7 +244,7 @@ document.addEventListener("drop", (event) => {
 				pos[1]
 			);
 			
-			if (hoveredNode && hoveredNode.type == "LoraLoader") {
+			if (hoveredNode && (hoveredNode.type == "LoraLoader" || hoveredNode.type == "LoraLoaderModelOnly")) {
 				afterGetDropData("modelInfo", (asJson) => {
 
 					event.preventDefault();
@@ -249,7 +275,7 @@ document.addEventListener("drop", (event) => {
 			event.preventDefault();
 			event.stopPropagation();
 
-			let node = addNode("LoraLoader", [event.canvasX, event.canvasY]);
+			let node = addNode(setting_LoraLoaderNodeType.value, [event.canvasX, event.canvasY]);
 			updateLoraNode(node, payload.modelName, payload.strengthModel, payload.strengthClip);
 		});
 
