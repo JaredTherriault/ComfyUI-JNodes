@@ -566,15 +566,17 @@ export async function getNonPngImageMetadata(file) {
 
             // Remove null characters
             const cleanedString = decodedString.replace(/\u0000/g, '');
-            jsonString = cleanedString.replace("UNICODE", "")
+            jsonString = cleanedString.replace("UNICODE", "").trim();
 
-            try {
+            if (jsonString.startsWith('{') || jsonString.startsWith('[')) {
+                try {
 
-                metadata = JSON.parse(jsonString);
+                    metadata = JSON.parse(jsonString);
 
-            } catch (error) {
+                } catch (error) {
 
-                console.error(`${error} (${file.name})`);
+                    console.error(`${error} (${file.name})`);
+                }
             }
         }
     } else {
@@ -582,6 +584,12 @@ export async function getNonPngImageMetadata(file) {
     }
 
     return { metadata: metadata, jsonString: jsonString};
+}
+
+async function isValidPngFile(file) {
+    const header = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+    const pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+    return header.length >= 8 && pngSignature.every((byte, i) => header[i] === byte);
 }
 
 export async function getMetaData(file, format) {
@@ -600,7 +608,7 @@ export async function getMetaData(file, format) {
     }
     
     try {
-        if (format === "image/png") {
+        if (format === "image/png" && await isValidPngFile(file)) {
             metadata = await pngInfo.getPngMetadata(file);
             metadata = appendA111Metadata(metadata);
         } else if (isVideoFile(file)) {
