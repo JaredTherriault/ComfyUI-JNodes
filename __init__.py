@@ -102,6 +102,10 @@ async def delete_item_wrapper(request):
 def get_browser_video_extensions_wrapper(request):
     from .py.utils import ACCEPTED_BROWSER_VIDEO_EXTENSIONS
     return web.json_response({"success": True, "extensions": ACCEPTED_BROWSER_VIDEO_EXTENSIONS})
+
+@server.PromptServer.instance.routes.post('/jnodes_edit_image_metadata')
+async def edit_image_metadata_wrapper(request):
+    return await edit_image_metadata(request)
     
 WEB_DIRECTORY = "./web"
 

@@ -11,7 +11,12 @@ import aiohttp
 from aiohttp import web
 import server
 
-from PIL import Image
+from PIL import Image, ImageSequence
+from PIL.PngImagePlugin import PngInfo
+from io import BytesIO
+
+import piexif
+import piexif.helper
 
 import json
 import shutil
@@ -850,3 +855,137 @@ async def delete_item(request):
 
     logger.warning("File could not be deleted: file not found")
     return web.Response(status=404)
+
+def _strip_surrogates(obj):
+    if isinstance(obj, str):
+        return re.sub(r'[\ud800-\udfff]', '', obj)
+    if isinstance(obj, dict):
+        return {k: _strip_surrogates(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_strip_surrogates(item) for item in obj]
+    return obj
+
+async def edit_image_metadata(request):
+    try:
+        result = await validate_and_return_file_from_request(request)
+
+        if result["success"] != True:
+            return web.json_response({"success": False, "error": "File not found"})
+
+        file_path = result["payload"]["file"]
+        request_data = await read_web_request_content(request.content)
+        request_json = json.loads(request_data)
+
+        metadata = _strip_surrogates(request_json.get("metadata", {}))
+        image_format = request_json.get("format", "")
+
+        ext = os.path.splitext(file_path)[1].lower()
+
+        if ext == ".png":
+            with Image.open(file_path) as img:
+                pnginfo = PngInfo()
+                for k, v in metadata.items():
+                    value = v
+                    if isinstance(v, str) and (v.startswith("{") or v.startswith("[")):
+                        try:
+                            value = json.loads(v)
+                        except:
+                            pass
+                    if isinstance(value, (dict, list)):
+                        text = json.dumps(value, ensure_ascii=True)
+                    else:
+                        text = str(value)
+                    pnginfo.add_text(k, text)
+                img.save(file_path, pnginfo=pnginfo)
+
+        elif ext in (".jpg", ".jpeg"):
+            with Image.open(file_path) as img:
+                existing_metadata = {}
+                try:
+                    exif_data = piexif.load(file_path)
+                    user_comment = exif_data.get("Exif", {}).get(piexif.ExifIFD.UserComment)
+                    if user_comment:
+                        decoded = piexif.helper.UserComment.decode(user_comment)
+                        if decoded.startswith("UNICODE"):
+                            decoded = decoded[7:]
+                        existing_metadata = json.loads(decoded)
+                except:
+                    pass
+
+                existing_metadata.update(metadata)
+
+                exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
+                try:
+                    old_exif = piexif.load(file_path)
+                    exif_dict["0th"] = old_exif.get("0th", {})
+                    exif_dict["GPS"] = old_exif.get("GPS", {})
+                    exif_dict["1st"] = old_exif.get("1st", {})
+                except:
+                    pass
+                exif_dict["Exif"][piexif.ExifIFD.UserComment] = json.dumps(existing_metadata).encode()
+                exif_bytes = piexif.dump(exif_dict)
+                img.save(file_path, exif=exif_bytes, quality=95)
+
+        elif ext == ".webp":
+            with Image.open(file_path) as img:
+                existing_metadata = {}
+                try:
+                    exif_data = piexif.load(file_path)
+                    user_comment = exif_data.get("Exif", {}).get(piexif.ExifIFD.UserComment)
+                    if user_comment:
+                        decoded = piexif.helper.UserComment.decode(user_comment)
+                        if decoded.startswith("UNICODE"):
+                            decoded = decoded[7:]
+                        existing_metadata = json.loads(decoded)
+                except:
+                    pass
+
+                existing_metadata.update(metadata)
+
+                exif_bytes = piexif.dump({
+                    "Exif": {
+                        piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(
+                            json.dumps(existing_metadata, indent=2, sort_keys=True), encoding="unicode"
+                        )
+                    }
+                })
+                is_animated = getattr(img, "is_animated", False)
+                if is_animated:
+                    img.save(file_path, format="WEBP", exif=exif_bytes, save_all=True)
+                else:
+                    img.save(file_path, format="WEBP", lossless=True, exif=exif_bytes)
+
+        elif ext == ".gif":
+            with Image.open(file_path) as img:
+                existing_metadata = {}
+                try:
+                    existing_metadata = json.loads(img.info.get("comment", "{}"))
+                except:
+                    pass
+                existing_metadata.update(metadata)
+
+                is_animated = getattr(img, "is_animated", False)
+                if is_animated:
+                    frames = []
+                    durations = []
+                    for frame in ImageSequence.Iterator(img):
+                        frames.append(frame.copy())
+                        durations.append(frame.info.get("duration", 100))
+                    frames[0].save(
+                        file_path,
+                        save_all=True,
+                        append_images=frames[1:],
+                        duration=durations,
+                        loop=0,
+                        comment=json.dumps(existing_metadata),
+                    )
+                else:
+                    img.save(file_path, comment=json.dumps(existing_metadata))
+        else:
+            return web.json_response({"success": False, "error": f"Unsupported image format: {ext}"})
+
+        return web.json_response({"success": True})
+
+    except Exception as e:
+        log_exception("Error editing image metadata:", e)
+        return web.json_response({"success": False, "error": str(e)})

@@ -901,7 +901,12 @@ export async function createExtraNetworkCard(nameText, familiars, type, imageDra
 									blob = new Blob([blob], { type: modelElement.fileInfo.file.format });
 								}
 
-								metadataViewerContextObject.setImageOrVideo(blob, true);
+								const fileInfo = {
+									filename: modelElement.fileInfo.filename,
+									type: modelElement.fileInfo.type,
+									subfolder: modelElement.fileInfo.subdirectory || modelElement.fileInfo.subfolder || "",
+								};
+								metadataViewerContextObject.setImageOrVideo(blob, true, fileInfo);
 							}
 						}
 					)

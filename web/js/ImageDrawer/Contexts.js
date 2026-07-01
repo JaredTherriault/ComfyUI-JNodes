@@ -1304,7 +1304,8 @@ export class ContextMetadataViewer extends ImageDrawerContext {
 		if (bIsBinary) { 
 
 			// file = payload.getAsFile();
-			await this.setImageOrVideo(payload, true);
+			const fileInfo = payload.name ? { filename: payload.name } : null;
+			await this.setImageOrVideo(payload, true, fileInfo);
 
 		} else if (payload.type == 'text/jnodes_image_drawer_payload') { // a payload specific to media from the drawer
 
@@ -1342,7 +1343,12 @@ export class ContextMetadataViewer extends ImageDrawerContext {
         						const blob = await response.blob();
 
 								if (blob) {
-									this.setImageOrVideo(blob, true);
+									const fileInfo = {
+										filename: jnodesPayload.filename,
+										type: jnodesPayload.type,
+										subfolder: jnodesPayload.subdirectory || jnodesPayload.subfolder || "",
+									};
+									this.setImageOrVideo(blob, true, fileInfo);
 								}
 
 								// Resolve the promise with the result of updateNode()
@@ -1664,6 +1670,56 @@ export class ContextMetadataViewer extends ImageDrawerContext {
 		return row;
 	}
 
+	_collectMetadataFromTable(tbody) {
+		const metadata = {};
+		for (const row of tbody.children) {
+			const keyCell = row.children[0];
+			const valueCell = row.children[1];
+			if (!keyCell || !valueCell) continue;
+
+			const keySpan = keyCell.querySelector("span");
+			const valueSpan = valueCell.querySelector("span");
+			if (!keySpan || !valueSpan) continue;
+
+			const key = keySpan.textContent.trim();
+			let value = valueSpan.textContent.trim();
+
+			try {
+				value = JSON.parse(value);
+			} catch {
+				// keep as string
+			}
+
+			metadata[key] = value;
+		}
+		return metadata;
+	}
+
+	async _handleEditMetadata(metadata) {
+		if (!this.currentFileInfo) {
+			return { success: false, error: "No file path available for saving" };
+		}
+
+		const { filename, type, subfolder } = this.currentFileInfo;
+
+		let href = `/jnodes_edit_image_metadata?`;
+		if (filename) href += `filename=${encodeURIComponent(filename)}&`;
+		if (type) href += `type=${encodeURIComponent(type)}&`;
+		if (subfolder) href += `subfolder=${encodeURIComponent(subfolder)}&`;
+
+		const response = await fetch(href, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				metadata: metadata,
+				format: this.viewingItem?.type || "",
+			}),
+		});
+
+		const result = await response.json();
+		return result;
+	}
+
 	_makeMediaPreview(inImageOrVideo) {
 
 		this.previewElement = null;
@@ -1719,7 +1775,7 @@ export class ContextMetadataViewer extends ImageDrawerContext {
 		}
 	}
 
-	async _generateMetadataWidgetFromImageOrVideo(inImageOrVideo) {
+	async _generateMetadataWidgetFromImageOrVideo(inImageOrVideo, inFileInfo = null) {
 		let metadata = null;
 		try {
 			metadata = await getMetaData(inImageOrVideo, inImageOrVideo.type);
@@ -1775,8 +1831,9 @@ export class ContextMetadataViewer extends ImageDrawerContext {
 			});
 
 			const bCreateCopyButton = true;
-			const bCreateEditButton = false; // TODO: No reason to edit until I implement saving meta back to the original image
-			const bCreateDeleteButton = false;
+			const isImageType = inImageOrVideo && inImageOrVideo.type && inImageOrVideo.type.startsWith("image/");
+			const bCreateEditButton = isImageType;
+			const bCreateDeleteButton = isImageType;
 	
 			for (const [key, value] of entries) {
 				if (key !== "parameters") {
@@ -1787,6 +1844,68 @@ export class ContextMetadataViewer extends ImageDrawerContext {
 			}
 	
 			table.appendChild(tbody);
+
+			// Save button for image metadata edits
+			if (isImageType) {
+				const saveContainer = $el("div", {
+					style: {
+						display: "flex",
+						alignItems: "center",
+						gap: "8px",
+						width: "100%",
+						margin: "10px 0",
+					}
+				});
+
+				const saveButton = $el("button", {
+					textContent: "Save Metadata",
+					style: {
+						padding: "8px 16px",
+						borderRadius: "4px",
+						border: "1px solid #4a4",
+						backgroundColor: "#2a5a2a",
+						color: "#fff",
+						cursor: "pointer",
+						fontWeight: "bold",
+					}
+				});
+
+				const saveStatus = $el("span", {
+					style: {
+						color: "#aaa",
+						fontSize: "13px",
+					}
+				});
+
+				saveButton.addEventListener("click", async () => {
+					saveButton.disabled = true;
+					saveButton.textContent = "Saving...";
+					saveStatus.textContent = "";
+
+					try {
+						const metadata = this._collectMetadataFromTable(tbody);
+						const result = await this._handleEditMetadata(metadata);
+						if (result.success) {
+							saveStatus.textContent = "Saved!";
+							saveStatus.style.color = "#4a4";
+						} else {
+							saveStatus.textContent = result.error || "Save failed";
+							saveStatus.style.color = "#a44";
+						}
+					} catch (e) {
+						saveStatus.textContent = `Error: ${e.message}`;
+						saveStatus.style.color = "#a44";
+					} finally {
+						saveButton.disabled = false;
+						saveButton.textContent = "Save Metadata";
+						setTimeout(() => { saveStatus.textContent = ""; }, 3000);
+					}
+				});
+
+				saveContainer.appendChild(saveButton);
+				saveContainer.appendChild(saveStatus);
+				container.appendChild(saveContainer);
+			}
 
 			// Create a container to hold input + button side-by-side
 			const filterContainer = $el("div", {
@@ -1903,12 +2022,12 @@ export class ContextMetadataViewer extends ImageDrawerContext {
 		return null;
 	}
 	
-	async setImageOrVideo(inImageOrVideoBlob, bUpdateOverlayWidget = false) {
+	async setImageOrVideo(inImageOrVideoBlob, bUpdateOverlayWidget = false, inFileInfo = null) {
 
 		let widget;
 		
 		try {
-			widget = await this._generateMetadataWidgetFromImageOrVideo(inImageOrVideoBlob);
+			widget = await this._generateMetadataWidgetFromImageOrVideo(inImageOrVideoBlob, inFileInfo);
 		} catch {
 
 			// pass
@@ -1917,6 +2036,7 @@ export class ContextMetadataViewer extends ImageDrawerContext {
 		if (widget) {
 
 			this.viewingItem = inImageOrVideoBlob;
+			this.currentFileInfo = inFileInfo;
 			this.setContent(widget);
 
 			if (bUpdateOverlayWidget) {

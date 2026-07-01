@@ -348,7 +348,12 @@ export function getOrCreateToolButton(imageElementToUse) {
                                     blob = new Blob([blob], { name: imageElementToUse.filename, type: imageElementToUse.fileInfo.file.format });
                                 }
 
-                                metadataViewerContextObject.setImageOrVideo(blob, true);
+                                const fileInfo = {
+                                    filename: imageElementToUse.fileInfo.filename,
+                                    type: imageElementToUse.fileInfo.type,
+                                    subfolder: imageElementToUse.fileInfo.subdirectory || imageElementToUse.fileInfo.subfolder || "",
+                                };
+                                metadataViewerContextObject.setImageOrVideo(blob, true, fileInfo);
                             }
                         }
                     )
