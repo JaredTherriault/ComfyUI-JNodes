@@ -94,8 +94,8 @@ function toggleTextAtTheBeginningOfEachSelectedLine(text, textarea) {
 				if (index == 0) {
 					selectionStartOffset += text.length;
 				}
-				selectionEndOffset += text.length;
 			}
+			selectionEndOffset += text.length;
 		}
 
 		// Skip second loop if we don't need to toggle the comment off
@@ -115,7 +115,7 @@ function toggleTextAtTheBeginningOfEachSelectedLine(text, textarea) {
 		}
 		const modifiedText = lines.join('\n');
 
-		utilitiesInstance.pasteToTextArea(modifiedText, textarea, selectionStart, selectionEnd);
+		utilitiesInstance.pasteToTextArea(modifiedText, textarea);
 
 		// Restore original selection + offsets from adding/removing comment text
 		textarea.selectionStart = utilitiesInstance.clamp(originalSelectionStart + selectionStartOffset, 0, textarea.value.length);

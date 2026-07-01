@@ -398,6 +398,7 @@ class JNodesUtilities {
 		return parentElement ? parentElement.querySelectorAll("video, img") : [];
 	}
 
+	// Leave position unset to use the selection area
 	pasteToTextArea(newText, textarea, position = null) {
 
 		// Ensure literal \n are converted to actual newlines
