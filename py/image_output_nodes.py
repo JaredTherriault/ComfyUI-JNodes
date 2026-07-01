@@ -26,6 +26,11 @@ import numpy as np
 
 import comfy.sd
 from nodes import SaveImage
+from comfy_extras.nodes_video import CreateVideo as ComfyCreateVideo
+from comfy_extras.nodes_video import SaveVideo as ComfySaveVideo
+from comfy_api.latest import io, ui, Input, InputImpl, Types
+from comfy.cli_args import args
+from fractions import Fraction
 from comfy.utils import common_upscale
 
 from PIL import Image, ImageSequence
@@ -317,91 +322,115 @@ class SaveVideoWithOptions():
                     format_ext = video_format["extension"]
             dimensions = f"{len(images[0][0])}x{len(images[0])}"
             output_quality = map_to_range(quality, 0, 100, 50, 1) # ffmpeg quality maps from 50 (worst) to 1 (best)
-            args = [
-                FFMPEG_PATH, 
-                "-v", "error", 
-                "-f", "rawvideo", 
-                "-pix_fmt", "rgb24", 
-                '-loglevel', 'quiet',
-                "-s", dimensions, 
-                "-r", str(frame_rate), 
-                "-i", "-", 
-                "-crf", str(output_quality) 
-                ] \
-                + video_format['main_pass']
 
             env=os.environ.copy()
             if  "environment" in video_format:
                 env.update(video_format["environment"])
 
-            full_output_folder_temp = f"{full_output_folder}/temp"
-            os.makedirs(full_output_folder_temp, exist_ok=True)
+            # Resolve audio
+            audio_path_to_use = None
+            audio_trim_start = 0
+            audio_trim_duration = 0
+            join_instance = JoinVideosInDirectory()
+            if audio_options:
+                audio_input_path = audio_options.get("audio_input_path")
+                if audio_input_path and os.path.isfile(audio_input_path) and join_instance.has_audio_track(audio_input_path):
+                    clip_audio = audio_options.get("clip_audio", False)
+                    audio_clip_start_seconds = audio_options.get("audio_clip_start_seconds", 0)
+                    audio_clip_duration = audio_options.get("audio_clip_duration", 0)
+                    use_whole_audio = audio_clip_start_seconds == 0 and audio_clip_duration == 0
+                    if clip_audio and not use_whole_audio:
+                        audio_duration = join_instance.get_audio_duration(audio_input_path)
+                        if audio_clip_duration == 0 or audio_clip_start_seconds + audio_clip_duration > audio_duration:
+                            audio_clip_duration = audio_duration - audio_clip_start_seconds
+                        audio_trim_start = audio_clip_start_seconds
+                        audio_trim_duration = audio_clip_duration
+                    audio_path_to_use = audio_input_path
 
-            interim_file_paths = []
-            total_passes = math.ceil(float(len(images)) / float(batch_size))
-            total_passes_digit_count = len(str(total_passes))
-            join_videos_instance = JoinVideosInDirectory()
-            for start in range(0, len(images), batch_size):
+            audio_codec = 'aac'
+            if audio_path_to_use and file_path.endswith(".webm"):
+                audio_codec = 'libopus'
 
-                batch_count = len(interim_file_paths) + 1
-                logger.info(f"SaveVideo: Processing batch {str(batch_count).zfill(total_passes_digit_count)} of {total_passes}")
+            # Write metadata once
+            metadata_json = json.dumps(
+                video_metadata if save_metadata else "",
+                separators=(",", ":")
+            )
 
-                end = min(start + batch_size, len(images))
-                image_batch = images[start:end]
-                
-                # convert images to numpy
-                image_batch = (image_batch.cpu().numpy() * 255.0).astype(np.uint8)
-
-                interim_file_path = f"{full_output_folder_temp}/{get_clean_filename(file_path)}_{len(interim_file_paths)}.{format_ext}"
-                interim_file_paths.append(interim_file_path)
-
-                os.makedirs(folder_paths.get_temp_directory(), exist_ok=True)
-
-                # 1️⃣ Produce clean JSON (compact)
-                metadata_json = json.dumps(
-                    video_metadata if save_metadata else "",
-                    separators=(",", ":")
-                    # allow_nan=False  
+            def escape_ffmetadata_value(value: str) -> str:
+                return (
+                    value
+                    .replace("\\", "\\\\")
+                    .replace("\n", r"\n")
+                    .replace(";", r"\;")
+                    .replace("#", r"\#")
+                    .replace("=", r"\=")
+                    .replace("NaN", "0")
                 )
 
-                # 2️⃣ Escape ONLY for ffmetadata syntax
-                def escape_ffmetadata_value(value: str) -> str:
-                    return (
-                        value
-                        .replace("\\", "\\\\")   # must be first
-                        .replace("\n", r"\n")
-                        .replace(";", r"\;")
-                        .replace("#", r"\#")
-                        .replace("=", r"\=")
-                        .replace("NaN", "0")
-                    )
+            escaped = escape_ffmetadata_value(metadata_json)
 
-                escaped = escape_ffmetadata_value(metadata_json)
+            os.makedirs(folder_paths.get_temp_directory(), exist_ok=True)
+            metadata_path = os.path.join(
+                folder_paths.get_temp_directory(),
+                "metadata.txt"
+            )
 
-                metadata_path = os.path.join(
-                    folder_paths.get_temp_directory(),
-                    "metadata.txt"
+            with open(metadata_path, "w", encoding="utf-8") as f:
+                f.write(";FFMETADATA1\n")
+                f.write("comment=" + escaped)
+
+            # Build ffmpeg command
+            cmd = [
+                FFMPEG_PATH,
+                "-v", "error",
+                "-i", metadata_path,
+                "-f", "rawvideo",
+                "-pix_fmt", "rgb24",
+                "-loglevel", "quiet",
+                "-s", dimensions,
+                "-r", str(frame_rate),
+                "-i", "-",
+            ]
+
+            if audio_path_to_use:
+                if audio_trim_start > 0:
+                    cmd.extend(["-ss", str(audio_trim_start)])
+                if audio_trim_duration > 0:
+                    cmd.extend(["-t", str(audio_trim_duration)])
+                cmd.extend(["-i", audio_path_to_use])
+
+            cmd.extend(["-crf", str(output_quality)])
+            cmd.extend(video_format['main_pass'])
+
+            if audio_path_to_use:
+                cmd.extend(["-map", "1:v", "-map", "2:a", "-c:a", audio_codec, "-strict", "experimental"])
+
+            cmd.extend(["-n", file_path])
+
+            # Stream all frames in a single ffmpeg process
+            total_frames = len(images)
+            logger.info(f"SaveVideo: Encoding {total_frames} frames...")
+
+            try:
+                process = subprocess.Popen(
+                    cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE, env=env
                 )
 
-                with open(metadata_path, "w", encoding="utf-8") as f:
-                    f.write(";FFMETADATA1\n")
-                    f.write("comment=" + escaped)
+                for start in range(0, total_frames, batch_size):
+                    end = min(start + batch_size, total_frames)
+                    image_batch = images[start:end]
+                    image_batch = (image_batch.cpu().numpy() * 255.0).astype(np.uint8)
+                    process.stdin.write(image_batch.tobytes())
 
-                m_args = args[:1] + ["-i", metadata_path] + args[1:]
+                process.stdin.close()
+                _, stderr = process.communicate()
 
-                try:
-                    res = subprocess.run(
-                        m_args + [interim_file_path],
-                        input=image_batch.tobytes(),
-                        capture_output=True,
-                        check=True,
-                        env=env
-                    )
-                except subprocess.CalledProcessError as e:
-                    print(e.stderr.decode("utf-8"), end="", file=sys.stderr)
-                    logger.warn("An error occurred when saving with metadata")
-
-            join_videos_instance.join_videos_in_directory(full_output_folder_temp, file_path, audio_options, True)
+                if process.returncode != 0:
+                    print(stderr.decode("utf-8"), end="", file=sys.stderr)
+                    logger.warn("An error occurred when saving video")
+            except Exception as e:
+                logger.warn(f"An error occurred when saving video: {e}")
 
         previews = [
             {
@@ -424,16 +453,68 @@ class AudioInputOptions:
                         "audio_clip_start_seconds": ("FLOAT", {"default": 0, "min": 0, "max": 3.402823466e+38}),
                         "audio_clip_duration": ("FLOAT", {"default": 0, "min": 0, "max": 3.402823466e+38}),
                      },
+                "optional":
+                    {
+                        "audio": ("AUDIO",),
+                    },
                 "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
         
     RETURN_TYPES = ("AUDIO_INPUT_OPTIONS",)
     FUNCTION = "execute"
 
-    def execute(self, **kwargs):
-        kwargs_copy = copy.deepcopy(kwargs)
-        kwargs_copy["audio_input_path"] = resolve_file_path(kwargs["audio_input_path"])
-        return (kwargs_copy,)
+    def execute(self, audio_input_path="/path/", clip_audio=False,
+                audio_clip_start_seconds=0, audio_clip_duration=0,
+                audio=None, **kwargs):
+        import wave
+
+        audio_input_path = resolve_file_path(audio_input_path)
+
+        if audio is not None:
+            waveform = audio.get("waveform")
+            sample_rate = audio.get("sample_rate")
+            if waveform is not None and sample_rate is not None:
+                try:
+                    waveform = waveform.float().cpu()
+
+                    if waveform.dim() == 1:
+                        waveform = waveform.unsqueeze(0)
+                    elif waveform.dim() == 3:
+                        waveform = waveform.squeeze(0)
+
+                    channels = waveform.shape[0]
+                    num_samples = waveform.shape[1]
+
+                    temp_dir = folder_paths.get_temp_directory()
+                    os.makedirs(temp_dir, exist_ok=True)
+                    slug = ''.join(random.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(8))
+                    temp_wav_path = os.path.join(temp_dir, f"jnodes_audio_input_{slug}.wav")
+
+                    waveform_np = waveform.numpy()
+
+                    if waveform_np.min() < -1.0 or waveform_np.max() > 1.0:
+                        waveform_np = np.clip(waveform_np, -1.0, 1.0)
+
+                    int_data = np.clip(waveform_np * 32767, -32768, 32767).astype(np.int16)
+                    int_data = np.ascontiguousarray(int_data.T)
+
+                    with wave.open(temp_wav_path, 'wb') as wf:
+                        wf.setnchannels(channels)
+                        wf.setsampwidth(2)
+                        wf.setframerate(int(sample_rate))
+                        wf.writeframes(int_data.tobytes())
+
+                    audio_input_path = temp_wav_path
+                    logger.info(f"AudioInputOptions: Saved AUDIO waveform to {temp_wav_path} ({channels}ch, {sample_rate}Hz, {num_samples} samples)")
+                except Exception as e:
+                    logger.warning(f"AudioInputOptions: Failed to save AUDIO waveform to file: {e}. Falling back to audio_input_path.")
+
+        return ({
+            "audio_input_path": audio_input_path,
+            "clip_audio": clip_audio,
+            "audio_clip_start_seconds": audio_clip_start_seconds,
+            "audio_clip_duration": audio_clip_duration,
+        },)
 
 class JoinVideosInDirectory:
 
@@ -671,6 +752,103 @@ class JoinVideosInDirectory:
             print(f"An error occurred while running ffprobe: {e}")
             return False
 
+class SaveVideoQuick(ComfySaveVideo):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="JNodes_SaveVideoQuick",
+            search_aliases=["export video"],
+            display_name="Save Video Quick",
+            category="video",
+            essentials_category="Basics",
+            description="Combines Create Video and Save Video into a single node. Saves the input images to your ComfyUI output or temp directory.",
+            inputs=[
+                io.Image.Input("images", tooltip="The images to create a video from."),
+                io.Float.Input("fps", default=24.0, min=1.0, max=999.0, step=1.0),
+                io.Audio.Input("audio", optional=True, tooltip="The audio to add to the video."),
+                io.Int.Input(
+                    "bit_depth",
+                    min=8,
+                    max=10,
+                    default=8,
+                    step=2,
+                    tooltip="Bit depth of the created video. 10-bit keeps smoother gradients with less"
+                    " banding, but some players and downstream nodes may not support it.",
+                    optional=True,
+                    display_mode=io.NumberDisplay.number,
+                ),
+                io.String.Input("filename_prefix", default="video/ComfyUI", tooltip="The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."),
+                io.Combo.Input("format", options=Types.VideoContainer.as_input(), default="auto", tooltip="The format to save the video as."),
+                io.Combo.Input("codec", options=Types.VideoCodec.as_input(), default="auto", tooltip="The codec to use for the video."),
+                io.Boolean.Input("save_to_output_dir", default=True, tooltip="If true save to /output. Otherwise, /temp."),
+                io.Boolean.Input("save_metadata", default=True, tooltip="Whether to save the video with or without metadata."),
+                io.Boolean.Input("save_workflow", default=True, tooltip="If this and save_metadata are true, the workflow will be saved to the metadata."),
+                io.Boolean.Input("save_prompt_server_prompt", default=True, tooltip="If true, save the server prompt to the metadata."),
+                io.String.Input("additional_metadata_json", default="", optional=True, tooltip="A JSON string of additional metadata to save to the video's metadata, if save_metadata is true."),
+            ],
+            hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo],
+            is_output_node=True,
+            outputs=[io.Video.Output("video")],
+        )
+
+    @classmethod
+    def execute(cls,
+        images: Input.Image, fps: float, audio: Optional[Input.Audio] = None, bit_depth: int = 8,
+        filename_prefix: str = "video/ComfyUI", format: str = "auto", codec: str = "auto",
+        save_to_output_dir: bool = True, save_metadata: bool = True,
+        save_workflow: bool = True, save_prompt_server_prompt: bool = True,
+        additional_metadata_json: str = None) -> io.NodeOutput:
+
+        video = InputImpl.VideoFromComponents(
+            Types.VideoComponents(images=images, audio=audio, frame_rate=Fraction(fps)),
+            bit_depth=bit_depth,
+        )
+
+        width, height = video.get_dimensions()
+        output_dir = (
+            folder_paths.get_output_directory()
+            if save_to_output_dir
+            else folder_paths.get_temp_directory()
+        )
+        full_output_folder, filename, counter, subfolder, filename_prefix = folder_paths.get_save_image_path(
+            filename_prefix,
+            output_dir,
+            width,
+            height
+        )
+
+        saved_metadata = None
+        if save_metadata and not args.disable_metadata:
+            metadata = {}
+            if cls.hidden.extra_pnginfo is not None:
+                if save_workflow:
+                    metadata.update(cls.hidden.extra_pnginfo)
+                else:
+                    for k, v in cls.hidden.extra_pnginfo.items():
+                        if k != "workflow":
+                            metadata[k] = v
+            if save_prompt_server_prompt and cls.hidden.prompt is not None:
+                metadata["prompt"] = cls.hidden.prompt
+            if additional_metadata_json:
+                try:
+                    metadata.update(json.loads(additional_metadata_json))
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            if len(metadata) > 0:
+                saved_metadata = metadata
+
+        file = f"{filename}_{counter:05}_.{Types.VideoContainer.get_extension(format)}"
+        video.save_to(
+            os.path.join(full_output_folder, file),
+            format=Types.VideoContainer(format),
+            codec=codec,
+            metadata=saved_metadata
+        )
+
+        folder_type = io.FolderType.output if save_to_output_dir else io.FolderType.temp
+        return io.NodeOutput(video, ui=ui.PreviewVideo([ui.SavedResult(file, subfolder, folder_type)]))
+
+
 class SaveImageWithOutput(SaveImage):
     
     # A store for subclasses to read (for example, to upload the resulting file)
@@ -802,6 +980,7 @@ NODE_CLASS_MAPPINGS = {
     
     "JNodes_SaveVideo": SaveVideo,
     "JNodes_SaveVideoWithOptions": SaveVideoWithOptions,
+    "JNodes_SaveVideoQuick": SaveVideoQuick,
     "JNodes_AudioInputOptions": AudioInputOptions,
     "JNodes_JoinVideosInDirectory": JoinVideosInDirectory,
     "JNodes_SaveImageWithOutput": SaveImageWithOutput,
@@ -811,6 +990,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     
     "JNodes_SaveVideo": "Save Video (DEPRECATED, USE 'JNodes_SaveVideoWithOptions')",
     "JNodes_SaveVideoWithOptions": "Save Video (With Options)",
+    "JNodes_SaveVideoQuick": "Save Video Quick",
     "JNodes_AudioInputOptions": "Audio Input Options (For Video Output)",
     "JNodes_JoinVideosInDirectory": "Join Videos In Directory",
     "JNodes_SaveImageWithOutput": "Save Image With Output",

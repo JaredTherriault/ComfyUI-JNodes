@@ -1,4 +1,7 @@
 
+from abc import ABC, abstractmethod
+from comfy_api.latest import io
+
 from .py.server_backend import *
 
 from aiohttp import web
@@ -135,6 +138,19 @@ def load_nodes():
                 NODE_DISPLAY_NAME_MAPPINGS.update(getattr(module, "NODE_DISPLAY_NAME_MAPPINGS"))      
         except:
             pass      
+
+class JNodesExtension(ABC):
+    async def on_load(self) -> None:
+        """
+        Called when an extension is loaded.
+        This should be used to initialize any global resources needed by the extension.
+        """
+
+    @abstractmethod
+    async def get_node_list(self) -> list[type[io.ComfyNode]]:
+        """
+        Returns a list of nodes that this extension provides.
+        """
 
 load_nodes()
 
