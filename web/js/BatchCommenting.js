@@ -22,6 +22,7 @@ class CustomConfigSetting extends ConfigSetting {
 let setting_ModifierKeyCombo = new CustomConfigSetting("ModifierKeyCombo", getModifierKeyCombos()[0]);
 let setting_KeyCode = new CustomConfigSetting("KeyCode", 'Slash');
 let setting_Token = new CustomConfigSetting("Token", '#');
+let setting_InlineToken = new CustomConfigSetting("InlineToken", '##');
 
 function getLineStartIndex(textarea, cursorPosition) {
 	const text = textarea.value;
@@ -47,8 +48,47 @@ function getLineEndIndex(textarea, cursorPosition) {
 	return endIndex;
 }
 
+// Wrap or unwrap selected text with an inline token.
+// Only handles single-line selections (no newlines).
+function toggleInlineToken(token, textarea) {
+
+	if (textarea.readOnly) {
+		return;
+	}
+
+	if (textarea.tagName === 'TEXTAREA' || (textarea.tagName === 'INPUT' && textarea.type === 'text')) {
+		const selectionStart = textarea.selectionStart;
+		const selectionEnd = textarea.selectionEnd;
+		const selectedText = textarea.value.substring(selectionStart, selectionEnd);
+
+		if (selectedText.includes('\n')) {
+			return;
+		}
+
+		const scrollPosition = textarea.scrollTop;
+
+		let newSelectionStart = selectionStart;
+		let newSelectionEnd = selectionEnd;
+
+		if (selectedText.startsWith(token) && selectedText.endsWith(token) && selectedText.length >= token.length * 2) {
+			// Toggle off: remove token from start and end
+			const innerText = selectedText.substring(token.length, selectedText.length - token.length);
+			textarea.value = textarea.value.substring(0, selectionStart) + innerText + textarea.value.substring(selectionEnd);
+			newSelectionEnd = selectionEnd - token.length * 2;
+		} else {
+			// Toggle on: add token to start and end
+			textarea.value = textarea.value.substring(0, selectionStart) + token + selectedText + token + textarea.value.substring(selectionEnd);
+			newSelectionEnd = selectionEnd + token.length * 2;
+		}
+
+		textarea.selectionStart = utilitiesInstance.clamp(newSelectionStart, 0, textarea.value.length);
+		textarea.selectionEnd = utilitiesInstance.clamp(newSelectionEnd, textarea.selectionStart, textarea.value.length);
+		textarea.scrollTop = scrollPosition;
+	}
+}
+
 // Insert Text Or Remove Existing Text 
-// At the Beginning Of Each Line In Selected Text In Text Area
+// At The Beginning Of Each Line In Selected Text In Text Area
 function toggleTextAtTheBeginningOfEachSelectedLine(text, textarea) {
 
 	if (textarea.readOnly) {
@@ -173,10 +213,12 @@ app.registerExtension({
 
 			const tooltip =
 				"A key combo that, when pressed, will insert text at the beginning of the selected " +
-				"lines in a multiline textarea, assuming it is the active element. If no text is " +
-				"selected, the text will be inserted at the beginning of the line where the cursor " +
-				"currently sits. This text will not automatically dummy out any lines, you will need " +
-				"to pass the resulting text into a custom node that removes lines marked as 'commented'.";
+				"lines in a multiline textarea, assuming it is the active element. If the selection " +
+				"is on a single line with no newlines, the inline token will be wrapped around the " +
+				"selection instead. If no text is selected, the text will be inserted at the " +
+				"beginning of the line where the cursor currently sits. This text will not " +
+				"automatically dummy out any lines, you will need to pass the resulting text " +
+				"into a custom node that removes lines marked as 'commented'.";
 			addJNodesSetting(labelWidget, settingWidget, tooltip);
 		}
 
@@ -195,6 +237,21 @@ app.registerExtension({
 			addJNodesSetting(labelWidget, settingWidget, tooltip);
 		}
 
+		{
+			const labelWidget = $el("label", {
+				textContent: "Inline-commenting Token:",
+			});
+			
+			const settingWidget = $el("input", {
+				value: setting_InlineToken.value,
+				onchange: function () { setting_InlineToken.value = settingWidget.value; }
+			});
+			
+			const tooltip = 
+				"The token that will be wrapped around selected text when performing an inline comment on a single-line selection"
+			addJNodesSetting(labelWidget, settingWidget, tooltip);
+		}
+
 		window.addEventListener("keydown", function(event) {
 			const { ctrlKey, metaKey, shiftKey, altKey, code } = event;
 			const bUseShiftInCombo = setting_ModifierKeyCombo.value === getModifierKeyCombos()[0];
@@ -207,7 +264,12 @@ app.registerExtension({
 				const textarea = document.activeElement;
 
 				if (textarea.tagName === 'TEXTAREA') {
-					toggleTextAtTheBeginningOfEachSelectedLine(setting_Token.value, textarea);
+					const selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+					if (selectedText.length > 0 && !selectedText.includes('\n')) {
+						toggleInlineToken(setting_InlineToken.value, textarea);
+					} else {
+						toggleTextAtTheBeginningOfEachSelectedLine(setting_Token.value, textarea);
+					}
 				}
 			}
 		}, true);
