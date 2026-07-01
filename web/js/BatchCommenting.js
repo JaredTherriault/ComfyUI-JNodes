@@ -1,5 +1,6 @@
 // Adds batch comment/uncomment functionality to multiline text areas via a configurable keyboard shortcut.
-// Inserts or removes a comment token at the beginning of each selected line, with modifier key combos.
+// Inserts or removes a comment token at the beginning of each selected line, or wraps/unwraps
+// an inline token around a single-line selection, with modifier key combos.
 
 import { app } from "../../../scripts/app.js";
 import { $el } from "../../../scripts/ui.js";
@@ -48,6 +49,34 @@ function getLineEndIndex(textarea, cursorPosition) {
 	return endIndex;
 }
 
+// Find the bounds of an inline comment surrounding the cursor position.
+// Returns { start, end, cursorPosition } or null if not inside an inline comment.
+function findInlineCommentBounds(token, text, cursorPosition) {
+	// Search backward for the opening token
+	const tokenStart = text.lastIndexOf(token, cursorPosition - 1);
+	if (tokenStart === -1) {
+		return null;
+	}
+
+	// Search forward for the closing token
+	const tokenEnd = text.indexOf(token, cursorPosition);
+	if (tokenEnd === -1) {
+		return null;
+	}
+
+	// Ensure no newline between the two tokens (must be same line)
+	const between = text.substring(tokenStart + token.length, tokenEnd);
+	if (between.includes('\n')) {
+		return null;
+	}
+
+	return {
+		start: tokenStart,
+		end: tokenEnd + token.length,
+		cursorPosition: Math.max(cursorPosition - token.length, 0)
+	};
+}
+
 // Wrap or unwrap selected text with an inline token.
 // Only handles single-line selections (no newlines).
 function toggleInlineToken(token, textarea) {
@@ -67,21 +96,25 @@ function toggleInlineToken(token, textarea) {
 
 		const scrollPosition = textarea.scrollTop;
 
-		let newSelectionStart = selectionStart;
-		let newSelectionEnd = selectionEnd;
+		let replacementText;
+		let newSelectionEnd;
 
 		if (selectedText.startsWith(token) && selectedText.endsWith(token) && selectedText.length >= token.length * 2) {
 			// Toggle off: remove token from start and end
-			const innerText = selectedText.substring(token.length, selectedText.length - token.length);
-			textarea.value = textarea.value.substring(0, selectionStart) + innerText + textarea.value.substring(selectionEnd);
+			replacementText = selectedText.substring(token.length, selectedText.length - token.length);
 			newSelectionEnd = selectionEnd - token.length * 2;
 		} else {
 			// Toggle on: add token to start and end
-			textarea.value = textarea.value.substring(0, selectionStart) + token + selectedText + token + textarea.value.substring(selectionEnd);
+			replacementText = token + selectedText + token;
 			newSelectionEnd = selectionEnd + token.length * 2;
 		}
 
-		textarea.selectionStart = utilitiesInstance.clamp(newSelectionStart, 0, textarea.value.length);
+		textarea.focus();
+		textarea.selectionStart = selectionStart;
+		textarea.selectionEnd = selectionEnd;
+		document.execCommand("insertText", false, replacementText);
+
+		textarea.selectionStart = utilitiesInstance.clamp(selectionStart, 0, textarea.value.length);
 		textarea.selectionEnd = utilitiesInstance.clamp(newSelectionEnd, textarea.selectionStart, textarea.value.length);
 		textarea.scrollTop = scrollPosition;
 	}
@@ -267,6 +300,18 @@ app.registerExtension({
 					const selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
 					if (selectedText.length > 0 && !selectedText.includes('\n')) {
 						toggleInlineToken(setting_InlineToken.value, textarea);
+					} else if (selectedText.length === 0) {
+						// No selection: check if caret is inside an inline comment
+						const bounds = findInlineCommentBounds(setting_InlineToken.value, textarea.value, textarea.selectionStart);
+						if (bounds) {
+							textarea.selectionStart = bounds.start;
+							textarea.selectionEnd = bounds.end;
+							toggleInlineToken(setting_InlineToken.value, textarea);
+							textarea.selectionStart = utilitiesInstance.clamp(bounds.cursorPosition, 0, textarea.value.length);
+							textarea.selectionEnd = textarea.selectionStart;
+						} else {
+							toggleTextAtTheBeginningOfEachSelectedLine(setting_Token.value, textarea);
+						}
 					} else {
 						toggleTextAtTheBeginningOfEachSelectedLine(setting_Token.value, textarea);
 					}
