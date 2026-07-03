@@ -806,7 +806,10 @@ export function getDisplayTextFromMetadata(metadata) {
             (bIsAllowList && bIsKeySpecified) || (!bIsAllowList && !bIsKeySpecified);
 
         if (bIncludeKey) {
-            const formattedValue = metadata[key].replace(/\n/g, '').replace(/\\n/g, '');
+            if (typeof metadata[key] === "string") {
+                metadata[key] = metadata[key].replace(/\n/g, '').replace(/\\n/g, '');
+            }
+            const formattedValue = metadata[key];
             outputString = outputString + '\n' + `${key}: ${formattedValue}, `;
         }
     }
@@ -887,7 +890,10 @@ export function makeTooltipWidgetFromMetadata(metadata) {
             (bIsAllowList && bIsKeySpecified) || (!bIsAllowList && !bIsKeySpecified);
 
         if (bIncludeKey) {
-            let formattedValue = utilitiesInstance.decodeUnicodeForeignLanguageText(metadata[key].replace(/\n/g, '').replace(/\\n/g, ''));
+            if (typeof metadata[key] === "string") {
+                metadata[key] = metadata[key].replace(/\n/g, '').replace(/\\n/g, '');
+            }
+            let formattedValue = utilitiesInstance.decodeUnicodeForeignLanguageText(metadata[key]);
 
             const row =
                 $el('tr', [
