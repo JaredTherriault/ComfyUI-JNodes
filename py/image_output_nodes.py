@@ -830,6 +830,15 @@ class SaveVideoQuick(ComfySaveVideo):
             height
         )
 
+        # Apply %date% and %time% token replacement (ported from SaveVideo_WithOptions)
+        locale.setlocale(locale.LC_TIME, '')
+        local_time = datetime.now()
+
+        if "%date%" in filename:
+            filename = filename.replace("%date%", local_time.strftime('%Y-%m-%d'))
+        if "%time%" in filename:
+            filename = filename.replace("%time%", local_time.strftime('%H-%M-%S'))
+
         saved_metadata = None
         if save_metadata and not args.disable_metadata:
             metadata = {}
