@@ -799,10 +799,23 @@ class SaveVideoQuick(ComfySaveVideo):
         save_workflow: bool = True, save_prompt_server_prompt: bool = True,
         additional_metadata_json: str = None) -> io.NodeOutput:
 
-        video = InputImpl.VideoFromComponents(
-            Types.VideoComponents(images=images, audio=audio, frame_rate=Fraction(fps)),
-            bit_depth=bit_depth,
-        )
+        try:
+            video = InputImpl.VideoFromComponents(
+                Types.VideoComponents(
+                    images=images,
+                    audio=audio,
+                    frame_rate=Fraction(fps),
+                ),
+                bit_depth=bit_depth,
+            )
+        except TypeError: # For runpod's older version
+            video = InputImpl.VideoFromComponents(
+                Types.VideoComponents(
+                    images=images,
+                    audio=audio,
+                    frame_rate=Fraction(fps),
+                ),
+            )
 
         width, height = video.get_dimensions()
         output_dir = (
