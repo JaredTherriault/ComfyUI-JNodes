@@ -61,7 +61,17 @@ class JNodesUtilities {
 			return false;
 		}
 		const browserVideoExtensions = await getBrowserVideoExtensions();
-		const fileExtension = href.split('.').pop().toLowerCase();
+
+		// Extract the actual filename from query params (e.g. ?filename=video.mp4&type=loras)
+		// before checking extension, since href.split('.').pop() would include query string noise
+		let checkStr = href;
+		const filenameMatch = href.match(/[?&]filename=([^&#]*)/);
+		if (filenameMatch) {
+			try { checkStr = decodeURIComponent(filenameMatch[1]); }
+			catch { checkStr = filenameMatch[1]; }
+		}
+
+		const fileExtension = checkStr.split('.').pop().toLowerCase();
 		return browserVideoExtensions.includes(fileExtension);
 	}
 
