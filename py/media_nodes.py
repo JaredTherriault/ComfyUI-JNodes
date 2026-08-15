@@ -1,4 +1,5 @@
 import shutil
+import subprocess
 import os
 
 import folder_paths
@@ -33,6 +34,14 @@ except Exception as e:
         return Inner
 import numpy as np
 from PIL import Image
+
+FFMPEG_PATH = shutil.which("ffmpeg")
+if FFMPEG_PATH is None:
+    try:
+        from imageio_ffmpeg import get_ffmpeg_exe
+        FFMPEG_PATH = get_ffmpeg_exe()
+    except:
+        pass
 
 
 class MediaInfo:
@@ -170,6 +179,7 @@ class LoadVisualMediaFromPath:
                 "sample_next_unit": (s.TIME_UNITS,),
                 "frame_skip": ("INT", {"default": 0, "min": 0, "step": 1}),
                 "discard_transparency": ("BOOLEAN", {"default": True}),
+                "extract_audio": ("BOOLEAN", {"default": True}),
             },
         }
 
@@ -177,8 +187,9 @@ class LoadVisualMediaFromPath:
         "IMAGE",
         "JNODES_MEDIA_INFO",
         "JNODES_MEDIA_INFO",
+        "AUDIO",
     )
-    RETURN_NAMES = ("IMAGE", "original_media_info", "output_media_info")
+    RETURN_NAMES = ("IMAGE", "original_media_info", "output_media_info", "audio")
     FUNCTION = "load_media"
 
     known_exceptions = []
@@ -191,6 +202,79 @@ class LoadVisualMediaFromPath:
         if media_path is not None and not os.path.isfile(media_path.strip('"')):
             return "Invalid media file: {}".format(media_path)
         return True
+
+    @staticmethod
+    def _has_audio_track(file_path):
+        """Check if a media file has an audio track using ffprobe."""
+        try:
+            result = subprocess.run(
+                [
+                    'ffprobe',
+                    '-v', 'error',
+                    '-show_entries', 'stream=codec_type',
+                    '-of', 'json',
+                    file_path
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True,
+                text=True
+            )
+            output = json.loads(result.stdout)
+            streams = output.get('streams', [])
+            for stream in streams:
+                if stream.get('codec_type') == 'audio':
+                    return True
+            return False
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return False
+
+    @staticmethod
+    def _extract_audio(file_path, start_seconds=0.0, duration_seconds=0.0):
+        """Extract audio from a media file using ffmpeg, return as AUDIO dict or None."""
+        if FFMPEG_PATH is None:
+            return None
+        try:
+            import tempfile
+            import wave
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
+                tmp_path = tmp.name
+            try:
+                cmd = [FFMPEG_PATH]
+                if start_seconds > 0:
+                    cmd.extend(['-ss', str(start_seconds)])
+                cmd.extend(['-i', file_path])
+                if duration_seconds > 0:
+                    cmd.extend(['-t', str(duration_seconds)])
+                cmd.extend(['-vn', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '1', '-y', tmp_path])
+                subprocess.run(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=True
+                )
+                # Read the WAV file
+                with wave.open(tmp_path, 'rb') as wav_file:
+                    sample_rate = wav_file.getframerate()
+                    n_channels = wav_file.getnchannels()
+                    n_frames = wav_file.getnframes()
+                    raw_data = wav_file.readframes(n_frames)
+
+                # Convert to numpy then torch
+                audio_np = np.frombuffer(raw_data, dtype=np.int16).astype(np.float32) / 32768.0
+                # Reshape if stereo (we forced mono above, but just in case)
+                if n_channels > 1:
+                    audio_np = audio_np.reshape(-1, n_channels)
+                    audio_np = audio_np.mean(axis=1)  # mix to mono
+
+                waveform = torch.from_numpy(audio_np).unsqueeze(0).unsqueeze(0)  # shape: [1, channels, num_samples]
+                return {"waveform": waveform, "sample_rate": sample_rate}
+            finally:
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+        except Exception as e:
+            logger.warning(f"Failed to extract audio: {e}")
+            return None
 
     @staticmethod
     def build_output_media_info(
@@ -221,6 +305,7 @@ class LoadVisualMediaFromPath:
         sample_next_unit: str,
         frame_skip: int,
         discard_transparency,
+        extract_audio=True,
     ):
         """
         For any other animated type, such as webp, apng, or mjpeg.
@@ -295,6 +380,15 @@ class LoadVisualMediaFromPath:
         if len(out_images) > 0:
             out_images = torch.cat(out_images, dim=0)
 
+        # Extract audio if present (time-matched to frame window)
+        audio = None
+        if extract_audio and os.path.isfile(media_path) and LoadVisualMediaFromPath._has_audio_track(media_path):
+            audio_start = start_at_n if start_at_unit == "seconds" else (start_at_frame / original_fps if original_fps > 0 else 0)
+            audio_duration = 0
+            if sample_next_n > 0:
+                audio_duration = sample_next_n if sample_next_unit == "seconds" else (sample_next_frame_count / original_fps if original_fps > 0 else 0)
+            audio = LoadVisualMediaFromPath._extract_audio(media_path, start_seconds=audio_start, duration_seconds=audio_duration)
+
         return (
             out_images,
             MediaInfo(0, original_frame_count, original_fps, width, height),
@@ -306,6 +400,7 @@ class LoadVisualMediaFromPath:
                 width,
                 height,
             ),
+            audio,
         )
 
     @staticmethod
@@ -317,6 +412,7 @@ class LoadVisualMediaFromPath:
         sample_next_unit: str,
         frame_skip: int,
         discard_transparency,
+        extract_audio=True,
     ):
 
         def retry_with_pil(
@@ -327,6 +423,7 @@ class LoadVisualMediaFromPath:
             sample_next_unit: str,
             frame_skip: int,
             discard_transparency,
+            extract_audio=True,
         ):
             logger.info(f"Retrying with pil due to opencv error")
             return LoadVisualMediaFromPath.load_media_pil(
@@ -337,6 +434,7 @@ class LoadVisualMediaFromPath:
                 sample_next_unit,
                 frame_skip,
                 discard_transparency,
+                extract_audio,
             )
 
         media_path = resolve_file_path(media_path)
@@ -351,6 +449,7 @@ class LoadVisualMediaFromPath:
                 sample_next_unit,
                 frame_skip,
                 discard_transparency,
+                extract_audio,
             )
 
         try:
@@ -364,6 +463,7 @@ class LoadVisualMediaFromPath:
                     sample_next_unit,
                     frame_skip,
                     discard_transparency,
+                    extract_audio,
                 )
             # set media_cap to look at start_index frame
             images = []
@@ -432,7 +532,17 @@ class LoadVisualMediaFromPath:
                 sample_next_unit,
                 frame_skip,
                 discard_transparency,
+                extract_audio,
             )
+
+        # Extract audio if present (time-matched to frame window)
+        audio = None
+        if extract_audio and os.path.isfile(media_path) and LoadVisualMediaFromPath._has_audio_track(media_path):
+            audio_start = start_at_n if start_at_unit == "seconds" else (start_at_frame / original_fps if original_fps > 0 else 0)
+            audio_duration = 0
+            if sample_next_n > 0:
+                audio_duration = sample_next_n if sample_next_unit == "seconds" else (sample_next_frames / original_fps if original_fps > 0 else 0)
+            audio = LoadVisualMediaFromPath._extract_audio(media_path, start_seconds=audio_start, duration_seconds=audio_duration)
 
         return (
             images,
@@ -447,6 +557,7 @@ class LoadVisualMediaFromPath:
                 width,
                 height,
             ),
+            audio,
         )
 
 class LoadVisualMediaFromPath_Batch:
