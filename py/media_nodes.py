@@ -170,11 +170,11 @@ class LoadVisualMediaFromPath:
         return {
             "required": {
                 "media_path": ("STRING", {"default": "/insert/path/here.ext"}),
-                "start_at_n": ("INT", {"default": 0, "min": 0, "step": 1}),
+                "start_at_n": ("INT", {"default": 0, "min": 0, "max": 9223372036854775807, "step": 1}),
                 "start_at_unit": (s.TIME_UNITS,),
                 "sample_next_n": (
                     "INT",
-                    {"default": 0, "min": 0, "step": 1},
+                    {"default": 0, "min": 0, "max": 9223372036854775807, "step": 1},
                 ),  # 0 in this case means no maximum
                 "sample_next_unit": (s.TIME_UNITS,),
                 "frame_skip": ("INT", {"default": 0, "min": 0, "step": 1}),
